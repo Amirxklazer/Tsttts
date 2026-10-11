@@ -1,4 +1,4 @@
-ILOT14 WORLD  v0.2.0  (Nintendo Switch homebrew, C++ / SDL2 / libnx)
+ILOT14 WORLD  v0.3.0  (Nintendo Switch homebrew, C++ / SDL2 / libnx)
 
 CONTROLS
   Left stick / D-pad   walk (menus: move)
@@ -47,3 +47,13 @@ TEST ON PC (needs SDL2):
   SDL_VIDEODRIVER=dummy ./ilot14 --bot --nodraw --fast   # auto-plays all 31 days
 
 SAVES: sdmc:/switch/Ilot14/  (3 slots + settings)
+
+WHAT'S NEW IN v0.3.0
+- Chapters: Ch1 = days 1-15, Ch2 = days 16-31, Ch3 locked until Day 31 is finished.
+- Cutscenes (bars, walking, emotes) in Chapters 1, 2 and 3.
+- Real animated elevator (doors, floor numbers, buttons).
+- Dialogue auto-advances when finished (Settings > Auto-advance).
+- Touch works in MENUS only. Tapping in-game shows "PLAY WITH JOY-CONS".
+- Menu shortcuts: L/R chapter jump (Day Select), X random / Y reset (Customize), key repeat on D-pad.
+- Customize your look, bot owners, "YOUR BOT" = Bolt.
+- Old saves carry over (a .bak copy is made of each old save).

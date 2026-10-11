@@ -7,3 +7,4 @@
 #include "story_days_2.hpp"
 #include "story_days_3.hpp"
 #include "story_days_4.hpp"
+#include "story_ch3.hpp"

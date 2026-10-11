@@ -5,7 +5,8 @@
 enum Op {
     O_SAY, O_CHOOSE, O_GOTO, O_SET, O_ADD, O_IF, O_IFNOT, O_IFGE, O_IFDAY, O_MINI, O_CARD, O_SCENE, O_GOAL,
     O_AWAIT, O_SPAWN, O_CLEARITEMS, O_WARP, O_ENDDAY, O_RUN, O_END, O_NPC, O_OBJ, O_DELOBJ, O_FX, O_WAIT,
-    O_TITLE, O_TOAST, O_LOCK, O_UNLOCK
+    O_TITLE, O_TOAST, O_LOCK, O_UNLOCK,
+    O_CAST, O_WALK, O_EMOTE, O_ANIM, O_BARS, O_NPCGO, O_PGO, O_FOCUS
 };
 
 struct Cmd {
@@ -22,7 +23,7 @@ struct Block {
 };
 
 static std::map<std::string, Block> BLOCKS;
-static std::map<int, std::string> DAY_TITLE;
+static std::map<int, std::string> DAY_TITLE, DAY_TITLE3;
 static std::vector<std::string> STORY_ERRORS;
 
 static std::vector<std::string> words(const std::string& s) {
@@ -47,7 +48,8 @@ static void parseStory(const std::string& text, const std::string& srcName) {
         {"scene", O_SCENE}, {"goal", O_GOAL}, {"await", O_AWAIT}, {"spawn", O_SPAWN}, {"clearitems", O_CLEARITEMS},
         {"warp", O_WARP}, {"endday", O_ENDDAY}, {"run", O_RUN}, {"end", O_END}, {"return", O_END}, {"npc", O_NPC},
         {"obj", O_OBJ}, {"delobj", O_DELOBJ}, {"fx", O_FX}, {"wait", O_WAIT}, {"title", O_TITLE}, {"toast", O_TOAST},
-        {"lock", O_LOCK}, {"unlock", O_UNLOCK}};
+        {"lock", O_LOCK}, {"unlock", O_UNLOCK}, {"cast", O_CAST}, {"walk", O_WALK}, {"emote", O_EMOTE}, {"anim", O_ANIM},
+        {"bars", O_BARS}, {"npcgo", O_NPCGO}, {"pgo", O_PGO}, {"focus", O_FOCUS}};
     std::vector<std::string> lines = splitStr(text, '\n');
     Block* cur = nullptr;
     int ln = 0;
@@ -109,9 +111,23 @@ static void parseStory(const std::string& text, const std::string& srcName) {
             } break;
             case O_DELOBJ: c.a = rest; break;
             case O_FX: c.a = rest; break;
-            case O_WAIT: c.n = atoi(rest.c_str()); break;
+            case O_WAIT: c.n = rest == "done" ? -1 : atoi(rest.c_str()); break;
+            case O_CAST: if (w.size() < 2) storyErr(srcName, ln, "cast key x"); else { c.a = w[0]; c.n = atoi(w[1].c_str()); } break;
+            case O_WALK: case O_NPCGO:
+                if (w.size() < 2) storyErr(srcName, ln, "walk key x [speed] [wait]");
+                else { c.a = w[0]; c.n = atoi(w[1].c_str()); c.b = w.size() > 2 && w[2] != "wait" ? w[2] : "4"; c.c = (w.back() == "wait") ? "wait" : ""; }
+                break;
+            case O_PGO:
+                if (w.empty()) storyErr(srcName, ln, "pgo x [speed] [wait]");
+                else { c.n = atoi(w[0].c_str()); c.b = w.size() > 1 && w[1] != "wait" ? w[1] : "4"; c.c = (w.back() == "wait") ? "wait" : ""; }
+                break;
+            case O_EMOTE: if (w.size() < 2) storyErr(srcName, ln, "emote key text"); else { c.a = w[0]; c.b = trim(rest.substr(w[0].size())); } break;
+            case O_ANIM: if (w.size() < 2) storyErr(srcName, ln, "anim key kind"); else { c.a = w[0]; c.b = w[1]; } break;
+            case O_BARS: c.a = rest; break;
+            case O_FOCUS: c.a = rest; break;
             case O_TITLE: c.a = rest;
                 if (cur->name.rfind("day_", 0) == 0) DAY_TITLE[atoi(cur->name.c_str() + 4)] = rest;
+                if (cur->name.rfind("c3_", 0) == 0) DAY_TITLE3[atoi(cur->name.c_str() + 3)] = rest;
                 break;
             case O_TOAST: c.a = rest; break;
             case O_LOCK: case O_UNLOCK: c.a = rest; break;
@@ -142,6 +158,13 @@ static void validateStory() {
                 case O_SPAWN: if (!floorBy(c.b)) storyErr(b.name, c.line, "unknown floor " + c.b); break;
                 case O_OBJ: if (!floorBy(c.b)) storyErr(b.name, c.line, "unknown floor " + c.b); break;
                 case O_LOCK: case O_UNLOCK: if (!floorBy(c.a)) storyErr(b.name, c.line, "unknown floor " + c.a); break;
+                case O_CAST: case O_WALK: case O_EMOTE: case O_ANIM:
+                    if (!charBy(c.a)) storyErr(b.name, c.line, "unknown character " + c.a);
+                    if (c.op == O_ANIM && c.b != "hop" && c.b != "spin" && c.b != "fall" && c.b != "shake" && c.b != "wave" && c.b != "bow" && c.b != "rise")
+                        storyErr(b.name, c.line, "bad anim " + c.b);
+                    break;
+                case O_NPCGO: if (!charBy(c.a)) storyErr(b.name, c.line, "unknown character " + c.a); break;
+                case O_FOCUS: if (c.a != "off" && c.a != "player" && !charBy(c.a)) storyErr(b.name, c.line, "bad focus " + c.a); break;
                 case O_NPC:
                     if (!charBy(c.a)) storyErr(b.name, c.line, "unknown character " + c.a);
                     else if (c.b != "hide" && c.b != "show" && c.b != "reset" && !floorBy(c.b)) storyErr(b.name, c.line, "unknown floor " + c.b);
@@ -167,6 +190,8 @@ static void validateStory() {
     }
     for (int d = 1; d <= 31; d++)
         if (!BLOCKS.count("day_" + std::to_string(d))) STORY_ERRORS.push_back("missing script day_" + std::to_string(d));
+    for (int d = 1; d <= 3; d++)
+        if (!BLOCKS.count("c3_" + std::to_string(d))) STORY_ERRORS.push_back("missing script c3_" + std::to_string(d));
     for (auto& ch : CHARS)
         if (!BLOCKS.count("chat_" + ch.key)) STORY_ERRORS.push_back("note: no chat_" + ch.key + " (will use chat_default)");
 }

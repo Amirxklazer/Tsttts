@@ -115,7 +115,7 @@ struct Roundup : Mini {
         for (int y = 120; y < SCR_H; y += 80) rect(0, y, SCR_W, 2, C(255, 255, 255, 25));
         rect(0, 0, SCR_W, 120, C(30, 40, 60));
         for (auto& b : bots) drawBot(b.x, b.y, b.c, phaseT, b.vx >= 0 ? 1 : -1, true);
-        Look l = LK(ORANGE, C(25, 18, 14), C(222, 170, 125), 0); l.tag14 = true;
+        Look l = playerLook();
         drawPerson(px, py + 4, dir, l, phaseT, true);
         if (flash > 0) frameR(px - 75, py - 75, 150, 150, C(255, 255, 255, 40 + flash * 20), 3);
         text("CAUGHT " + std::to_string(caught) + "/" + std::to_string(need), 40, 40, 2.4f, WHITE);
@@ -238,7 +238,7 @@ struct Fight : Mini {
         rect(0, 0, SCR_W, 130, boss ? C(40, 35, 60) : C(130, 190, 235));
         rect(0, 130, SCR_W, 6, C(0, 0, 0, 60));
         for (int i = 0; i < 24; i++) rect((i * 97) % 1280, 160 + (i * 61) % 520, 14, 6, C(255, 255, 255, 25));
-        Look l = LK(ORANGE, C(25, 18, 14), C(222, 170, 125), 0); l.tag14 = true;
+        Look l = playerLook();
         if (inv == 0 || (inv / 4) % 2 == 0) drawPerson(px, py + 4, dir, l, phaseT, true);
         if (swing > 0) {
             float rad = boss ? 140 : 110;
@@ -451,7 +451,7 @@ struct Maze : Mini {
         float ex = OX + (CW - 1) * CS + CS / 2, ey = OY + (CH - 1) * CS + CS / 2;
         rect(ex - 18, ey - 24, 36, 48, exitOpen ? C(120, 255, 190, 230) : C(60, 60, 60));
         if (exitOpen) fillCircle(ex, ey, 40 + sinf(tick * 0.1f) * 5, C(120, 255, 190, 50));
-        Look l = LK(ORANGE, C(25, 18, 14), C(222, 170, 125), 0, 0.5f); l.tag14 = false;
+        Look l = playerLook(); l.h *= 0.5f; l.tag14 = false;
         drawPerson(px, py + 16, 1, l, tick, true);
         // HUD
         rect(20, 10, 260, 22, C(0, 0, 0, 180)); rect(24, 14, 252.0f * std::max(0.0f, stamina) / 100, 14, stamina > 30 ? C(120, 220, 255) : C(255, 90, 90));
@@ -558,7 +558,7 @@ struct Roof : Mini {
         }
         float fx = endX - camX;
         rect(fx, 280, 6, 280, C(220, 220, 230)); rect(fx + 6, 284, 70, 44, ORANGE); text("14", fx + 41, 292, 1.8f, BLACK, 1);
-        Look l = LK(ORANGE, C(25, 18, 14), C(222, 170, 125), 0, 0.9f); l.tag14 = true;
+        Look l = playerLook(); l.h *= 0.9f;
         drawPerson(px + 14 - camX, py + 56, 1, l, tick, fabsf(vx) > 0.1f && onGround);
         text("STARS " + std::to_string(starsGot) + "/5", 40, 30, 2.2f, WHITE);
         rect(SCR_W - 340, 36, 300, 10, C(0, 0, 0, 120));

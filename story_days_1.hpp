@@ -4,10 +4,22 @@ static const char* STORY_DAYS_1 = R"IL(
 # ================================================================ DAY 1
 script day_1
 title The Dalia Quest
+card CHAPTER 1|Lost the Ash
 toast Walk: stick / D-pad.   Talk / use: A.   Menu: +
+bars on
 scene room amir
+cast amir 860
+cast bolt -200
+say |Day 1. Morning in the 14.
+walk bolt 480 6 wait
+emote bolt !
+say Bolt|BEEP! Dalia texted six times! SIX! Amir, WAKE UP!
+anim amir hop
 say |Day 1. Morning in the 14. The elevator hums, a Cleaning bot beeps somewhere in the hall, and my phone says Dalia texted me six times.
 say Amir|Six. Before breakfast.
+walk bolt 1400 7
+say Bolt|Follow me! Zoom zoom!
+bars off
 say |(Dalia lives in M-002 on the Main floor, one floor below mine. The elevator is at the left end of the hall.)
 scene off
 goal Take the elevator down to the Main floor and talk to Dalia (M-002).
@@ -111,9 +123,14 @@ endday
 # ================================================================ DAY 2
 script day_2
 title Hornets
+bars on
 scene room amir
+cast amir 700
+emote amir ?
+anim amir shake
 say |Day 2. Gabriel texted at 7:12: "Come to my room. Bring shoes you can run in."
 say Amir|Never a good sign.
+bars off
 scene off
 goal Go to Gabriel's room on the Main floor (M-004).
 await talk gabriel
@@ -203,10 +220,15 @@ endday
 # ================================================================ DAY 3
 script day_3
 title Papercraft Day
+bars on
 scene room amir
+cast amir 700
+anim amir bow
+emote amir !
 say |Day 3. My phone buzzes from under the pillow. A message from Amine, written entirely in capital letters.
 say Amine|PAPERCRAFT DAY!! Bring: COFFEE (Anes, Common floor). PAPER ROLLS (Anais, Rare floor). GLUE (Uncommon floor). UHU STIC (Youcef, Main floor). PENS (Raceem, Lethal floor). RULERS (Lilian, Teen floor). Meet me at S-001!!
 say Amir|Six things. Six floors. That's a quest.
+bars off
 scene off
 clearitems
 spawn coffee common 610

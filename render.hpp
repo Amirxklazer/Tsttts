@@ -105,6 +105,16 @@ static void drawBackdrop(const std::string& bg, int t) {
         rect(0, 0, SCR_W, SCR_H, C(84, 88, 98)); rect(0, 0, SCR_W, 80, C(60, 62, 70));
         for (int x = 100; x < SCR_W; x += 380) { rect(x, 80, 60, 520, C(120, 124, 134)); rect(x, 520, 60, 80, C(240, 210, 40)); }
         rect(0, 600, SCR_W, 120, C(70, 72, 80)); for (int x = 0; x < SCR_W; x += 200) rect(x, 650, 90, 6, C(240, 240, 240, 140));
+    } else if (bg == "hall") {
+        gradient(0, 600, C(96, 112, 150), C(70, 84, 124)); rect(0, 600, SCR_W, 120, C(60, 66, 96)); rect(0, 596, SCR_W, 6, ORANGE);
+        for (int x = 80; x < SCR_W; x += 300) { rect(x, 330, 130, 266, C(230, 230, 240)); rect(x + 8, 338, 114, 250, C(120, 130, 170)); }
+        for (int x = 100; x < SCR_W; x += 320) rect(x, 70, 150, 12, C(255, 255, 235));
+    } else if (bg == "deep") {
+        rect(0, 0, SCR_W, SCR_H, C(14, 26, 32));
+        for (int x = 0; x < SCR_W; x += 120) { rect(x, 0, 26, 600, C(30, 52, 60)); rect(x + 8, 0, 4, 600, C(50, 90, 96)); }
+        for (int y = 120; y < 500; y += 130) rect(0, y, SCR_W, 14, C(40, 70, 78));
+        rect(0, 600, SCR_W, 120, C(20, 34, 40)); rect(0, 596, SCR_W, 6, C(255, 140, 50));
+        for (int x = 40; x < SCR_W; x += 260) rect(x, 480, 10, 10, C(255, 140, 50, 120 + (int)(100 * sinf(t * 0.1f + x))));
     } else if (bg == "void") {
         rect(0, 0, SCR_W, SCR_H, C(12, 10, 24));
         for (int x = 0; x < SCR_W; x += 80) line(640, 300, x, 720, C(120, 90, 200, 60));
@@ -115,18 +125,40 @@ static void drawBackdrop(const std::string& bg, int t) {
     }
 }
 
+static void drawEmote(float x, float y, const std::string& e, int t) {
+    float bob = sinf(t * 0.2f) * 3;
+    float w = std::max(50.0f, (float)textW(e, 2.4f) + 26);
+    rect(x - w / 2, y - 66 + bob, w, 54, WHITE); frameR(x - w / 2, y - 66 + bob, w, 54, BLACK, 3);
+    rect(x - 7, y - 12 + bob, 14, 12, WHITE); rect(x - 4, y - 3 + bob, 8, 5, BLACK);
+    text(e, x, y - 56 + bob, 2.4f, BLACK, 1);
+}
+
 static void drawScene() {
+    float sx = g.shake > 0 ? (float)rndi(-6, 6) : 0;
     drawBackdrop(g.sceneBg, g.frame);
-    size_t n = g.sceneChars.size();
-    for (size_t i = 0; i < n; i++) {
-        CharDef* c = charBy(g.sceneChars[i]);
+    std::vector<Actor*> order;
+    for (auto& a : g.actors) order.push_back(&a);
+    for (Actor* ap : order) {
+        Actor& a = *ap;
+        CharDef* c = charBy(a.key);
         if (!c) continue;
-        float x = n == 1 ? 640 : n == 2 ? (i == 0 ? 420 : 860) : (280 + i * 360);
         bool speaking = g.vs == V_SAY && (g.dKey.empty() ? g.dWho == c->name : g.dKey == c->key);
-        float bob = speaking ? sinf(g.frame * 0.3f) * 3 : 0;
-        if (c->isBot) { drawBot(x, 612 + bob, c->look.shirt, g.frame, i == 0 ? 1 : -1); continue; }
-        Look l = c->look; l.h *= 1.9f; if (c->key == "amir") l.tag14 = true;
-        drawPerson(x, 612 + bob, (i == 0 || (n == 3 && i == 1)) ? 1 : -1, l, g.frame, false);
+        float bob = speaking ? sinf(g.frame * 0.3f) * 3 : 0, ox = sx, oy = 0;
+        float prog = a.animT > 0 ? 1.0f - a.animT / (a.animName == "fall" ? 70.0f : 50.0f) : 0;
+        if (a.animName == "hop") oy = -fabsf(sinf(prog * 6.2832f * 1.5f)) * 70;
+        else if (a.animName == "shake") ox += sinf(g.frame * 1.6f) * 8;
+        else if (a.animName == "fall") { oy = prog * prog * 520; ox += prog * 90 * a.dir; }
+        else if (a.animName == "rise") oy = (1 - prog) * 400;
+        else if (a.animName == "bow") oy = sinf(prog * 3.1416f) * 40;
+        else if (a.animName == "wave") ox += sinf(g.frame * 0.5f) * 6;
+        int dirv = a.dir;
+        if (a.animName == "spin") dirv = ((g.frame / 4) % 2) ? 1 : -1;
+        if (c->isBot) drawBot(a.x + ox, 612 + bob + oy, c->look.shirt, g.frame, dirv, a.animName != "shake");
+        else {
+            Look l = c->look; l.h *= 1.9f;
+            drawPerson(a.x + ox, 612 + bob + oy, dirv, l, g.frame, a.walking);
+        }
+        if (a.emoteT > 0) drawEmote(a.x + ox, 612 - (c->isBot ? 150 : 340 * c->look.h), a.emote, g.frame);
     }
 }
 
@@ -159,6 +191,15 @@ static void drawTheme(const FloorDef& f, float camX) {
             rect(sx(60), 340, 150, 250, C(30, 20, 20)); frameR(sx(60), 340, 150, 250, ORANGE, 4);
             dashH(sx(70), 350, 130, C(255, 150, 60, 150)); text("STAIRWAY", sx(135), 300, 1.2f, ORANGE, 1);
         }
+        return;
+    }
+    if (th == "deep") {
+        rect(0, 0, SCR_W, SCR_H, C(14, 26, 32));
+        for (int x = -((int)camX % 120); x < SCR_W; x += 120) { rect(x, 92, 26, 498, C(30, 52, 60)); rect(x + 8, 92, 4, 498, C(50, 90, 96)); }
+        for (int y = 150; y < 500; y += 120) rect(0, y, SCR_W, 14, C(40, 70, 78));
+        rect(0, 590, SCR_W, 130, C(20, 34, 40)); rect(0, 588, SCR_W, 4, C(255, 140, 50));
+        for (int x = -((int)camX % 260); x < SCR_W; x += 260) rect(x + 40, 470, 10, 10, C(255, 140, 50, 120 + (int)(100 * sinf(g.frame * 0.1f + x))));
+        text(f.name, 640, 110, 2.4f, C(255, 140, 50, 90), 1, 6);
         return;
     }
     wallBG(f);
@@ -240,17 +281,28 @@ static void drawDoorSign(float cx, const Room& r, bool own, const FloorDef& f) {
 }
 
 static void drawNpcTag(float x, const CharDef& c, float h) {
-    float w = (float)std::max(textW(c.name, 1.2f), textW(c.id, 0.9f)) + 16;
+    std::string l2 = c.id; Col c2 = C(255, 190, 120);
+    if (c.isBot) {
+        const BotInfo* b = botOf(c.key);
+        if (b) {
+            CharDef* oc = charBy(b->ownerKey);
+            l2 = b->ownerKey == "amir" ? "YOUR BOT" : oc ? "Owner: " + oc->name : "The building's bot";
+            if (b->ownerKey == "amir") c2 = C(120, 255, 190);
+        }
+    }
+    float w = (float)std::max(textW(c.name, 1.2f), textW(l2, 0.9f)) + 16;
     float y = GY - 110 * h - 64;
     rect(x - w / 2, y, w, 44, C(0, 0, 0, 170));
     text(c.name, x, y + 3, 1.2f, WHITE, 1);
-    text(c.id, x, y + 24, 0.9f, C(255, 190, 120), 1);
+    text(l2, x, y + 24, 0.9f, c2, 1);
 }
 
 static void drawWorld() {
     FloorDef* f = floorBy(g.floorKey);
     if (!f) return;
-    float camX = std::max(0.0f, std::min(f->width - SCR_W, g.px - 640));
+    float fx = g.px;
+    if (!g.focusKey.empty()) { auto it = g.npcs.find(g.focusKey); if (it != g.npcs.end() && it->second.floor == g.floorKey) fx = it->second.x; }
+    float camX = std::max(0.0f, std::min(f->width - SCR_W, fx - 640));
     if (g.shake > 0) camX += rndi(-5, 5);
     drawTheme(*f, camX);
     if (f->inElevator) drawElevator(*f, camX);
@@ -310,7 +362,8 @@ static void drawWorld() {
 static void drawHUD() {
     FloorDef* f = floorBy(g.floorKey);
     rect(0, 0, SCR_W, 44, C(0, 0, 0, 175));
-    text("DAY " + std::to_string(g.day), 20, 10, 1.8f, ORANGE);
+    int chn = g.chapter == 3 ? 3 : (g.day <= 15 ? 1 : 2);
+    text("CH" + std::to_string(chn) + "  DAY " + std::to_string(g.day), 20, 10, 1.8f, ORANGE);
     if (f) text(f->name, 640, 10, 1.8f, WHITE, 1);
     text("ITEMS " + std::to_string(g.inv.size()), SCR_W - 20, 10, 1.8f, WHITE, 2);
     if (!g.goal.empty() && !g.sceneOn) {
@@ -383,28 +436,134 @@ static void drawCardScreen(const std::string& title, const std::string& sub, int
     if (t > 50) text("A", 640, 570, 2, C(255, 255, 255, 120 + (int)(100 * sinf(t * 0.12f))), 1);
 }
 
-static void drawElevMenu() {
-    if (!g.elevOpen) return;
-    std::vector<int> l = elevList();
-    float w = 520, rowH = 38;
-    int vis = std::min<int>(l.size(), 12);
-    float h = 70 + vis * rowH;
-    float x = 380, y = 90;
-    rect(x, y, w, h, C(10, 14, 30, 245)); frameR(x, y, w, h, ORANGE, 3);
-    text("ELEVATOR", x + w / 2, y + 12, 2, ORANGE, 1, 4);
-    int start = std::max(0, std::min((int)l.size() - vis, g.elevSel - vis / 2));
-    for (int i = 0; i < vis; i++) {
-        int idx = start + i;
-        FloorDef& fl = FLOORS[l[idx]];
-        float ry = y + 56 + i * rowH;
-        bool s = idx == g.elevSel;
-        if (s) rect(x + 8, ry, w - 16, rowH - 4, ORANGE);
-        Col c = s ? BLACK : WHITE;
-        text((fl.level >= 0 ? "+" : "") + std::to_string(fl.level), x + 24, ry + 6, 1.5f, c);
-        text(fl.name, x + 90, ry + 6, 1.5f, c);
-        if (fl.key == g.floorKey) text("HERE", x + w - 24, ry + 6, 1.3f, c, 2);
+// ---------------------------------------------------------------- elevator interior
+static void thickLine(float x1, float y1, float x2, float y2, float t, Col c) {
+    float dx = x2 - x1, dy = y2 - y1, l = std::max(1.0f, hypotf(dx, dy));
+    int n = (int)l;
+    for (int i = 0; i <= n; i += 2) rect(x1 + dx * i / n - t / 2, y1 + dy * i / n - t / 2, t, t, c);
+}
+static void drawTri(float cx, float cy, float w, bool up, Col c) {
+    for (int r = 0; r < (int)w; r += 2) {
+        float ww = up ? r : w - r;
+        rect(cx - ww / 2, cy - w / 2 + r, ww, 2, c);
     }
-    text("A Go   B Close", x + w / 2, y + h + 10, 1.5f, WHITE, 1);
+}
+static std::string lvlStr(int lv) { return lv == 0 ? "L" : (lv > 0 ? "+" : "") + std::to_string(lv); }
+
+static void drawElevatorScene() {
+    float shx = 0, shy = 0;
+    if (g.elevPhase == 3) { shx = sinf(g.frame * 2.3f) * 1.6f; shy = cosf(g.frame * 1.9f) * 1.4f; }
+    const float BX0 = 400, BX1 = 880, BY0 = 120, BY1 = 560;
+    // ---- ceiling
+    for (int y = 0; y < (int)BY0; y++) {
+        float t = y / BY0; float l = BX0 * t, r = SCR_W - BX0 * t;
+        rect(l, y, r - l, 1, mix(C(206, 208, 214), C(150, 154, 164), t));
+    }
+    // light panel
+    for (int y = 22; y < 100; y++) {
+        float t = y / BY0; float l = BX0 * t + 80 * (1 - t) + 40, r = SCR_W - l;
+        rect(l, y, r - l, 1, C(255, 250, 228));
+    }
+    // ---- side walls
+    for (int x = 0; x < (int)BX0; x++) {
+        float t = x / BX0; float top = BY0 * t, bot = SCR_H - (SCR_H - BY1) * t;
+        float lx = x, rx = SCR_W - 1 - x;
+        Col cl = mix(C(112, 118, 130), C(160, 166, 178), t);
+        rect(lx, top, 1, bot - top, cl);
+        rect(rx, top, 1, bot - top, dim(cl, 0.92f));
+    }
+    float seams[] = {0, 130, 240, 320, 370};
+    for (float sx : seams) for (int k = 0; k < 2; k++) {
+        float x = k ? SCR_W - 1 - sx : sx; float t = std::min(1.0f, sx / BX0);
+        rect(x, BY0 * t, 3, SCR_H - (SCR_H - BY1) * t - BY0 * t, C(70, 74, 86));
+    }
+    // handrails
+    for (int x = 0; x < (int)BX0; x += 2) {
+        float t = x / BX0; float top = BY0 * t, bot = SCR_H - (SCR_H - BY1) * t; float y = top + (bot - top) * 0.62f;
+        rect(x, y, 3, 9 - 5 * t, C(225, 228, 235)); rect(SCR_W - 1 - x - 2, y, 3, 9 - 5 * t, C(205, 208, 216));
+    }
+    // ---- floor (tiles in perspective)
+    for (int y = (int)BY1; y < SCR_H; y++) {
+        float t = (y - BY1) / (SCR_H - BY1); float l = BX0 * (1 - t), r = BX1 + BX0 * t;
+        rect(l, y, r - l, 1, mix(C(58, 60, 70), C(34, 36, 44), t));
+    }
+    for (int k = -8; k <= 8; k++) {
+        float xb = 640 + k * 150; float x560 = 640 + (xb - 640) * (BY1 - 300) / (SCR_H - 300);
+        line(x560, BY1, xb, SCR_H, C(0, 0, 0, 80));
+    }
+    for (float y : {575.0f, 600.0f, 640.0f, 690.0f}) rect(BX0 * (1 - (y - BY1) / (SCR_H - BY1)), y, SCR_W - 2 * BX0 * (1 - (y - BY1) / (SCR_H - BY1)), 2, C(0, 0, 0, 70));
+    // ---- back wall
+    rect(BX0, BY0, BX1 - BX0, BY1 - BY0, C(150, 156, 168));
+    for (int x = (int)BX0; x < (int)BX1; x += 40) rect(x, BY0, 2, BY1 - BY0, C(255, 255, 255, 18));
+    rect(BX0, BY0, BX1 - BX0, 14, C(110, 116, 128));
+    // doorway
+    const float DX0 = 480, DX1 = 800, DY0 = 206, DY1 = 560;
+    // view through the doors
+    int viewIdx = (g.elevPhase >= 4 && g.elevPhase <= 6) ? g.elevTo : g.elevFrom;
+    SDL_Rect clip = {(int)(DX0 + shx), (int)DY0, (int)(DX1 - DX0), (int)(DY1 - DY0)};
+    rect(DX0, DY0, DX1 - DX0, DY1 - DY0, C(20, 20, 26));
+    if (g.elevDoor > 0.02f) {
+        SDL_RenderSetClipRect(G.ren, &clip);
+        drawTheme(FLOORS[viewIdx], 0);
+        float dd = FLOORS[viewIdx].inElevator ? 1 : 0;
+        text(FLOORS[viewIdx].name, 640, DY0 + 24, 1.6f, C(255, 255, 255, 200), 1, 2);
+        text(lvlStr(FLOORS[viewIdx].level), 640, DY0 + 52, 2.2f, C(255, 160, 80, 220), 1);
+        SDL_RenderSetClipRect(G.ren, nullptr);
+    }
+    // door panels
+    float o = g.elevDoor, pw = 160 * (1 - o);
+    for (int k = 0; k < 2; k++) {
+        float px0 = k == 0 ? DX0 : DX1 - pw;
+        if (pw < 1) continue;
+        rect(px0 + shx, DY0, pw, DY1 - DY0, C(186, 190, 200));
+        for (int y = (int)DY0; y < (int)DY1; y += 6) rect(px0 + shx, y, pw, 1, C(255, 255, 255, 22));
+        rect(px0 + shx, DY0, pw, (DY1 - DY0), C(0, 0, 0, 0));
+        rect(k == 0 ? px0 + shx : px0 + shx + pw - 8, DY0, 8, DY1 - DY0, C(120, 126, 140));
+        if (g.elevPhase == 3) for (int b = 0; b < 4; b++) { float yy = DY0 + fmodf(g.frame * 6.0f + b * 90, DY1 - DY0); rect(px0 + shx, yy, pw, 14, C(255, 255, 255, 26)); }
+        if (o < 0.05f) { text("14", px0 + (k == 0 ? pw - 32 : 32), DY0 + 140, 2.4f, ORANGE, 1); }
+    }
+    frameR(DX0 - 8 + shx, DY0 - 8, DX1 - DX0 + 16, DY1 - DY0 + 8, C(88, 94, 108), 8);
+    rect(DX0 - 8, DY1 - 2, DX1 - DX0 + 16, 8, C(70, 74, 86));
+    // indicator above the doors
+    rect(560, 136, 160, 60, C(8, 8, 12)); frameR(560, 136, 160, 60, C(60, 64, 76), 4);
+    int curLv = FLOORS[g.elevCur].level;
+    bool ding = g.elevPhase == 4 && (g.elevT / 4) % 2 == 0;
+    Col led = ding ? C(255, 240, 160) : C(255, 120, 30);
+    text(lvlStr(curLv), 650, 148, 3.0f, led, 1);
+    if (g.elevPhase == 3 && g.elevPath.size() > 1) {
+        bool goingUp = FLOORS[g.elevTo].level > FLOORS[g.elevFrom].level;
+        drawTri(590, 166, 22, goingUp, (g.frame / 8) % 2 ? led : dim(led, 0.4f));
+    }
+    if (ding) text("*DING*", 640, 100, 1.6f, C(30, 30, 40), 1, 3);
+    // ---- control panel (right)
+    std::vector<int> l = elevList();
+    float PX = 944, PY = 80, PW = 296, PH = 560;
+    rect(PX, PY, PW, PH, C(92, 98, 112)); frameR(PX, PY, PW, PH, C(200, 204, 214), 4); rect(PX + 6, PY + 6, PW - 12, PH - 12, C(60, 64, 76));
+    rect(PX + 16, PY + 16, PW - 32, 66, C(8, 8, 12)); frameR(PX + 16, PY + 16, PW - 32, 66, C(40, 44, 54), 3);
+    int showIdx = g.elevPhase >= 3 ? g.elevCur : (l.empty() ? 0 : l[std::min<int>(g.elevSel, (int)l.size() - 1)]);
+    text(FLOORS[showIdx].name, PX + PW / 2, PY + 22, 1.3f, C(255, 150, 60), 1);
+    text(lvlStr(FLOORS[showIdx].level), PX + PW / 2, PY + 46, 2.4f, C(255, 190, 110), 1);
+    for (size_t i = 0; i < l.size(); i++) {
+        float cx = PX + 90 + (i % 2) * 118, cy = PY + 128 + (i / 2) * 46;
+        bool sel = g.elevPhase == 2 && (int)i == g.elevSel;
+        bool target = g.elevPhase >= 3 && l[i] == g.elevTo && g.elevPhase < 6;
+        bool here = l[i] == (g.elevPhase >= 5 ? g.elevTo : g.elevFrom);
+        fillCircle(cx, cy, 24, C(210, 214, 224));
+        fillCircle(cx, cy, 20, target ? C(255, 200, 90) : C(48, 52, 62));
+        if (target) fillCircle(cx, cy, 30, C(255, 190, 80, 55));
+        if (sel) { for (int k = 0; k < 3; k++) { float rr = 28 + k; for (int a = 0; a < 48; a++) { float an = a * 0.1309f; rect(cx + cosf(an) * rr - 1, cy + sinf(an) * rr - 1, 3, 3, ORANGE); } } }
+        text(lvlStr(FLOORS[l[i]].level), cx, cy - 8, 1.1f, target ? BLACK : WHITE, 1);
+        if (here) rect(cx + 20, cy - 24, 8, 8, C(90, 255, 160));
+    }
+    // ---- player
+    Look pl = playerLook(); pl.h *= 1.9f;
+    drawPerson(250 + shx, 690 + shy, 1, pl, g.frame, false);
+    // ---- light flicker / vignette while riding
+    if (g.elevPhase == 3 && (g.frame % 97) < 3) rect(0, 0, SCR_W, SCR_H, C(0, 0, 0, 70));
+    if (g.elevPhase == 2) {
+        text("A Press floor     B Leave", 560, 664, 1.5f, WHITE, 1);
+    }
+    for (int y = 0; y < SCR_H; y += 2) rect(0, y, SCR_W, 1, C(0, 0, 0, 14));
 }
 
 // ---------------------------------------------------------------- blueprint menus
@@ -419,14 +578,17 @@ static void blueprintBG() {
         float x = sx ? 1222 : 56, y = sy ? 636 : 84;
         rect(x - 14, y, 30, 2, WHITE); rect(x, y - 14, 2, 30, WHITE);
     }
-    text("A Select    B Back", 640, 668, 1.6f, WHITE, 1, 2);
+    text(g_hint, 640, 668, 1.5f, WHITE, 1, 2);
+    if (g_backBtn) { frameR(56, 22, 140, 38, WHITE, 2); text("< BACK", 126, 30, 1.5f, WHITE, 1, 2); HITS.push_back({56, 22, 140, 38, 2, 0}); }
     text("ILOT14 WORLD  " VERSION, 1210, 52, 1.2f, C(255, 255, 255, 150), 2);
 }
 
-static void bpButton(float x, float y, float w, float h, const std::string& label, bool sel, bool enabled = true) {
+static void bpButton(float x, float y, float w, float h, const std::string& label, bool sel, bool enabled = true, int idx = -1) {
+    if (idx >= 0) HITS.push_back({x, y, w, h, 0, idx});
     Col c = enabled ? WHITE : C(255, 255, 255, 90);
-    if (sel) { rect(x, y, w, h, WHITE); text(label, x + 28, y + h / 2 - 14, 2.0f, C(28, 66, 156), 0, 2); rect(x - 22, y + h / 2 - 8, 14, 16, ORANGE); }
-    else { frameR(x, y, w, h, c, 3); text(label, x + 28, y + h / 2 - 14, 2.0f, c, 0, 2); }
+    float sc = h < 50 ? 1.7f : 2.0f;
+    if (sel) { rect(x, y, w, h, WHITE); text(label, x + 28, y + h / 2 - 8 * sc, sc, C(28, 66, 156), 0, 2); rect(x - 22, y + h / 2 - 8, 14, 16, ORANGE); }
+    else { frameR(x, y, w, h, c, 3); text(label, x + 28, y + h / 2 - 8 * sc, sc, c, 0, 2); }
 }
 
 static std::string fmtTime(long frames) {
@@ -455,13 +617,14 @@ static void drawTower() {
 static void drawTitleMenu() {
     blueprintBG();
     drawTower();
-    text("\xC3\x8E L O T 1 4", 110, 110, 6.6f, WHITE, 0, 4);
-    text("W O R L D   //   BLUEPRINT SERIES", 114, 205, 1.5f, C(255, 255, 255, 200));
+    text("\xC3\x8E L O T 1 4", 110, 100, 6.6f, WHITE, 0, 4);
+    text("W O R L D   //   BLUEPRINT SERIES", 114, 190, 1.5f, C(255, 255, 255, 200));
     SlotInfo last; if (g.st.lastSlot > 0) last = slotInfo(g.st.lastSlot);
-    const char* names[] = {"CONTINUE", "NEW GAME", "SAVE SLOTS", "DAY SELECT", "SETTINGS", "EXIT TO HOMEBREW MENU"};
-    for (int i = 0; i < 6; i++) bpButton(130, 250 + i * 64, 560, 52, names[i], g.sel == i, i != 0 || last.exists);
-    if (g.msgT > 0) text(g.msg, 130, 640, 1.4f, C(255, 220, 120));
-    if (g.sel == 0 && last.exists) text("Slot " + std::to_string(g.st.lastSlot) + " - Day " + std::to_string(last.day), 710, 262, 1.3f, C(255, 255, 255, 180));
+    const char* names[] = {"CONTINUE", "NEW GAME", "SAVE SLOTS", "DAY SELECT", "CHAPTERS", "CUSTOMIZE", "SETTINGS", "EXIT TO HOMEBREW MENU"};
+    for (int i = 0; i < 8; i++) bpButton(130, 226 + i * 50, 560, 42, names[i], g.sel == i, i != 0 || last.exists, i);
+    if (g.msgT > 0) text(g.msg, 130, 642, 1.4f, C(255, 220, 120));
+    if (g.sel == 0 && last.exists) text("Slot " + std::to_string(g.st.lastSlot) + " - " + (last.chapter == 3 ? "Ch.3 " : "") + "Day " + std::to_string(last.day), 710, 236, 1.3f, C(255, 255, 255, 180));
+    if (g.sel == 4 && g.st.ch3) text("Chapter 3 unlocked!", 710, 436, 1.3f, C(120, 255, 190));
 }
 
 static void drawSlotList(const std::string& heading, const std::string& hint) {
@@ -472,12 +635,14 @@ static void drawSlotList(const std::string& heading, const std::string& hint) {
         SlotInfo si = slotInfo(i);
         float y = 230 + (i - 1) * 124;
         bool s = g.sel == i - 1;
+        HITS.push_back({110, y, 1060, 104, 0, i - 1});
         if (s) rect(110, y, 1060, 104, C(255, 255, 255, 40));
         frameR(110, y, 1060, 104, WHITE, s ? 4 : 2);
         text("SLOT " + std::to_string(i), 140, y + 16, 2.4f, s ? ORANGE : WHITE, 0, 3);
         if (si.exists) {
             std::string t = DAY_TITLE.count(si.day) ? DAY_TITLE[si.day] : "";
-            text("DAY " + std::to_string(si.day) + "  -  " + t, 140, y + 60, 1.7f, WHITE);
+            if (si.chapter == 3) t = DAY_TITLE3.count(si.day) ? DAY_TITLE3[si.day] : "";
+            text(std::string(si.chapter == 3 ? "CHAPTER 3  -  " : "") + "DAY " + std::to_string(si.day) + "  -  " + t, 140, y + 60, 1.7f, WHITE);
             text(fmtTime(si.frames), 1150, y + 16, 1.7f, C(255, 255, 255, 190), 2);
         } else text("EMPTY", 140, y + 60, 1.7f, C(255, 255, 255, 140));
     }
@@ -486,11 +651,15 @@ static void drawSlotList(const std::string& heading, const std::string& hint) {
 static void drawDaySelect() {
     blueprintBG();
     text("DAY SELECT", 110, 100, 3.4f, WHITE, 0, 6);
-    text("Days you have reached are unlocked.", 114, 160, 1.4f, C(255, 255, 255, 190));
+    text("Days you have reached are unlocked.", 114, 150, 1.4f, C(255, 255, 255, 190));
+    rect(114, 182, 22, 8, ORANGE); text("Chapter 1: days 1-15", 144, 176, 1.1f, WHITE);
+    rect(380, 182, 22, 8, C(120, 255, 220)); text("Chapter 2: days 16-31", 410, 176, 1.1f, WHITE);
     for (int d = 1; d <= 31; d++) {
-        int i = d - 1; float x = 130 + (i % 8) * 128, y = 210 + (i / 8) * 96;
+        int i = d - 1; float x = 130 + (i % 8) * 128, y = 206 + (i / 8) * 94;
         bool un = d <= g.st.maxDay, s = g.sel == i;
+        HITS.push_back({x, y, 112, 80, 0, i});
         if (s) rect(x, y, 112, 80, WHITE); else frameR(x, y, 112, 80, un ? WHITE : C(255, 255, 255, 70), 2);
+        rect(x + 4, y + 4, 104, 6, d <= 15 ? ORANGE : C(120, 255, 220, un ? 255 : 90));
         Col c = s ? C(28, 66, 156) : (un ? WHITE : C(255, 255, 255, 80));
         text(std::to_string(d), x + 56, y + 20, 2.6f, c, 1);
         if (!un) text("LOCKED", x + 56, y + 58, 0.9f, c, 1);
@@ -505,28 +674,157 @@ static void drawSettings() {
     blueprintBG();
     text("SETTINGS", 110, 100, 3.4f, WHITE, 0, 6);
     const char* ts[] = {"SLOW", "NORMAL", "FAST", "INSTANT"};
-    bpButton(130, 230, 760, 64, std::string("TEXT SPEED:   ") + ts[g.st.textSpeed], g.sel == 0);
-    bpButton(130, 320, 760, 64, std::string("SCANLINES:   ") + (g.st.scanlines ? "ON" : "OFF"), g.sel == 1);
-    bpButton(130, 410, 760, 64, "BACK", g.sel == 2);
-    text("Left / Right or A changes a setting.", 134, 500, 1.4f, C(255, 255, 255, 190));
+    const char* au[] = {"OFF (press A)", "LONG", "NORMAL", "SHORT"};
+    bpButton(130, 210, 760, 60, std::string("TEXT SPEED:   ") + ts[g.st.textSpeed], g.sel == 0, true, 0);
+    bpButton(130, 290, 760, 60, std::string("AUTO-ADVANCE:   ") + au[g.st.autoAdv], g.sel == 1, true, 1);
+    bpButton(130, 370, 760, 60, std::string("SCANLINES:   ") + (g.st.scanlines ? "ON" : "OFF"), g.sel == 2, true, 2);
+    bpButton(130, 450, 760, 60, "BACK", g.sel == 3, true, 3);
+    text("Dialogue moves on by itself when finished. A still skips ahead.", 134, 540, 1.3f, C(255, 255, 255, 190));
 }
 
 static void drawPause() {
     rect(0, 0, SCR_W, SCR_H, C(0, 20, 60, 190));
-    frameR(300, 120, 680, 480, WHITE, 3);
-    text("PAUSED", 640, 150, 3.2f, WHITE, 1, 8);
-    const char* names[] = {"RESUME", "SAVE PROGRESS", "SETTINGS", "QUIT TO TITLE"};
-    for (int i = 0; i < 4; i++) bpButton(350, 235 + i * 70, 580, 56, names[i], g.sel == i);
-    text("Saves the start of Day " + std::to_string(g.day), 640, 535, 1.3f, C(255, 255, 255, 180), 1);
-    if (g.msgT > 0) text(g.msg, 640, 565, 1.5f, C(255, 220, 120), 1);
+    frameR(300, 80, 680, 560, WHITE, 3);
+    text("PAUSED", 640, 100, 3.2f, WHITE, 1, 8);
+    const char* names[] = {"RESUME", "SAVE PROGRESS", "BOT REGISTRY", "CUSTOMIZE", "SETTINGS", "QUIT TO TITLE"};
+    HITS.push_back({0, 0, SCR_W, SCR_H, 2, 0});
+    HITS.push_back({300, 80, 680, 560, 1, g.sel});
+    for (int i = 0; i < 6; i++) bpButton(350, 175 + i * 62, 580, 50, names[i], g.sel == i, true, i);
+    text(std::string("Saves the start of ") + (g.chapter == 3 ? "Chapter 3 - " : "") + "Day " + std::to_string(g.day), 640, 560, 1.3f, C(255, 255, 255, 180), 1);
+    if (g.msgT > 0) text(g.msg, 640, 590, 1.5f, C(255, 220, 120), 1);
+}
+
+// ---------------------------------------------------------------- effects overlay
+static void drawFX() {
+    for (auto& p : g.parts) {
+        float a = std::min(1.0f, p.life / 25.0f);
+        if (p.type == 3) line(p.x, p.y, p.x + p.vx * 1.5f, p.y - p.vy * 1.5f, C(p.c.r, p.c.g, p.c.b, 140));
+        else if (p.type == 4) { rect(p.x - 7, p.y - 3, 14, 9, C(250, 210, 30)); rect(p.x - 2, p.y - 3, 3, 9, BLACK); rect(p.x + 2, p.y - 8, 8, 4, C(220, 240, 255, 190)); }
+        else if (p.type == 2) { rect(p.x - 2, p.y - 2, 5, 5, C(p.c.r, p.c.g, p.c.b, (int)(255 * a))); }
+        else rect(p.x, p.y, 9, 6, C(p.c.r, p.c.g, p.c.b, 230));
+    }
+    if (g.dark > 0) {
+        float d = g.dark;
+        if (g.flickerT > 0 && (g.flickerT / 5) % 2) d *= 0.4f;
+        rect(0, 0, SCR_W, SCR_H, C(0, 5, 20, (int)(235 * d)));
+    } else if (g.flickerT > 0 && (g.flickerT / 4) % 3 == 0) rect(0, 0, SCR_W, SCR_H, C(0, 0, 0, 150));
+    if (g.bars > 0.01f) {
+        float h = 64 * g.bars;
+        rect(0, 0, SCR_W, h, BLACK); rect(0, SCR_H - h, SCR_W, h, BLACK);
+    }
+}
+
+// ---------------------------------------------------------------- chapters / customize / registry screens
+static void drawChapters() {
+    blueprintBG();
+    text("CHAPTERS", 110, 100, 3.4f, WHITE, 0, 6);
+    struct Ch { const char* n; const char* t; std::string d; bool un; };
+    Ch chs[3] = {{"CHAPTER 1", "LOST THE ASH - DAYS 1 TO 15", "The Dalia quest, the hornets, the Backrooms, the blackout.", true},
+                 {"CHAPTER 2", "FURTHER INN - DAYS 16 TO 31", g.st.maxDay >= 16 ? "Down to the Further Inn, the grey door, Prime, the party." : "Reach Day 16 to unlock.", g.st.maxDay >= 16},
+                 {"CHAPTER 3", "LOWEST POINT", g.st.ch3 ? "Level 18 is waiting." : "Finish Day 31 to unlock.", g.st.ch3}};
+    for (int i = 0; i < 3; i++) {
+        float y = 190 + i * 130; bool sel = g.sel == i;
+        HITS.push_back({110, y, 1060, 112, 0, i});
+        if (sel) rect(110, y, 1060, 112, C(255, 255, 255, 40));
+        frameR(110, y, 1060, 112, chs[i].un ? WHITE : C(255, 255, 255, 90), sel ? 4 : 2);
+        Col c = chs[i].un ? WHITE : C(255, 255, 255, 110);
+        text(chs[i].n, 140, y + 14, 1.6f, sel ? ORANGE : c, 0, 4);
+        text(chs[i].t, 140, y + 46, 2.0f, c);
+        text(chs[i].d, 140, y + 82, 1.3f, C(255, 255, 255, chs[i].un ? 190 : 110));
+        if (!chs[i].un) { rect(1066, y + 38, 60, 44, C(255, 255, 255, 40)); frameR(1066, y + 38, 60, 44, C(255, 255, 255, 140), 3); text("LOCK", 1096, y + 50, 1.0f, C(255, 255, 255, 170), 1); }
+    }
+    if (g.msgT > 0) text(g.msg, 110, 600, 1.4f, C(255, 220, 120));
+}
+
+static void drawCustomize() {
+    blueprintBG();
+    text("CUSTOMIZE", 110, 100, 3.4f, WHITE, 0, 6);
+    // preview
+    Look l = lookFromAppear(APP); l.h *= 2.4f;
+    frameR(800, 150, 360, 480, WHITE, 3); dashH(810, 580, 340, C(255, 255, 255, 120));
+    int dirv = ((g.custSpin / 90) % 2) ? -1 : 1;
+    drawPerson(980, 580, dirv, l, g.frame, false);
+    text("YOU", 980, 160, 1.6f, WHITE, 1, 6);
+    struct Row { std::string a, b; };
+    std::vector<Row> rows = {
+        {"SKIN", SKIN_N[APP.skin]}, {"HAIR STYLE", HAIR_N[APP.hairStyle]}, {"HAIR COLOR", std::to_string(APP.hairCol + 1) + " / 8"},
+        {"HEIGHT", HEIGHT_N[APP.height]}, {"CLOTHES", TOP_N[APP.top]}, {"CLOTHES COLOR", std::to_string(APP.topCol + 1) + " / 12"},
+        {"PANTS", std::to_string(APP.pants + 1) + " / 8"}, {"EXTRA", ACC_N[APP.acc]}, {"14 BADGE", APP.tag14 ? "ON" : "OFF"},
+        {"RESET", ""}, {"DONE", ""}};
+    for (size_t i = 0; i < rows.size(); i++) {
+        float y = 160 + i * 42; bool sel = g.custSel == (int)i;
+        if (i < 9) { HITS.push_back({110, y, 320, 36, 3, (int)i}); HITS.push_back({430, y, 320, 36, 4, (int)i}); } else HITS.push_back({110, y, 640, 36, 0, (int)i});
+        if (sel) { rect(110, y, 640, 36, WHITE); rect(88, y + 10, 14, 16, ORANGE); }
+        else frameR(110, y, 640, 36, WHITE, 2);
+        Col c = sel ? C(28, 66, 156) : WHITE;
+        text(rows[i].a, 130, y + 6, 1.6f, c, 0, 2);
+        if (!rows[i].b.empty()) text((sel ? "<  " : "") + rows[i].b + (sel ? "  >" : ""), 730, y + 6, 1.6f, c, 2);
+    }
+    // swatches
+    float sy = 630;
+    if (g.custSel == 0) for (int i = 0; i < 8; i++) { rect(110 + i * 44, sy, 36, 20, SKIN_C[i]); if (i == APP.skin) frameR(108 + i * 44, sy - 2, 40, 24, WHITE, 2); }
+    if (g.custSel == 2) for (int i = 0; i < 8; i++) { rect(110 + i * 44, sy, 36, 20, HAIR_C[i]); if (i == APP.hairCol) frameR(108 + i * 44, sy - 2, 40, 24, WHITE, 2); }
+    if (g.custSel == 5) for (int i = 0; i < 12; i++) { rect(110 + i * 44, sy, 36, 20, TOP_C[i]); if (i == APP.topCol) frameR(108 + i * 44, sy - 2, 40, 24, WHITE, 2); }
+    if (g.custSel == 6) for (int i = 0; i < 8; i++) { rect(110 + i * 44, sy, 36, 20, PANT_C[i]); if (i == APP.pants) frameR(108 + i * 44, sy - 2, 40, 24, WHITE, 2); }
+}
+
+static void drawRegistry() {
+    blueprintBG();
+    text("BOT REGISTRY", 110, 100, 3.0f, WHITE, 0, 6);
+    text("Everyone in the 14 owns a Cleaning bot.", 114, 150, 1.4f, C(255, 255, 255, 190));
+    const BotInfo* mine = botOwnedBy("amir");
+    if (mine) {
+        rect(110, 178, 1060, 54, C(120, 255, 190, 60)); frameR(110, 178, 1060, 54, C(120, 255, 190), 3);
+        text("YOUR BOT:  " + mine->name, 130, 186, 1.8f, C(120, 255, 190));
+        text(mine->personality, 130, 210, 1.1f, WHITE);
+    }
+    int rowsVis = 7;
+    int n = (int)BOTS.size();
+    g.regScroll = std::max(0, std::min(n - rowsVis, g.regScroll));
+    for (int r = 0; r < rowsVis && g.regScroll + r < n; r++) {
+        const BotInfo& b = BOTS[g.regScroll + r];
+        CharDef* oc = charBy(b.ownerKey);
+        float y = 248 + r * 52;
+        frameR(110, y, 1060, 46, C(255, 255, 255, 150), 2);
+        std::string owner = b.ownerKey == "amir" ? "AMIR (you)" : oc ? oc->name + "  " + oc->id : "THE BUILDING";
+        text(b.name, 130, y + 4, 1.5f, b.ownerKey == "amir" ? C(120, 255, 190) : WHITE);
+        text("owner: " + owner, 130, y + 25, 1.0f, C(255, 190, 120));
+        text(b.personality, 1150, y + 14, 1.1f, C(255, 255, 255, 190), 2);
+    }
+    text(std::to_string(g.regScroll + 1) + "-" + std::to_string(std::min(n, g.regScroll + rowsVis)) + " / " + std::to_string(n) + "   Up / Down: scroll", 640, 622, 1.2f, C(255, 255, 255, 170), 1);
 }
 
 static void drawEnding() {
     rect(0, 0, SCR_W, SCR_H, C(8, 10, 22));
     float a = std::min(1.0f, g.cT / 90.0f);
-    text("DAY 31 COMPLETE", 640, 200, 4, C(255, 255, 255, (int)(255 * a)), 1, 8);
+    text(g.chapter == 3 ? "CHAPTER 3 - THE START OF THE END" : "DAY 31 COMPLETE", 640, 200, g.chapter == 3 ? 3 : 4, C(255, 255, 255, (int)(255 * a)), 1, 8);
     text("TO BE CONTINUED...", 640, 300, 3, C(249, 115, 22, (int)(255 * a)), 1, 6);
+    if (g.chapter == 1 && g.cT > 100) text("CHAPTER 3: LOWEST POINT - UNLOCKED", 640, 520, 2, C(120, 255, 190, 220), 1, 3);
     text("LOST OF ASHES  -  the story goes on", 640, 400, 1.8f, C(255, 255, 255, (int)(200 * a)), 1);
     text("Thanks for playing  " VERSION, 640, 460, 1.6f, C(255, 255, 255, (int)(160 * a)), 1);
     if (g.cT > 120) text("A", 640, 580, 2, C(255, 255, 255, 120 + (int)(100 * sinf(g.cT * 0.12f))), 1);
+}
+
+
+// ---------------------------------------------------------------- touch warning (in-game touches are not supported)
+static void drawTouchWarn() {
+    if (g.touchWarn <= 0) return;
+    int a = std::min(255, g.touchWarn * 8);
+    rect(0, 0, SCR_W, SCR_H, C(0, 0, 0, a / 3));
+    float x = 290, y = 190, w = 700, h = 300;
+    rect(x, y, w, h, C(24, 10, 14, a)); frameR(x, y, w, h, C(255, 70, 70, a), 5);
+    float cx = 430, cy = 340;
+    Col sk = C(240, 200, 160, a), ol = C(60, 40, 30, a);
+    // hand
+    rect(cx - 44, cy - 6, 88, 66, ol); rect(cx - 40, cy - 2, 80, 58, sk);
+    float fl[4] = {58, 72, 78, 66};
+    for (int i = 0; i < 4; i++) { float fx = cx - 40 + i * 20; rect(fx - 2, cy - 4 - fl[i] - 2, 20, fl[i] + 4, ol); rect(fx, cy - 4 - fl[i], 16, fl[i] + 2, sk); }
+    rect(cx - 70, cy + 6, 34, 24, ol); rect(cx - 66, cy + 10, 30, 16, sk);
+    // red ring + slash
+    Col red = C(255, 60, 60, a);
+    for (int k = 0; k < 120; k++) { float an = k * 0.05236f; rect(cx + cosf(an) * 96 - 4, cy + sinf(an) * 96 - 4, 9, 9, red); }
+    thickLine(cx - 68, cy - 68, cx + 68, cy + 68, 12, red);
+    text("PLAY WITH", 790, 245, 3.0f, C(255, 255, 255, a), 1, 3);
+    text("JOY-CONS", 790, 295, 3.4f, C(255, 90, 90, a), 1, 3);
+    text("Touch only works in menus.", 790, 372, 1.5f, C(255, 255, 255, (int)(a * 0.8f)), 1);
 }

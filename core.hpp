@@ -41,6 +41,8 @@ struct Input {
     u32 held = 0, prev = 0, pressed = 0;
     float ax = 0, ay = 0;
     bool quit = false;
+    std::vector<std::pair<float, float>> taps;   // screen taps this frame (1280x720 space)
+    float drag = 0;                               // vertical finger drag this frame (pixels)
     bool down(u32 b) const { return (held & b) != 0; }
     bool hit(u32 b) const { return (pressed & b) != 0; }
 };
@@ -54,7 +56,16 @@ struct Gfx {
     float padAx = 0, padAy = 0;
     bool scanlines = true;
     int shakeT = 0;
+    std::vector<std::pair<float, float>> taps;
+    float drag = 0;
+    int holdT[4] = {0, 0, 0, 0};
 } G;
+
+// ---------- touch hit regions (menus register these while drawing) ----------
+struct Hit { float x, y, w, h; int kind, idx; };   // kind: 0 select+confirm, 1 select, 2 back, 3 left, 4 right
+static std::vector<Hit> HITS;
+static std::string g_hint = "A Select    B Back";
+static bool g_backBtn = true;
 
 // ---------- file helpers ----------
 static void ensureDir() {
@@ -171,6 +182,12 @@ static void pollInput(Input& in) {
             case SDL_KEYUP: G.keyHeld &= ~mapKey(e.key.keysym.sym); break;
             case SDL_JOYBUTTONDOWN: G.padHeld |= mapPad(e.jbutton.button); break;
             case SDL_JOYBUTTONUP: G.padHeld &= ~mapPad(e.jbutton.button); break;
+            case SDL_FINGERDOWN: G.taps.push_back({e.tfinger.x * SCR_W, e.tfinger.y * SCR_H}); break;
+            case SDL_FINGERMOTION: G.drag += e.tfinger.dy * SCR_H; break;
+            case SDL_MOUSEBUTTONDOWN:
+                if (e.button.which != SDL_TOUCH_MOUSEID) { float lx = 0, ly = 0; SDL_RenderWindowToLogical(G.ren, e.button.x, e.button.y, &lx, &ly); G.taps.push_back({lx, ly}); }
+                break;
+            case SDL_MOUSEWHEEL: G.drag += e.wheel.y * 30.0f; break;
             case SDL_JOYDEVICEADDED: {
                 SDL_Joystick* j = SDL_JoystickOpen(e.jdevice.which);
                 if (j) G.pads.push_back(j);
@@ -203,6 +220,16 @@ static void pollInput(Input& in) {
     in.prev = in.held;
     in.held = h;
     in.pressed = in.held & ~in.prev;
+    // key repeat for the D-pad: hold a direction and it repeats (easier menu navigation)
+    const u32 dirs[4] = {B_UP, B_DOWN, B_LEFT, B_RIGHT};
+    for (int i = 0; i < 4; i++) {
+        if (h & dirs[i]) {
+            G.holdT[i]++;
+            if (G.holdT[i] > 22 && (G.holdT[i] - 22) % 6 == 0) in.pressed |= dirs[i];
+        } else G.holdT[i] = 0;
+    }
+    in.taps = G.taps; G.taps.clear();
+    in.drag = G.drag; G.drag = 0;
     in.ax = dx; in.ay = dy;
 }
 
@@ -315,7 +342,7 @@ static void scanlineOverlay() {
 }
 
 // ---------- pixel people / bots ----------
-struct Look { Col shirt, hair, skin, pants; int hairStyle; float h; bool tag14; };
+struct Look { Col shirt, hair, skin, pants; int hairStyle; float h; bool tag14; int topStyle = 0, acc = 0; };
 
 // feet at (x, gy). dir -1 left / 1 right. walk = frame counter for legs
 static void drawPerson(float x, float gy, int dir, const Look& L, int walk, bool moving) {
@@ -337,6 +364,17 @@ static void drawPerson(float x, float gy, int dir, const Look& L, int walk, bool
     rect(x + bw / 2 - 1, by + 4, 7 * s, bodyH - 10, dim(L.shirt, 0.9f));
     rect(x - bw / 2 - 6 * s, by + bodyH - 10, 7 * s, 8, L.skin);
     rect(x + bw / 2 - 1, by + bodyH - 10, 7 * s, 8, L.skin);
+    // clothing styles
+    if (L.topStyle == 1) { // hoodie: hood bulge + pocket
+        rect(x - bw / 2 + 2, by - 5, bw - 4, 8, dim(L.shirt, 0.8f));
+        rect(x - 12 * s, by + bodyH - 14, 24 * s, 11, dim(L.shirt, 0.82f));
+    } else if (L.topStyle == 2) { // jacket: light collar + centre line
+        rect(x - 1, by, 3, bodyH, dim(L.shirt, 0.6f));
+        rect(x - bw / 2, by, 8, 7, mix(L.shirt, WHITE, 0.5f)); rect(x + bw / 2 - 8, by, 8, 7, mix(L.shirt, WHITE, 0.5f));
+        rect(x - bw / 2, by + bodyH - 6, bw, 6, dim(L.shirt, 0.75f));
+    } else if (L.topStyle == 3) { // striped
+        for (int k = 0; k < 4; k++) rect(x - bw / 2, by + 6 + k * 10 * s, bw, 4, mix(L.shirt, WHITE, 0.55f));
+    }
     if (L.tag14) {
         text("14", x, by + 8 * s, 1.1f * s, BLACK, 1);
     }
@@ -352,14 +390,36 @@ static void drawPerson(float x, float gy, int dir, const Look& L, int walk, bool
         rect(x + headS / 2 - 4 * s, hy, 7 * s, headS + 6, L.hair);
     } else if (L.hairStyle == 2) { // bald-ish / buzz
         rect(x - headS / 2, hy - 2, headS, 6 * s, dim(L.hair, 0.9f));
-    } else { // curly / big
+    } else if (L.hairStyle == 3) { // curly / big
         rect(x - headS / 2 - 4, hy - 7, headS + 8, 15 * s, L.hair);
+    } else if (L.hairStyle == 4) { // spiky
+        rect(x - headS / 2 - 1, hy - 3, headS + 2, 9 * s, L.hair);
+        for (int k = 0; k < 4; k++) rect(x - headS / 2 + 1 + k * (headS / 4.0f), hy - 12, headS / 4.0f - 2, 11, L.hair);
+    } else if (L.hairStyle == 5) { // ponytail
+        rect(x - headS / 2 - 1, hy - 4, headS + 2, 11 * s, L.hair);
+        rect(x + (dir > 0 ? -headS / 2 - 8 : headS / 2 + 1), hy + 2, 8, 24 * s, L.hair);
+    } else { // 6 = bun
+        rect(x - headS / 2 - 1, hy - 4, headS + 2, 11 * s, L.hair);
+        fillCircle(x, hy - 10, 8 * s, L.hair);
     }
     // eyes
     float ex = dir > 0 ? 4 : -4;
     rect(x + ex - 8 * s, hy + 12 * s, 5 * s, 6 * s, BLACK);
     rect(x + ex + 4 * s, hy + 12 * s, 5 * s, 6 * s, BLACK);
     rect(x + ex * 1.5f - 4 * s, hy + 23 * s, 8 * s, 2, dim(L.skin, 0.55f));
+    // accessories
+    if (L.acc == 1) { // glasses
+        frameR(x + ex - 10 * s, hy + 10 * s, 10 * s, 10 * s, C(30, 30, 40), 2); frameR(x + ex + 2 * s, hy + 10 * s, 10 * s, 10 * s, C(30, 30, 40), 2);
+        rect(x + ex - 1, hy + 14 * s, 4, 2, C(30, 30, 40));
+    } else if (L.acc == 2) { // cap
+        rect(x - headS / 2 - 2, hy - 6, headS + 4, 12 * s, C(200, 40, 40));
+        rect(dir > 0 ? x : x - headS / 2 - 12, hy + 4, headS / 2 + 12, 5, C(160, 30, 30));
+    } else if (L.acc == 3) { // headphones
+        rect(x - headS / 2 - 3, hy - 3, headS + 6, 5, C(40, 40, 50));
+        rect(x - headS / 2 - 6, hy + 8, 8, 14 * s, C(40, 40, 50)); rect(x + headS / 2 - 2, hy + 8, 8, 14 * s, C(40, 40, 50));
+    } else if (L.acc == 4) { // scarf
+        rect(x - headS / 2 - 1, hy + headS - 2, headS + 2, 9, C(240, 240, 240)); rect(x + 4, hy + headS, 8, 20, C(240, 240, 240));
+    }
 }
 
 static void drawBot(float x, float gy, Col body, int t, int dir, bool happy = true) {

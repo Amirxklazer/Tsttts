@@ -164,8 +164,16 @@ endday
 # ================================================================ DAY 25
 script day_25
 title The Bot Picnic
+bars on
 scene room amir
+cast amir 700
+cast dalia -200
+walk dalia 420 7 wait
+emote dalia !
+anim dalia spin
+fx confetti
 say |Day 25. Dalia has an idea. It's covered in glitter, has no budget, and involves forty Cleaning bots.
+bars off
 scene off
 ifnot prime_free nopr
 npc prime bots 2140
@@ -320,9 +328,16 @@ endday
 # ================================================================ DAY 29
 script day_29
 title Storm Warning
+bars on
 scene room amir
+cast amir 700
+fx rain
+fx shake
+anim amir shake
 say |Day 29. A very odd sky. Heavy and grey and bruise-colored. The window rattles. Thunder, far away, grumbles like a hungry elevator.
+bars off
 scene off
+fx rainoff
 goal Take the elevator up to the Roof. Gabriel says the banner pole is loose.
 await floor roof
 scene roof amir gabriel amine
@@ -427,8 +442,13 @@ endday
 # ================================================================ DAY 31
 script day_31
 title Îlot14 Day
+bars on
 scene room amir
+cast amir 700
+fx confetti
+emote amir !
 say |Day 31. The big day. The banner is flapping on the roof. The bots are polished. The whole building smells like cake.
+bars off
 scene off
 goal Go to the Main floor and find Dalia (M-002). It's time.
 await talk dalia

@@ -29,6 +29,31 @@ struct CharDef {
 static std::vector<FloorDef> FLOORS;
 static std::vector<CharDef> CHARS;
 
+// ---------------- player appearance (customizer) ----------------
+struct Appear { int skin = 2, hairStyle = 0, hairCol = 0, height = 2, top = 0, topCol = 0, pants = 0, acc = 0, tag14 = 1; };
+static Appear APP;
+static const Col SKIN_C[8] = {{255, 224, 196, 255}, {240, 200, 160, 255}, {222, 170, 125, 255}, {200, 150, 105, 255}, {170, 120, 82, 255}, {135, 90, 60, 255}, {100, 66, 44, 255}, {80, 52, 36, 255}};
+static const Col HAIR_C[8] = {{25, 18, 14, 255}, {60, 38, 25, 255}, {110, 70, 35, 255}, {190, 150, 70, 255}, {210, 210, 210, 255}, {170, 50, 40, 255}, {60, 90, 200, 255}, {249, 115, 22, 255}};
+static const Col TOP_C[12] = {{249, 115, 22, 255}, {235, 235, 235, 255}, {30, 30, 36, 255}, {200, 50, 50, 255}, {60, 120, 210, 255}, {60, 170, 90, 255}, {240, 200, 60, 255}, {150, 80, 190, 255}, {100, 100, 110, 255}, {240, 130, 170, 255}, {30, 150, 160, 255}, {120, 80, 50, 255}};
+static const Col PANT_C[8] = {{35, 38, 55, 255}, {30, 30, 30, 255}, {70, 90, 140, 255}, {110, 90, 60, 255}, {90, 90, 96, 255}, {60, 100, 70, 255}, {150, 60, 60, 255}, {230, 230, 230, 255}};
+static const float HEIGHT_V[5] = {0.84f, 0.92f, 1.0f, 1.08f, 1.16f};
+static const char* HEIGHT_N[5] = {"SHORT", "SMALL", "AVERAGE", "TALL", "TALLER"};
+static const char* HAIR_N[7] = {"SHORT", "LONG", "BUZZ", "CURLY", "SPIKY", "PONYTAIL", "BUN"};
+static const char* TOP_N[4] = {"T-SHIRT", "HOODIE", "JACKET", "STRIPED"};
+static const char* ACC_N[5] = {"NONE", "GLASSES", "CAP", "HEADPHONES", "SCARF"};
+static const char* SKIN_N[8] = {"PALE", "LIGHT", "SAND", "TAN", "BROWN", "DEEP", "DARK", "DARKER"};
+
+static Look lookFromAppear(const Appear& a) {
+    Look l;
+    l.skin = SKIN_C[a.skin % 8]; l.hair = HAIR_C[a.hairCol % 8]; l.shirt = TOP_C[a.topCol % 12]; l.pants = PANT_C[a.pants % 8];
+    l.hairStyle = a.hairStyle % 7; l.h = HEIGHT_V[a.height % 5]; l.tag14 = a.tag14 != 0; l.topStyle = a.top % 4; l.acc = a.acc % 5;
+    return l;
+}
+
+// ---------------- Cleaning bots(tm): everyone owns one ----------------
+struct BotInfo { std::string botKey, name, ownerKey, personality; bool named; };
+static std::vector<BotInfo> BOTS;
+
 static Look LK(Col shirt, Col hair, Col skin, int style = 0, float h = 1.0f, Col pants = C(55, 60, 85)) {
     Look l; l.shirt = shirt; l.hair = hair; l.skin = skin; l.pants = pants; l.hairStyle = style; l.h = h; l.tag14 = false;
     return l;
@@ -46,6 +71,7 @@ static void addChar(const char* key, const char* id, const char* name, const cha
     CHARS.push_back(c);
 }
 
+static FloorDef* floorBy(const std::string& k);
 static void buildData() {
     FLOORS.clear(); CHARS.clear();
     // top -> bottom. level numbers: Lobby = 0
@@ -79,6 +105,9 @@ static void buildData() {
         {{"NST-001", "Aya", "aya_n"}, {"NST-002", "Adam Tansaouti", "tansaouti"}, {"NST-003", "Sofia", "sofia"}});
     // extra non-elevator places
     addFloor("out1", "Outside parking", "outside", 0, C(110, 150, 200), C(255, 255, 255), {}, false);
+    addFloor("lvl18", "Level 18", "deep", -9, C(30, 48, 58), C(255, 140, 50), {}, false);
+    addFloor("cradle", "Service Corridor 0", "deep", -9, C(60, 52, 40), C(255, 140, 50), {}, false);
+    floorBy("lvl18")->width = 3000;
 
     Col dk = C(30, 22, 18);
     // Main
@@ -131,7 +160,42 @@ static void buildData() {
     addChar("grim", "BOT-07", "Grim", "bots", LK(C(110, 90, 160), C(0, 0, 0), C(0, 0, 0)), true);
     addChar("zed", "BOT-08", "Zed", "bots", LK(C(255, 255, 255), C(0, 0, 0), C(0, 0, 0)), true);
     addChar("prime", "BOT-00", "Prime", "bots", LK(C(255, 120, 30), C(0, 0, 0), C(0, 0, 0)), true);
+
+    // ---- bot registry. The first 8 are the named bots in the bots parking. Edit owners here.
+    BOTS.clear();
+    BOTS.push_back({"sweepy", "Sweepy", "arwa", "cheerful and proud of every clean floor", true});
+    BOTS.push_back({"mopsy", "Mopsy", "dalia", "grumpy but loyal", true});
+    BOTS.push_back({"dustin", "Dustin", "dania", "nervous, scared of stairs and the color yellow", true});
+    BOTS.push_back({"vacca", "Vacca", "youcef", "sleepy, efficiently idle", true});
+    BOTS.push_back({"sparkle", "Sparkle", "aya_l", "dramatic, loves shiny buttons", true});
+    BOTS.push_back({"bolt", "Bolt", "amir", "hyper, fast, almost hits everyone", true});
+    BOTS.push_back({"grim", "Grim", "basmala", "gloomy poet, secretly sweet", true});
+    BOTS.push_back({"zed", "Zed", "gabriel", "sarcastic, pretends not to care", true});
+    BOTS.push_back({"prime", "Prime", "", "the first Cleaning bot, belongs to the whole building", true});
+    // everyone else owns a bot too. They roam their owner's floor.
+    static const char* gn[] = {"Pip", "Tiny", "Nova", "Dot", "Rusty", "Buzz", "Mochi", "Gizmo", "Ember", "Ziggy", "Pebble", "Waffles", "Sprocket", "Clank", "Biscuit", "Moxie", "Toast", "Pixel", "Noodle", "Widget", "Bubbles", "Cinder", "Fizz", "Olive", "Peanut"};
+    static const char* gp[] = {"curious, pokes everything", "shy, hides behind plants", "chatty, never stops beeping", "lazy, takes naps on pads", "brave, chases the dust bunnies", "tidy, hates crumbs", "playful, loves a game of tag", "serious, sweeps in straight lines", "cheeky, hides socks", "gentle, hums lullabies"};
+    static const Col gc[] = {C(255, 170, 90), C(150, 200, 255), C(255, 220, 120), C(170, 255, 170), C(220, 170, 255), C(255, 160, 190), C(160, 240, 230), C(240, 240, 140)};
+    int gi = 0;
+    std::vector<CharDef> extra;
+    for (auto& c : CHARS) {
+        if (c.isBot || c.key == "amir") continue;
+        bool has = false;
+        for (auto& b : BOTS) if (b.ownerKey == c.key) has = true;
+        if (has) continue;
+        std::string bk = "bot_" + c.key;
+        BOTS.push_back({bk, gn[gi % 25], c.key, gp[(gi * 3) % 10], false});
+        CharDef b; b.key = bk; b.id = "BOT-" + c.id; b.name = gn[gi % 25]; b.floor = c.floor; b.isBot = true;
+        b.look = LK(gc[gi % 8], C(0, 0, 0), C(0, 0, 0));
+        extra.push_back(b);
+        gi++;
+    }
+    for (auto& b : extra) CHARS.push_back(b);
 }
+
+static const BotInfo* botOf(const std::string& botKey) { for (auto& b : BOTS) if (b.botKey == botKey) return &b; return nullptr; }
+static const BotInfo* botOwnedBy(const std::string& ownerKey) { for (auto& b : BOTS) if (b.ownerKey == ownerKey) return &b; return nullptr; }
+static Look playerLook() { CharDef* c = nullptr; for (auto& x : CHARS) if (x.key == "amir") { c = &x; break; } if (c) return c->look; return lookFromAppear(APP); }
 
 static FloorDef* floorBy(const std::string& k) {
     for (auto& f : FLOORS) if (f.key == k) return &f;

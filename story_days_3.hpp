@@ -103,8 +103,15 @@ endday
 # ================================================================ DAY 15
 script day_15
 title Blackout
+bars on
 scene room amir
+cast amir 700
+say |Day 15. Breakfast. Everything is normal.
+fx dark
+anim amir shake
+emote amir !
 say |Day 15. The lights go out at breakfast. All of them. The elevator hums on emergency power. Somewhere downstairs, Dustin screams.
+bars off
 scene off
 clearitems
 spawn battery lobby 800
@@ -126,6 +133,7 @@ mini timing 5 4 Restart_the_power
 ifnot skipped restored
 say |(The power came back by itself, a little embarrassed.)
 label restored
+fx lights
 say |Light floods the room. Screens blink, fans spin, a distant cheer comes from every floor.
 say |On the main screen, a single line blinks twice: "POWER SURGE FROM LEVEL 18. SOURCE: UNKNOWN."
 say Amir|...Level eighteen.
@@ -141,8 +149,14 @@ endday
 # ================================================================ DAY 16
 script day_16
 title The Welcome Basket
+card CHAPTER 2|Further Inn
+bars on
 scene room amir
+cast amir 760
+emote amir ?
+anim amir hop
 say |Day 16. A card on my door, in handwriting I don't recognize: "The Further Inn welcomes you. Bring a welcome basket. We forgot how."
+bars off
 scene off
 clearitems
 spawn towel common 610
