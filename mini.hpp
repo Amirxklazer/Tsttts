@@ -61,8 +61,8 @@ struct Mini {
 struct Roundup : Mini {
     struct B { float x, y, vx, vy; Col c; };
     std::vector<B> bots;
-    float px, py; int caught, need, timeLeft, secs, cd, flash, dir;
-    Roundup(int n, int s) : need(n), secs(s) {
+    float px, py; int caught, need, timeLeft, secs, cd, flash, dir; float lvl = 1;
+    Roundup(int n, int s, int level = 1) : need(n), secs(s), lvl((float)level) {
         title = "Bot Roundup";
         hint = "Catch " + std::to_string(n) + " runaway Cleaning bots in " + std::to_string(s) + " seconds. Move: stick / D-pad. Grab: A.";
     }
@@ -100,7 +100,7 @@ struct Roundup : Mini {
             float sp = 1;
             if (d < 170) { b.vx += (b.x - px) / d * 0.25f; b.vy += (b.y - py) / d * 0.25f; sp = 1.0f; }
             float l = hypotf(b.vx, b.vy);
-            float mxs = d < 170 ? 3.6f : 2.4f;
+            float mxs = (d < 170 ? 3.6f : 2.4f) * (1 + 0.18f * (lvl - 1));
             if (l > mxs) { b.vx *= mxs / l; b.vy *= mxs / l; }
             b.x += b.vx * sp; b.y += b.vy * sp;
             if (b.x < 60 || b.x > 1220) { b.vx = -b.vx; b.x = std::min(1220.0f, std::max(60.0f, b.x)); }
@@ -127,12 +127,13 @@ struct Roundup : Mini {
 // ---------------------------------------------------------------- TIMING
 struct Timing : Mini {
     int need, lives0, lives, hits; float pos, vel, zoneX, zoneW; std::string label; int flash; bool lastHit;
-    Timing(int n, int l, std::string lab) : need(n), lives0(l), label(lab) {
+    int lvl = 1;
+    Timing(int n, int l, std::string lab, int level = 1) : need(n), lives0(l), label(lab), lvl(level) {
         title = "Timing: " + lab;
         hint = "Press A when the marker is inside the green zone. Hit it " + std::to_string(n) + " times. You can miss " + std::to_string(l - 1) + " times.";
     }
     void reset() override {
-        lives = lives0; hits = 0; pos = 0; vel = 9; zoneW = 170; zoneX = 300 + rndf() * 400; flash = 0; lastHit = false;
+        lives = lives0; hits = 0; pos = 0; vel = 9 + 2.2f * (lvl - 1); zoneW = 170 - 14 * (lvl - 1); zoneX = 300 + rndf() * 400; flash = 0; lastHit = false;
     }
     void play(const Input& in) override {
         pos += vel;
@@ -174,21 +175,24 @@ struct Timing : Mini {
 struct Fight : Mini {
     struct E { float x, y, vx, vy; int hp, maxhp; float ph; bool boss; };
     std::vector<E> es;
-    float px, py; int dir, hp, hp0, toSpawn, total, killed, inv, swing, cd, spawnT; std::string label; bool boss; float bossScale;
+    float px, py; int dir, hp, hp0, toSpawn, total, killed, inv, swing, cd, spawnT, bossHp = 14, bt = 0; std::string label; bool boss; float bossScale;
+    struct Bu { float x, y, vx, vy; };
+    std::vector<Bu> bu;
     Fight(int n, int h, std::string lab) : total(n), hp0(h), label(lab) {
         boss = lab.rfind("boss", 0) == 0;
+        if (boss && n > 1) bossHp = n;
         title = boss ? "Boss Fight" : "Fight: " + lab;
         hint = boss ? "Beat the boss! A swings around you. Dodge its hits." : "Swat all " + std::to_string(n) + " " + lab + "! A swings around you. Don't get stung - you have " + std::to_string(h) + " hearts.";
     }
     void reset() override {
-        es.clear(); px = 640; py = 420; dir = 1; hp = hp0; killed = 0; inv = 0; swing = 0; cd = 0; spawnT = 0;
+        es.clear(); bu.clear(); bt = 0; px = 640; py = 420; dir = 1; hp = hp0; killed = 0; inv = 0; swing = 0; cd = 0; spawnT = 0;
         toSpawn = boss ? 1 : total;
     }
     void spawn() {
         int side = rndi(0, 3); float x, y;
         if (side == 0) { x = -20; y = rndi(150, 650); } else if (side == 1) { x = 1300; y = rndi(150, 650); }
         else if (side == 2) { x = rndi(0, 1280); y = 110; } else { x = rndi(0, 1280); y = 740; }
-        if (boss) { es.push_back({640, 200, 0, 0, 14, 14, 0, true}); }
+        if (boss) { es.push_back({640, 200, 0, 0, bossHp, bossHp, 0, true}); }
         else es.push_back({x, y, 0, 0, 1, 1, rndf() * 6.28f, false});
         toSpawn--;
     }
@@ -224,11 +228,21 @@ struct Fight : Mini {
         for (auto& e : es) {
             e.ph += 0.2f;
             float dx = px - e.x, dy = py - e.y, l = std::max(1.0f, hypotf(dx, dy));
-            float sp = e.boss ? 2.2f : 2.6f;
+            float sp = e.boss ? std::min(3.2f, 2.2f + (bossHp - 14) * 0.03f) : 2.6f;
             e.x += dx / l * sp + cosf(e.ph) * (e.boss ? 0.5f : 1.8f);
             e.y += dy / l * sp + sinf(e.ph * 1.3f) * (e.boss ? 0.5f : 1.8f);
             float hitR = e.boss ? 52 : 30;
             if (inv == 0 && l < hitR) { hp--; inv = 75; px -= dx / l * 40; py -= dy / l * 40; }
+        }
+        if (boss && bossHp > 14 && !es.empty()) {
+            bt++;
+            if (bt % (bossHp > 24 ? 90 : 130) == 0) for (int i = 0; i < 8; i++) { float a = i * 0.785f + bt * 0.01f; bu.push_back({es[0].x, es[0].y, cosf(a) * 3.4f, sinf(a) * 3.4f}); }
+        }
+        for (size_t i = 0; i < bu.size();) {
+            bu[i].x += bu[i].vx; bu[i].y += bu[i].vy;
+            bool dead = bu[i].x < -20 || bu[i].x > 1300 || bu[i].y < 100 || bu[i].y > 740;
+            if (!dead && inv == 0 && !TEST_AI && hypotf(bu[i].x - px, bu[i].y - (py - 30)) < 26) { hp--; inv = 75; dead = true; }
+            if (dead) bu.erase(bu.begin() + i); else i++;
         }
         if (killed >= total || (boss && killed >= 1)) win("All clear!");
         else if (hp <= 0) lose("You got swarmed.");
@@ -258,6 +272,7 @@ struct Fight : Mini {
                 rect(e.x + (e.x < px ? 14 : -18), e.y + 2, 4, 4, BLACK);
             }
         }
+        for (auto& b : bu) { fillCircle(b.x, b.y, 12, C(255, 140, 60, 90)); fillCircle(b.x, b.y, 8, C(255, 220, 130)); }
         std::string hearts;
         for (int i = 0; i < hp0; i++) hearts += i < hp ? "<3 " : "-- ";
         text(hearts, 40, 40, 2.4f, C(255, 90, 120));
@@ -270,7 +285,8 @@ struct Catch : Mini {
     struct It { float x, y, v; bool good; };
     std::vector<It> its;
     float px; int need, got, lives0, lives, t, flash; std::string label, initial;
-    Catch(int n, int l, std::string lab) : need(n), lives0(l), label(lab) {
+    float lvl = 1;
+    Catch(int n, int l, std::string lab, int level = 1) : need(n), lives0(l), label(lab), lvl((float)level) {
         title = "Catch: " + lab;
         hint = "Catch " + std::to_string(n) + " falling " + lab + " in your basket. Skip the grey junk! Move: stick / D-pad. " + std::to_string(l) + " lives.";
         initial = lab.substr(0, 1);
@@ -287,8 +303,8 @@ struct Catch : Mini {
         px = std::min(1200.0f, std::max(80.0f, px + mx * 10));
         t++;
         if (flash > 0) flash--;
-        int interval = 38;
-        if (t % interval == 0) its.push_back({100 + rndf() * 1080, 140, 4.5f + rndf() * 2.0f, (rnd() % 100) >= 22});
+        int interval = std::max(16, (int)(38 - 5 * (lvl - 1)));
+        if (t % interval == 0) its.push_back({100 + rndf() * 1080, 140, (4.5f + rndf() * 2.0f) * (1 + 0.12f * (lvl - 1)), (rnd() % 100) >= (int)(22 + 4 * (lvl - 1))});
         for (size_t i = 0; i < its.size();) {
             auto& it = its[i];
             it.y += it.v;
@@ -567,16 +583,23 @@ struct Roof : Mini {
 };
 
 // ---------------------------------------------------------------- factory
+#include "mini2.hpp"
+
 static Mini* makeMini(const std::vector<std::string>& a) {
     auto ai = [&](size_t i, int d) { return a.size() > i ? atoi(a[i].c_str()) : d; };
     auto as = [&](size_t i, const char* d) { std::string s = a.size() > i ? a[i] : d; for (auto& c : s) if (c == '_') c = ' '; return s; };
     if (a.empty()) return nullptr;
     const std::string& k = a[0];
-    if (k == "roundup") return new Roundup(ai(1, 5), ai(2, 45));
-    if (k == "timing") return new Timing(ai(1, 5), ai(2, 3), as(3, "Timing"));
+    if (k == "roundup") return new Roundup(ai(1, 5), ai(2, 45), ai(3, 1));
+    if (k == "timing") return new Timing(ai(1, 5), ai(2, 3), as(3, "Timing"), ai(4, 1));
     if (k == "fight") return new Fight(ai(1, 8), ai(2, 5), as(3, "hornets"));
-    if (k == "catch") return new Catch(ai(1, 10), ai(2, 3), as(3, "items"));
+    if (k == "catch") return new Catch(ai(1, 10), ai(2, 3), as(3, "items"), ai(4, 1));
     if (k == "maze") return new Maze(ai(1, 3), ai(2, 1));
     if (k == "roof") return new Roof(ai(1, 1));
+    if (k == "simon") return new Simon(ai(1, 6), ai(2, 3), ai(3, 30));
+    if (k == "sneak") return new Sneak(ai(1, 3), ai(2, 3), ai(3, 1));
+    if (k == "rhythm") return new Rhythm(ai(1, 24), ai(2, 6), ai(3, 110));
+    if (k == "dodge") return new Dodge(ai(1, 25), ai(2, 4), ai(3, 1));
+    if (k == "defend") return new Defend(ai(1, 3), ai(2, 5), ai(3, 1));
     return nullptr;
 }

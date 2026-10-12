@@ -107,7 +107,19 @@ static void buildData() {
     addFloor("out1", "Outside parking", "outside", 0, C(110, 150, 200), C(255, 255, 255), {}, false);
     addFloor("lvl18", "Level 18", "deep", -9, C(30, 48, 58), C(255, 140, 50), {}, false);
     addFloor("cradle", "Service Corridor 0", "deep", -9, C(60, 52, 40), C(255, 140, 50), {}, false);
+    addFloor("room0", "Room 000", "inn", -8, C(60, 40, 50), C(255, 190, 90), {}, false);
+    addFloor("camp", "Waystation", "deep", -9, C(40, 54, 60), C(120, 255, 190), {}, false);
+    addFloor("furnace", "The Furnace", "deep", -9, C(70, 36, 30), C(255, 110, 40), {}, false);
+    addFloor("flood", "Flooded Hall", "deep", -9, C(26, 50, 70), C(120, 200, 255), {}, false);
+    addFloor("archive", "The Archive", "deep", -9, C(50, 44, 66), C(220, 180, 255), {}, false);
+    addFloor("echo", "The Echo Room", "deep", -9, C(20, 20, 28), C(255, 255, 255), {}, false);
     floorBy("lvl18")->width = 3000;
+    floorBy("room0")->width = 2200;
+    floorBy("camp")->width = 2400;
+    floorBy("furnace")->width = 2800;
+    floorBy("flood")->width = 2800;
+    floorBy("archive")->width = 2600;
+    floorBy("echo")->width = 2000;
 
     Col dk = C(30, 22, 18);
     // Main

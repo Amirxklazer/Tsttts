@@ -14,7 +14,13 @@ static void loadStory() {
     parseStory(STORY_DAYS_2, "story_days_2");
     parseStory(STORY_DAYS_3, "story_days_3");
     parseStory(STORY_DAYS_4, "story_days_4");
+    parseStory(STORY_CH2A, "story_ch2a");
+    parseStory(STORY_CH2B, "story_ch2b");
+    parseStory(STORY_CH2C, "story_ch2c");
     parseStory(STORY_CH3, "story_ch3");
+    parseStory(STORY_CH3B, "story_ch3b");
+    parseStory(STORY_CH3C, "story_ch3c");
+    parseStory(STORY_CH3D, "story_ch3d");
     validateStory();
 }
 
@@ -51,7 +57,13 @@ static void updateMenus(const Input& in) {
                     else setMsg("No save yet - start a New Game.");
                 } else if (g.sel == 1) { g.mode = M_NEWSLOT; g.sel = 0; g.quitConfirm = 0; }
                 else if (g.sel == 2) { g.mode = M_SLOTS; g.sel = 0; g.quitConfirm = 0; }
-                else if (g.sel == 3) { g.mode = M_DAYSEL; g.sel = std::max(0, g.st.maxDay - 1); if (g.slot < 1) g.slot = g.st.lastSlot > 0 ? g.st.lastSlot : 1; }
+                else if (g.sel == 3) {
+                    g.mode = M_DAYSEL;
+                    SlotInfo li = g.st.lastSlot > 0 ? slotInfo(g.st.lastSlot) : SlotInfo();
+                    g.dsCh = li.exists && g.st.unl[li.chapter] ? li.chapter : 1;
+                    g.sel = std::max(0, std::min(CH_LEN[g.dsCh] - 1, g.st.maxD[g.dsCh] - 1));
+                    if (g.slot < 1) g.slot = g.st.lastSlot > 0 ? g.st.lastSlot : 1;
+                }
                 else if (g.sel == 4) { g.mode = M_CHAPTERS; g.sel = 0; }
                 else if (g.sel == 5) { g.mode = M_CUSTOM; g.custSel = 0; }
                 else if (g.sel == 6) { g.mode = M_SETTINGS; g.sel = 0; }
@@ -63,23 +75,12 @@ static void updateMenus(const Input& in) {
             if (in.hit(B_DOWN)) g.sel = (g.sel + 1) % 3;
             if (in.hit(B_B)) { g.mode = M_TITLE; g.sel = 4; }
             if (in.hit(B_A)) {
-                if (g.sel == 0) { g.mode = M_NEWSLOT; g.sel = 0; g.quitConfirm = 0; }
-                else if (g.sel == 1) {
-                    if (g.st.maxDay < 16) setMsg("Locked. Reach Day 16 in Chapter 1 first.");
-                    else { g.mode = M_DAYSEL; g.sel = 15; if (g.slot < 1) g.slot = g.st.lastSlot > 0 ? g.st.lastSlot : 1; }
+                int c = g.sel + 1;
+                if (!g.st.unl[c]) setMsg(c == 2 ? "Locked. Finish Day 31 of Chapter 1 first." : "Locked. Finish Day 35 of Chapter 2 first.");
+                else {
+                    g.mode = M_DAYSEL; g.dsCh = c; g.sel = std::max(0, std::min(CH_LEN[c] - 1, g.st.maxD[c] - 1));
+                    if (g.slot < 1) g.slot = g.st.lastSlot > 0 ? g.st.lastSlot : 1;
                 }
-                else if (!g.st.ch3) setMsg("Locked. Finish Day 31 of Chapter 1 first.");
-                else { g.mode = M_CHSLOT; g.sel = 0; g.quitConfirm = 0; }
-            }
-        } break;
-        case M_CHSLOT: {
-            if (in.hit(B_UP)) g.sel = (g.sel + 2) % 3;
-            if (in.hit(B_DOWN)) g.sel = (g.sel + 1) % 3;
-            if (in.hit(B_B)) { g.mode = M_CHAPTERS; g.sel = 2; }
-            if (in.hit(B_A)) {
-                int sl = g.sel + 1;
-                if (slotInfo(sl).exists && g.quitConfirm != sl) { g.quitConfirm = sl; setMsg("Slot used. Press A again to overwrite."); }
-                else startChapter3(sl);
             }
         } break;
         case M_CUSTOM: case M_PCUSTOM: {
@@ -133,14 +134,18 @@ static void updateMenus(const Input& in) {
             }
         } break;
         case M_DAYSEL: {
+            int len = CH_LEN[g.dsCh];
             if (in.hit(B_LEFT)) g.sel = std::max(0, g.sel - 1);
-            if (in.hit(B_RIGHT)) g.sel = std::min(30, g.sel + 1);
+            if (in.hit(B_RIGHT)) g.sel = std::min(len - 1, g.sel + 1);
             if (in.hit(B_UP)) g.sel = std::max(0, g.sel - 8);
-            if (in.hit(B_DOWN)) g.sel = std::min(30, g.sel + 8);
-            if (in.hit(B_L)) g.sel = g.sel > 15 ? 15 : 0;
-            if (in.hit(B_R)) g.sel = g.sel < 15 ? 15 : 30;
+            if (in.hit(B_DOWN)) g.sel = std::min(len - 1, g.sel + 8);
+            if (in.hit(B_L) && g.dsCh > 1) { g.dsCh--; g.sel = std::min(g.sel, CH_LEN[g.dsCh] - 1); }
+            if (in.hit(B_R) && g.dsCh < 3 && g.st.unl[g.dsCh + 1]) { g.dsCh++; g.sel = std::min(g.sel, CH_LEN[g.dsCh] - 1); }
             if (in.hit(B_B)) { g.mode = M_TITLE; g.sel = 3; }
-            if (in.hit(B_A) && g.sel + 1 <= g.st.maxDay) startDayFromSelect(g.sel + 1);
+            if (in.hit(B_A)) {
+                if (g.sel + 1 <= g.st.maxD[g.dsCh]) startDayFromSelect(g.dsCh, g.sel + 1);
+                else setMsg("Not reached yet.");
+            }
         } break;
         case M_SETTINGS: settingsInput(in, M_TITLE); break;
         case M_PSET: settingsInput(in, M_PAUSE); break;
@@ -159,7 +164,7 @@ static void updateMenus(const Input& in) {
         } break;
         case M_ENDING: {
             g.cT++;
-            if (g.cT > 120 && in.hit(B_A)) { g.mode = M_TITLE; g.sel = g.chapter == 1 ? 4 : 0; if (g.chapter == 1) setMsg("Chapter 3 unlocked! Open Chapters."); }
+            if (g.cT > 120 && in.hit(B_A)) { g.mode = M_TITLE; g.sel = 0; if (g.endCh < 3) setMsg("Next chapter unlocked! Press Continue."); }
         } break;
         default: break;
     }
@@ -191,6 +196,7 @@ static void handleTaps(const Input& in) {
             case 2: tapInject |= B_B; break;
             case 3: sel = hit->idx; tapInject |= B_LEFT; break;
             case 4: sel = hit->idx; tapInject |= B_RIGHT; break;
+            case 5: if (g.mode == M_DAYSEL && g.st.unl[hit->idx]) { g.dsCh = hit->idx; g.sel = std::min(g.sel, CH_LEN[g.dsCh] - 1); } break;
         }
     }
 }
@@ -246,7 +252,6 @@ static void draw() {
         case M_PAUSE: drawPlay(); drawPause(); break;
         case M_ENDING: drawEnding(); break;
         case M_CHAPTERS: drawChapters(); break;
-        case M_CHSLOT: drawSlotList("CHAPTER 3", "Pick a slot for Chapter 3."); if (g.msgT > 0) text(g.msg, 110, 625, 1.4f, C(255, 220, 120)); break;
         case M_CUSTOM: case M_PCUSTOM: drawCustomize(); break;
         case M_REG: drawRegistry(); break;
     }
@@ -262,7 +267,7 @@ static bool SHOT_DAYSTART = false;
 static std::map<long, std::pair<float, float>> TAPS;
 static std::map<long, std::pair<u32, int>> SEQ; // frame -> (button, length)
 static long botFrames = 0;
-static int botFromDay = 1, botToDay = 31;
+static int botFromDay = 1, botToDay = 99;
 static int lastBotDay = 0;
 static bool botDone = false;
 static long stuck = 0; static int stuckPc = -1; static std::string stuckName;
@@ -294,9 +299,10 @@ static void botThink() {
         fprintf(stderr, "[bot] day %d start (frame %ld)\n", g.day, g.playFrames);
         if (g.day > botToDay) { botDone = true; return; }
     }
+    if (getenv("BOTDBG") && tick % 120 == 0) { auto it = g.npcs.find("anes"); fprintf(stderr, "[dbg] vs=%d floor=%s px=%.0f anes=%s/%.0f stuck=%d mode=%d fade=%d elev=%d\n", (int)g.vs, g.floorKey.c_str(), g.px, it != g.npcs.end() ? it->second.floor.c_str() : "?", it != g.npcs.end() ? it->second.x : -1.f, stuck, (int)g.mode, g.fadePhase, (int)g.elevOpen); }
     if (g.vs != V_CHOOSE) choiceTarget = -1;
     switch (g.vs) {
-        case V_SAY: case V_CARD: case V_ENDDAY: press(B_A); stuck = 0; break;
+        case V_SAY: case V_CARD: case V_ENDDAY: press(B_A); break;
         case V_CHOOSE:
             if (choiceTarget < 0) choiceTarget = (int)(rnd() % g.dChoices.size());
             if (g.dSel < choiceTarget) press(B_DOWN); else press(B_A);
@@ -346,6 +352,7 @@ static void botThink() {
                 else press(B_A);
                 break;
             }
+            if (c.a == "talk" && stuck > 300) tx += ((stuck / 300) % 3 - 1) * 55;   // a Cleaning bot may be blocking the prompt
             float dx = tx - g.px;
             float stop = needA ? 30.0f : 12.0f;
             if (c.a == "floor") break;
@@ -361,7 +368,7 @@ static void applySeq() {
 }
 
 int main(int argc, char** argv) {
-    long maxFrames = -1; bool check = false, ai = false, fast = false; int startDay0 = 0, startCh = 1;
+    std::string miniArg; long maxFrames = -1; bool check = false, ai = false, fast = false; int startDay0 = 0, startCh = 1;
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
         auto next = [&]() { return i + 1 < argc ? std::string(argv[++i]) : std::string(); };
@@ -376,6 +383,7 @@ int main(int argc, char** argv) {
         else if (a == "--shots") SHOT_DIR = next();
         else if (a == "--shot-at") { for (auto& s : splitStr(next(), ',')) SHOT_FRAMES.insert(atol(s.c_str())); }
         else if (a == "--shot-daystart") SHOT_DAYSTART = true;
+        else if (a == "--mini") miniArg = next();
         else if (a == "--tap") { for (auto& s : splitStr(next(), ',')) { auto p = splitStr(s, ':'); if (p.size() >= 3) TAPS[atol(p[0].c_str())] = {(float)atof(p[1].c_str()), (float)atof(p[2].c_str())}; } }
         else if (a == "--seq") { for (auto& s : splitStr(next(), ',')) { auto p = splitStr(s, ':'); if (p.size() >= 2) SEQ[atol(p[0].c_str())] = {btnFrom(p[1]), p.size() > 2 ? atoi(p[2].c_str()) : 3}; } }
         else if (a == "--seed") rngState = (u32)atol(next().c_str()) | 1;
@@ -403,13 +411,16 @@ int main(int argc, char** argv) {
         g.slot = 1;
         g.flags.clear(); setF("lock_roof", 1);
         g.mode = M_PLAY;
-        if (startCh == 3) { g.st.ch3 = true; startChapter3(1); }
-        else if (botFromDay > 1 || startDay0) {
+        if (startCh > 1 || botFromDay > 1 || startDay0) {
             int d = startDay0 ? startDay0 : botFromDay;
-            g.progressFlags.clear();
-            g.st.maxDay = 31;
-            startDayFromSelect(d);
+            if (startCh == 1) g.progressFlags.clear();
+            for (int c = 1; c <= 3; c++) { g.st.unl[c] = true; g.st.maxD[c] = CH_LEN[c]; }
+            startDayFromSelect(startCh, d);
         } else newGame(1);
+    }
+    if (!miniArg.empty()) {
+        for (auto& c : miniArg) if (c == ',') c = ' ';
+        g.mode = M_PLAY; g.mini = makeMini(words(miniArg)); g.vs = g.mini ? V_MINI : V_NONE;
     }
     Input in;
     int exitCode = 0;
@@ -435,6 +446,7 @@ int main(int argc, char** argv) {
             SDL_RenderPresent(G.ren);
         }
         if (BOT && botDone) break;
+        if (!miniArg.empty() && g.vs != V_MINI) { fprintf(stderr, "[mini] done after %ld frames won=%d\n", botFrames, F("won")); break; }
         if (maxFrames > 0 && botFrames >= maxFrames) break;
         if (!headless) { /* vsync handles pacing */ }
         else if (!fast && !NODRAW) { Uint32 dt = SDL_GetTicks() - t0; if (dt < 16) SDL_Delay(16 - dt); }

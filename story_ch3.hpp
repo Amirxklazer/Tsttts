@@ -1,64 +1,55 @@
-// story_ch3.hpp - CHAPTER 3: LOWEST POINT (unlocks after Day 31). Three short days: c3_1, c3_2, c3_3.
+// story_ch3.hpp - CHAPTER 3: LOWEST POINT, days 1-10 (Act 1: Level 18). Chapter 3 unlocks after Chapter 2 day 35.
 #pragma once
 static const char* STORY_CH3 = R"IL(
-# ================================================================ CHAPTER 3 - DAY 1
+# ================================================================ CH3 DAY 1
 script c3_1
 title Down We Go
 card CHAPTER 3|Lowest Point
 bars on
-scene room amir
-cast amir 860
-cast bolt -200
-say |A week after Îlot14 Day. The banner is still on the roof. The bots are still wearing party hats. And the knocking is back.
-walk bolt 470 7 wait
-emote bolt !
-say Bolt|ZOOM! It's coming from BELOW! Way below! Below the below!
-say Amir|Below Parking 2.
-say Bolt|Below EVERYTHING!
-anim amir shake
-say |Three knocks. A pause. Three more. This time it's not asking. It's counting down.
+scene inn amir dalia gabriel aya_n
+cast amir 520
+cast dalia 760
+cast gabriel 960
+cast aya_n 1160
+say |A week after the concert. The Inn is quiet again. Everyone is packing for a trip nobody wants to name.
+say Aya@aya_n|Provisions. Water. Almond water, because Prime insists. Four flashlights. One very small cake.
+say Dalia|The cake is for emergencies.
+say Gabriel|Cake isn't an emergency item.
+say Dalia|Everything is an emergency item if you try hard enough.
+anim dalia hop
+say Aya@aya_n|Amir. The silver key. Do you have it?
+say |It's in my pocket. It hums softly against my leg, as if it's counting down.
 bars off
 scene off
-goal Take the elevator down to Parking 2. Dalia and Gabriel are waiting at the grey door.
-npc dalia park2 1750
-npc gabriel park2 1650
-await floor park2
-say Dalia|You heard it too. Of course you did.
-say Gabriel|Prime said something yesterday. Through the old speaker. Three words.
+warp inn 900
+npc dalia inn 1050
+npc gabriel inn 1150
+npc aya_n inn 1000
+npc prime inn 1350
+goal Take the elevator and press the button marked 18. First talk to Prime in the lobby.
+await talk prime
+say Prime|THE LIFT IS READY. THE BUTTON IS GREEN. MY BATTERIES ARE FULL. I HAVE PACKED A DUSTPAN.
+say Prime|I HAVE PACKED TWO DUSTPANS. ONE FOR EMERGENCIES.
 choose
-> What did he say? => what
-> Let's just go. => go
-label what
-say Gabriel|"Level eighteen. Lowest."
-say Dalia|Lowest point.
+> Is it going to be safe? => safe
+> Let's go. => go
+label safe
+say Prime|NO. BUT WE WILL BE TOGETHER. IT IS THE SAME THING, MOSTLY.
 label go
-goal Open the grey door at the east end of Parking 2.
-obj greydoor park2 1900 Grey door
-await use greydoor
-fx fadeout
-wait 40
-warp cradle 220
-npc dalia cradle 330
-npc gabriel cradle 420
-ifnot prime_free noprime
-npc prime cradle 640
-label noprime
-fx fadein
-toast Service Corridor 0
-say |The Backrooms don't hum here anymore. Prime fixed the wallpaper. One wall at a time. The carpet even smells like carpet now.
-obj lift cradle 1500 Old service lift
-goal Walk to the old service lift at the end of the corridor and use it.
-await use lift
+say Aya@aya_n|Come back. All of you. I'm keeping your rooms warm.
+say Amir|We will.
+goal Walk to the elevator and press 18.
+await floor lvl18
 bars on
-scene elev amir dalia gabriel
+scene elev amir dalia gabriel prime
 fx shake
-say |The lift is older than the building. Maybe older than the idea of the building. It groans as the doors close.
+say |The lift groans like an old animal. The Inn's number slides past. Then a door I've never seen. Then a long dark stretch of numbers going backwards.
 anim dalia hop
 say Dalia|If this thing falls, I'm blaming Gabriel.
 say Gabriel|Why me?
 say Dalia|You brought the rope. Ropes are a bad sign.
 fx shake
-say |The numbers above the door go backwards. 17. 18. Then the display flickers and shows a symbol I can't read.
+say |The display flickers and shows a symbol I can't read. Then it settles. "18".
 fx fadeout
 wait 40
 bars off
@@ -66,20 +57,26 @@ scene off
 warp lvl18 220
 npc dalia lvl18 330
 npc gabriel lvl18 420
-ifnot prime_free noprime2
 npc prime lvl18 520
-label noprime2
 fx fadein
 toast Level 18
 say |Level 18. Dark teal walls, orange lights, pipes that hum a note I almost recognize. This isn't the Backrooms. This is somewhere the building keeps for itself.
 say Amir|Stay close.
 endday
 
-# ================================================================ CHAPTER 3 - DAY 2
+# ================================================================ CH3 DAY 2
 script c3_2
 title Level 18
+bars on
 scene deep amir dalia gabriel
+cast amir 600
+cast dalia 800
+cast gabriel 1000
 say |Day 2 on Level 18. Time doesn't work the same here. Hunger does, though.
+emote gabriel ...
+say Gabriel|My watch says it's Tuesday. It also says it's Thursday.
+say Dalia|Both could be true.
+bars off
 scene off
 warp lvl18 220
 npc dalia lvl18 330
@@ -95,7 +92,7 @@ obj bigdoor lvl18 2500 Sealed door
 goal Walk to the sealed door at the east end of Level 18 and use it.
 await use bigdoor
 say |Three fuse slots, each blinking amber. Each slot needs a perfectly timed push.
-mini timing 6 4 Power_the_door
+mini timing 6 4 Power_the_door 2
 ifnot skipped powered
 say |(The slots took pity on you and lit up on their own.)
 label powered
@@ -104,48 +101,272 @@ say |The door rumbles open. Behind it, something is running toward us. A flood o
 mini fight 14 6 dust_wraiths
 say Dalia|That was NOT in the brochure.
 say Gabriel|There's no brochure.
-say |Beyond the door, a long hall leads to a round chamber. In its center, a tall door of black glass. A faint orange light spills around its edges.
+say |Beyond the door, a faint orange glow. A campfire's worth of light, somewhere far ahead.
 set l18_door 1
 endday
 
-# ================================================================ CHAPTER 3 - DAY 3
+# ================================================================ CH3 DAY 3
 script c3_3
-title The Door With a Name
-scene deep amir dalia gabriel
-say |Day 3. The black door. Ash drifts across the floor of the round chamber like slow snow, though there's no wind.
-scene off
-warp lvl18 2500
-npc dalia lvl18 2400
-npc gabriel lvl18 2350
-obj blackdoor lvl18 2750 Black glass door
-goal Examine the black glass door.
-await use blackdoor
+title The Waystation
 bars on
-scene deep amir dalia gabriel
-say |A nameplate on the door. Brass. Polished. Someone has been taking care of it. It reads:
-fx flicker
-say |"L-001 - AMIR."
-emote amir !!
-say Dalia|That's... your room number.
-say Gabriel|That's your name.
-say Amir|I live on the Lethal floor. I know where my door is.
-say |The ash lifts off the floor and swirls around the nameplate. Behind the glass, a shape stands very still. It has my silhouette.
-choose
-> Open it. => open
-> Not yet. We need a plan. => wait
-label wait
-say Gabriel|That's the first smart thing anyone's said today.
-say Dalia|But we're going to open it eventually, aren't we.
-say Amir|...Eventually.
-goto fin
-label open
-set opened_door 1
-say Amir|If it has my name on it, it's mine to open.
-say |The glass doesn't break. It simply isn't there anymore. A cold wind of ash blows past us, and the shape steps forward.
-label fin
-fx flash
-card TO BE CONTINUED|Chapter 3 of the Lost of Ashes story.
+scene deep amir dalia gabriel prime
+say |Day 3. We follow the orange glow down a long corridor. The pipes hum louder. Under the hum, a thin melody, like someone whistling a lullaby through their teeth.
+say Prime|THERE IS A STRUCTURE AHEAD. IT IS... TIDY.
+emote prime !
+say Dalia|Tidy? Down here?
 bars off
 scene off
+warp camp 300
+npc dalia camp 420
+npc gabriel camp 500
+npc prime camp 600
+clearitems
+goal Walk into the camp. Pick up the 4 supplies left on the ground.
+spawn supply camp 700
+spawn supply camp 1100
+spawn supply camp 1500
+spawn supply camp 1900
+await items 4
+say |A small camp. A ring of stones. A kettle still warm. A row of neatly stacked crates labelled "FOR WHOEVER COMES NEXT".
+say Gabriel|It's been used. Recently.
+say Dalia|By who?
+say |On the biggest crate, a note in handwriting that looks like mine: "Welcome. This is the Waystation. The kettle is hot. Don't trust the east corridor."
+say Amir|...The kettle is hot.
+say Gabriel|I hate this.
+say Prime|I LIKE IT. IT IS VERY ORGANIZED.
+mini catch 10 3 supplies 3
+ifnot skipped caught
+say |(Prime sorted the last crates into neat towers. They were not asked to.)
+label caught
+fx flash
+say |Prime plants a tiny flag on the camp's central crate. "WAYSTATION: CLEANED BY PRIME". It's a charming, tilted flag.
+say Dalia|We have a base.
+say Amir|We have a base.
+set camp_found 1
+clearitems
+endday
+
+# ================================================================ CH3 DAY 4
+script c3_4
+title The Pipe Maze
+bars on
+scene deep amir kenzy
+say |Day 4. Kenzy joined us overnight via the old service lift. He's carrying a bag of wires, a map, and a face that says "I regret nothing".
+say Kenzy|Prime picked up a sound from the east. A rhythm. I mapped it. It's coming from the pipes, in a pattern.
+say Amir|Pipes don't make patterns.
+say Kenzy|These ones do.
+bars off
+scene off
+warp camp 600
+npc kenzy camp 900
+goal Talk to Kenzy at the camp's map table.
+await talk kenzy
+say Kenzy|The east corridor is a maze of old pipes. A hum drains your stamina. Grab bottled water and reach the green exit light.
+say Kenzy|I'd go with you, but my bag is heavy and I've made some questionable decisions.
+mini maze 4 7
+ifnot skipped through
+say |(The pipes spat you out. A little bruised, a little dusty, a little offended.)
+label through
+say |You come out on the far side with four cool bottles and a dent in your elbow. The corridor behind you slides shut with a click.
+say Kenzy|And?
+say Amir|It was a maze.
+say Kenzy|I KNEW IT. Put it on the map.
+set pipes_done 1
+endday
+
+# ================================================================ CH3 DAY 5
+script c3_5
+title The Furnace Door
+bars on
+scene deep amir dalia gabriel
+say |Day 5. The east corridor ends in a round iron door the color of a dying ember. Heat rolls off it in waves. A sign: "FURNACE. DO NOT ENTER. WE MEAN IT. - THE MANAGEMENT".
+say Dalia|Who's the management?
+say Gabriel|Whoever wrote the sign. Which doesn't make me feel better.
+say Amir|We have to go in.
+say Gabriel|I'm aware.
+bars off
+scene off
+warp furnace 300
+npc dalia furnace 420
+npc gabriel furnace 520
+goal Cross the Furnace. Dodge the jets of flame.
+mini dodge 24 4 2
+ifnot skipped crossed
+say |(A bot-shaped shadow tugged you out of a flame jet. You never saw it.)
+label crossed
+say |On the far side, a long ledge. Below it, an ocean of orange light, like the inside of a sleeping sun.
+say Gabriel|That's the heart of the building, isn't it.
+say Amir|I think it's the heart of something.
+say Dalia|I don't like it. I want to hug it.
+set furnace_seen 1
+endday
+
+# ================================================================ CH3 DAY 6
+script c3_6
+title Wraith Hunters
+bars on
+scene deep amir prime dalia
+say |Day 6. The camp is under attack. A low, grey wave of dust wraiths is climbing over the crates, drawn to the warm kettle.
+say Prime|DUST DETECTED. A GREAT DEAL OF DUST. I TAKE PERSONAL OFFENSE.
+emote prime !
+say Dalia|We need a line! A lane! A... lane line!
+fx shake
+bars off
+scene off
+warp camp 800
+npc prime camp 1000
+npc dalia camp 700
+goal Defend the Waystation!
+mini defend 4 5 2
+ifnot skipped held
+say |(The bots rolled into the front lines. A few hats were lost in the fighting.)
+label held
+say |The last wraith pops. Grey drifts settle across the camp like tired snow.
+say Dalia|Okay. Okay. We can do this.
+say Prime|WE CAN. THE KETTLE IS STILL WARM.
+set camp_held 1
+endday
+
+# ================================================================ CH3 DAY 7
+script c3_7
+title Flooded Hall
+bars on
+scene deep amir gabriel bolt
+say |Day 7. A corridor full of ankle-deep water. Ripples in a regular rhythm. Floating in the water, a fleet of little paper boats, each labelled with a name.
+say Gabriel|Cute. Terrifying.
+say Bolt|Beep! The water is cold! I love it!
+emote bolt !
+bars off
+scene off
+warp flood 300
+npc gabriel flood 420
+clearitems
+goal Collect 3 paper boats floating in the Flooded Hall.
+spawn boat flood 800
+spawn boat flood 1500
+spawn boat flood 2200
+await items 3
+say |Each boat has a name written in blue ink. Dalia. Gabriel. Amir. In the same handwriting as the camp note.
+say Gabriel|It's mine. It says "bring the rope".
+say Amir|Whoever's writing these knows us. Better than we know ourselves.
+say |At the end of the hall, a flood gate. Behind it, a clatter. A dozen flooded Cleaning bots are floating in circles, stuck in an eddy.
+mini roundup 8 45 3
+ifnot skipped saved
+say |(The eddy slowed down by itself. The bots drifted gently into Bolt's arms.)
+label saved
+say Bolt|They're SAFE! I have FRIENDS! SO MANY FRIENDS!
+say Gabriel|They're strangers.
+say Bolt|Friends I haven't met yet!
+set flood_done 1
+clearitems
+endday
+
+# ================================================================ CH3 DAY 8
+script c3_8
+title Sofia's Echo
+bars on
+scene deep amir sofia
+say |Day 8. Sofia came down in the middle of the night. Barefoot. She says the whole level is singing.
+say Sofia|Everything here has a pitch. The pipes. The water. The walls. Even the dust.
+say Amir|What's it singing?
+say Sofia|A name.
+bars off
+scene off
+warp camp 900
+npc sofia camp 1200
+goal Talk to Sofia at the campfire.
+await talk sofia
+say Sofia|The notes come in a sequence. If I play them back, the level answers. Watch. Then repeat.
+mini simon 8 3 22
+ifnot skipped played
+say |(Sofia sang the rest. The walls answered.)
+label played
+fx flicker
+say |A low note rings through the camp. From a crack in the wall, a faded brass nameplate slides out and clinks on the floor. Dalia picks it up.
+say Dalia|"M-002 - DALIA". It's mine.
+say Sofia|It's a key to something.
+say Amir|Doors. There are doors.
+set first_plate 1
+endday
+
+# ================================================================ CH3 DAY 9
+script c3_9
+title Static
+bars on
+scene deep amir kenzy prime
+say |Day 9. Kenzy's radio has been picking up a new signal. A voice, almost words. A rhythm, definitely music.
+say Kenzy|It's speaking. In a code I don't know. Prime, did you hear that?
+say Prime|I HEARD A SEQUENCE. IT WAS IN FOUR PARTS. UP. RIGHT. DOWN. LEFT. IT SOUNDED... LONELY.
+bars off
+scene off
+warp camp 1000
+npc kenzy camp 1300
+goal Talk to Kenzy at the radio.
+await talk kenzy
+say Kenzy|Match the signal. Each beat, a button. If you get it right, the radio tunes itself.
+mini rhythm 30 5 120
+ifnot skipped tuned
+say |(The radio tuned itself. It was more sophisticated than it looked.)
+label tuned
+fx flicker
+say |The static clears. A voice. Raspy, young, familiar. Not quite my voice. Not quite not.
+say ???|"...If you're hearing this, you passed the furnace. Good. I'm sorry about the heat."
+say ???|"The Archive is south of the Waystation. Everything you need is behind the doors. Don't go alone."
+say Amir|That's me.
+say Kenzy|That is a very good impression of you.
+say Amir|It isn't an impression.
+set radio3 1
+endday
+
+# ================================================================ CH3 DAY 10
+script c3_10
+title Night at the Waystation
+bars on
+scene deep amir dalia gabriel prime
+say |Day 10. Night. The camp fire is low. Dalia's wrapped in three blankets. Gabriel's sitting just outside the circle of light, watching the dark.
+say Dalia|I can't sleep. Down here, even the quiet is loud.
+say Gabriel|I'll keep watch.
+say Amir|You always do.
+say Gabriel|Someone has to.
+bars off
+scene off
+warp camp 1000
+npc dalia camp 1100
+npc gabriel camp 1300
+goal Talk to Dalia by the campfire.
+await talk dalia
+say Dalia|Can I tell you something dumb?
+choose
+> Always. => always
+> Is it a joke? => joke
+label joke
+say Dalia|No. It's the opposite of a joke.
+goto go
+label always
+say Dalia|Okay. Okay.
+label go
+say Dalia|I'm scared. I'm not scared of the dark. I'm scared that we get to the end of this and it turns out we were the dust.
+say Amir|We're not the dust.
+say Dalia|I know. But what if the building thinks we are.
+choose
+> The building loves us. => love
+> Then we show it we're not. => show
+label love
+say Dalia|That's a very Amir thing to say. I'm keeping it.
+goto go2
+label show
+say Dalia|That's a very Gabriel thing to say. I'm also keeping it.
+label go2
+say |A tiny sound from the dark. A slow, soft scraping. Something is on the ledge above the camp.
+fx flicker
+say Gabriel|Quiet. Everyone.
+mini sneak 4 3 2
+ifnot skipped passed
+say |(Gabriel whispered "go" and you went. Somehow nobody woke the thing.)
+label passed
+say |Above the camp, a shape on the ledge. Not a wraith. A tall, thin silhouette against the orange glow. It watches. It raises one hand. Then it's gone.
+say Amir|That wasn't a wraith.
+say Gabriel|No. It wasn't.
+set saw_shape 1
 endday
 )IL";

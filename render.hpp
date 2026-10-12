@@ -362,7 +362,7 @@ static void drawWorld() {
 static void drawHUD() {
     FloorDef* f = floorBy(g.floorKey);
     rect(0, 0, SCR_W, 44, C(0, 0, 0, 175));
-    int chn = g.chapter == 3 ? 3 : (g.day <= 15 ? 1 : 2);
+    int chn = g.chapter;
     text("CH" + std::to_string(chn) + "  DAY " + std::to_string(g.day), 20, 10, 1.8f, ORANGE);
     if (f) text(f->name, 640, 10, 1.8f, WHITE, 1);
     text("ITEMS " + std::to_string(g.inv.size()), SCR_W - 20, 10, 1.8f, WHITE, 2);
@@ -623,8 +623,8 @@ static void drawTitleMenu() {
     const char* names[] = {"CONTINUE", "NEW GAME", "SAVE SLOTS", "DAY SELECT", "CHAPTERS", "CUSTOMIZE", "SETTINGS", "EXIT TO HOMEBREW MENU"};
     for (int i = 0; i < 8; i++) bpButton(130, 226 + i * 50, 560, 42, names[i], g.sel == i, i != 0 || last.exists, i);
     if (g.msgT > 0) text(g.msg, 130, 642, 1.4f, C(255, 220, 120));
-    if (g.sel == 0 && last.exists) text("Slot " + std::to_string(g.st.lastSlot) + " - " + (last.chapter == 3 ? "Ch.3 " : "") + "Day " + std::to_string(last.day), 710, 236, 1.3f, C(255, 255, 255, 180));
-    if (g.sel == 4 && g.st.ch3) text("Chapter 3 unlocked!", 710, 436, 1.3f, C(120, 255, 190));
+    if (g.sel == 0 && last.exists) text("Slot " + std::to_string(g.st.lastSlot) + " - " + ("Ch." + std::to_string(last.chapter) + " ") + "Day " + std::to_string(last.day), 710, 236, 1.3f, C(255, 255, 255, 180));
+    if (g.sel == 4 && g.st.unl[2]) text(g.st.unl[3] ? "Chapters 2 and 3 unlocked!" : "Chapter 2 unlocked!", 710, 436, 1.3f, C(120, 255, 190));
 }
 
 static void drawSlotList(const std::string& heading, const std::string& hint) {
@@ -640,9 +640,8 @@ static void drawSlotList(const std::string& heading, const std::string& hint) {
         frameR(110, y, 1060, 104, WHITE, s ? 4 : 2);
         text("SLOT " + std::to_string(i), 140, y + 16, 2.4f, s ? ORANGE : WHITE, 0, 3);
         if (si.exists) {
-            std::string t = DAY_TITLE.count(si.day) ? DAY_TITLE[si.day] : "";
-            if (si.chapter == 3) t = DAY_TITLE3.count(si.day) ? DAY_TITLE3[si.day] : "";
-            text(std::string(si.chapter == 3 ? "CHAPTER 3  -  " : "") + "DAY " + std::to_string(si.day) + "  -  " + t, 140, y + 60, 1.7f, WHITE);
+            std::string t = dayTitleOf(si.chapter, si.day);
+            text("CH" + std::to_string(si.chapter) + "  -  DAY " + std::to_string(si.day) + "  -  " + t, 140, y + 60, 1.7f, WHITE);
             text(fmtTime(si.frames), 1150, y + 16, 1.7f, C(255, 255, 255, 190), 2);
         } else text("EMPTY", 140, y + 60, 1.7f, C(255, 255, 255, 140));
     }
@@ -650,24 +649,30 @@ static void drawSlotList(const std::string& heading, const std::string& hint) {
 
 static void drawDaySelect() {
     blueprintBG();
-    text("DAY SELECT", 110, 100, 3.4f, WHITE, 0, 6);
-    text("Days you have reached are unlocked.", 114, 150, 1.4f, C(255, 255, 255, 190));
-    rect(114, 182, 22, 8, ORANGE); text("Chapter 1: days 1-15", 144, 176, 1.1f, WHITE);
-    rect(380, 182, 22, 8, C(120, 255, 220)); text("Chapter 2: days 16-31", 410, 176, 1.1f, WHITE);
-    for (int d = 1; d <= 31; d++) {
-        int i = d - 1; float x = 130 + (i % 8) * 128, y = 206 + (i / 8) * 94;
-        bool un = d <= g.st.maxDay, s = g.sel == i;
-        HITS.push_back({x, y, 112, 80, 0, i});
-        if (s) rect(x, y, 112, 80, WHITE); else frameR(x, y, 112, 80, un ? WHITE : C(255, 255, 255, 70), 2);
-        rect(x + 4, y + 4, 104, 6, d <= 15 ? ORANGE : C(120, 255, 220, un ? 255 : 90));
+    text("DAY SELECT", 110, 90, 3.4f, WHITE, 0, 6);
+    Col cc[4] = {WHITE, ORANGE, C(120, 255, 220), C(255, 120, 150)};
+    int ch = g.dsCh, len = CH_LEN[ch];
+    for (int c = 1; c <= 3; c++) {
+        float x = 130 + (c - 1) * 330; bool un = g.st.unl[c], on = c == ch;
+        HITS.push_back({x, 148, 310, 40, 5, c});
+        if (on) rect(x, 148, 310, 40, cc[c]);
+        else frameR(x, 148, 310, 40, un ? cc[c] : C(255, 255, 255, 70), 2);
+        text("CH" + std::to_string(c) + " " + std::string(CH_NAME[c]) + (un ? "" : "  [LOCKED]"), x + 155, 158, 1.2f, on ? C(20, 30, 70) : (un ? cc[c] : C(255, 255, 255, 90)), 1);
+    }
+    int maxd = g.st.maxD[ch];
+    for (int d = 1; d <= len; d++) {
+        int i = d - 1; float x = 130 + (i % 8) * 128, y = 204 + (i / 8) * 76;
+        bool un = d <= maxd, s = g.sel == i;
+        HITS.push_back({x, y, 112, 68, 0, i});
+        if (s) rect(x, y, 112, 68, WHITE); else frameR(x, y, 112, 68, un ? WHITE : C(255, 255, 255, 70), 2);
+        rect(x + 4, y + 4, 104, 5, C(cc[ch].r, cc[ch].g, cc[ch].b, un ? 255 : 90));
         Col c = s ? C(28, 66, 156) : (un ? WHITE : C(255, 255, 255, 80));
-        text(std::to_string(d), x + 56, y + 20, 2.6f, c, 1);
-        if (!un) text("LOCKED", x + 56, y + 58, 0.9f, c, 1);
+        text(std::to_string(d), x + 56, y + 16, 2.4f, c, 1);
+        if (!un) text("LOCKED", x + 56, y + 48, 0.9f, c, 1);
     }
     int d = g.sel + 1;
-    std::string t = DAY_TITLE.count(d) ? DAY_TITLE[d] : "";
-    text("DAY " + std::to_string(d) + (g.sel + 1 <= g.st.maxDay ? "  -  " + t : "  -  ???"), 130, 580, 2.0f, ORANGE);
-    text("Starts the day with the choices you had when you first got there.", 130, 616, 1.2f, C(255, 255, 255, 170));
+    text("DAY " + std::to_string(d) + (d <= maxd ? "  -  " + dayTitleOf(ch, d) : "  -  ???"), 130, 596, 1.9f, ORANGE);
+    text("Starts the day with the choices you had when you first got there.", 130, 630, 1.1f, C(255, 255, 255, 170));
 }
 
 static void drawSettings() {
@@ -690,7 +695,7 @@ static void drawPause() {
     HITS.push_back({0, 0, SCR_W, SCR_H, 2, 0});
     HITS.push_back({300, 80, 680, 560, 1, g.sel});
     for (int i = 0; i < 6; i++) bpButton(350, 175 + i * 62, 580, 50, names[i], g.sel == i, true, i);
-    text(std::string("Saves the start of ") + (g.chapter == 3 ? "Chapter 3 - " : "") + "Day " + std::to_string(g.day), 640, 560, 1.3f, C(255, 255, 255, 180), 1);
+    text("Saves the start of Chapter " + std::to_string(g.chapter) + " - Day " + std::to_string(g.day), 640, 560, 1.3f, C(255, 255, 255, 180), 1);
     if (g.msgT > 0) text(g.msg, 640, 590, 1.5f, C(255, 220, 120), 1);
 }
 
@@ -719,9 +724,9 @@ static void drawChapters() {
     blueprintBG();
     text("CHAPTERS", 110, 100, 3.4f, WHITE, 0, 6);
     struct Ch { const char* n; const char* t; std::string d; bool un; };
-    Ch chs[3] = {{"CHAPTER 1", "LOST THE ASH - DAYS 1 TO 15", "The Dalia quest, the hornets, the Backrooms, the blackout.", true},
-                 {"CHAPTER 2", "FURTHER INN - DAYS 16 TO 31", g.st.maxDay >= 16 ? "Down to the Further Inn, the grey door, Prime, the party." : "Reach Day 16 to unlock.", g.st.maxDay >= 16},
-                 {"CHAPTER 3", "LOWEST POINT", g.st.ch3 ? "Level 18 is waiting." : "Finish Day 31 to unlock.", g.st.ch3}};
+    Ch chs[3] = {{"CHAPTER 1  -  31 DAYS", "LOST THE ASH", "The Dalia quest, the hornets, the Backrooms, Prime, Îlot14 Day.", true},
+                 {"CHAPTER 2  -  35 DAYS", "FURTHER INN", g.st.unl[2] ? "Reopen the Inn. The ledger, the knocking, Room 000." : "Finish Day 31 of Chapter 1 to unlock.", g.st.unl[2]},
+                 {"CHAPTER 3  -  40 DAYS", "LOWEST POINT", g.st.unl[3] ? "Level 18. Doors with names. The shape behind the glass." : "Finish Day 35 of Chapter 2 to unlock.", g.st.unl[3]}};
     for (int i = 0; i < 3; i++) {
         float y = 190 + i * 130; bool sel = g.sel == i;
         HITS.push_back({110, y, 1060, 112, 0, i});
@@ -797,9 +802,9 @@ static void drawRegistry() {
 static void drawEnding() {
     rect(0, 0, SCR_W, SCR_H, C(8, 10, 22));
     float a = std::min(1.0f, g.cT / 90.0f);
-    text(g.chapter == 3 ? "CHAPTER 3 - THE START OF THE END" : "DAY 31 COMPLETE", 640, 200, g.chapter == 3 ? 3 : 4, C(255, 255, 255, (int)(255 * a)), 1, 8);
-    text("TO BE CONTINUED...", 640, 300, 3, C(249, 115, 22, (int)(255 * a)), 1, 6);
-    if (g.chapter == 1 && g.cT > 100) text("CHAPTER 3: LOWEST POINT - UNLOCKED", 640, 520, 2, C(120, 255, 190, 220), 1, 3);
+    text("CHAPTER " + std::to_string(g.endCh) + " COMPLETE", 640, 200, 4, C(255, 255, 255, (int)(255 * a)), 1, 8);
+    text(g.endCh < 3 ? std::string(CH_NAME[g.endCh]) + " - done" : "TO BE CONTINUED...", 640, 300, 3, C(249, 115, 22, (int)(255 * a)), 1, 6);
+    if (g.endCh < 3 && g.cT > 100) text("CHAPTER " + std::to_string(g.endCh + 1) + ": " + std::string(CH_NAME[g.endCh + 1]) + " - UNLOCKED. Press Continue!", 640, 520, 2, C(120, 255, 190, 220), 1, 3);
     text("LOST OF ASHES  -  the story goes on", 640, 400, 1.8f, C(255, 255, 255, (int)(200 * a)), 1);
     text("Thanks for playing  " VERSION, 640, 460, 1.6f, C(255, 255, 255, (int)(160 * a)), 1);
     if (g.cT > 120) text("A", 640, 580, 2, C(255, 255, 255, 120 + (int)(100 * sinf(g.cT * 0.12f))), 1);
@@ -810,21 +815,17 @@ static void drawEnding() {
 static void drawTouchWarn() {
     if (g.touchWarn <= 0) return;
     int a = std::min(255, g.touchWarn * 8);
-    rect(0, 0, SCR_W, SCR_H, C(0, 0, 0, a / 3));
-    float x = 290, y = 190, w = 700, h = 300;
-    rect(x, y, w, h, C(24, 10, 14, a)); frameR(x, y, w, h, C(255, 70, 70, a), 5);
-    float cx = 430, cy = 340;
-    Col sk = C(240, 200, 160, a), ol = C(60, 40, 30, a);
-    // hand
-    rect(cx - 44, cy - 6, 88, 66, ol); rect(cx - 40, cy - 2, 80, 58, sk);
+    float w = 330, h = 104, x = SCR_W - w - 14, y = 14;
+    rect(x, y, w, h, C(24, 10, 14, a)); frameR(x, y, w, h, C(255, 70, 70, a), 3);
+    float cx = x + 52, cy = y + 66, k = 0.36f;
+    Col sk = C(240, 200, 160, a), ol = C(60, 40, 30, a), red = C(255, 60, 60, a);
+    rect(cx - 44 * k, cy - 6 * k, 88 * k, 66 * k, ol); rect(cx - 40 * k, cy - 2 * k, 80 * k, 58 * k, sk);
     float fl[4] = {58, 72, 78, 66};
-    for (int i = 0; i < 4; i++) { float fx = cx - 40 + i * 20; rect(fx - 2, cy - 4 - fl[i] - 2, 20, fl[i] + 4, ol); rect(fx, cy - 4 - fl[i], 16, fl[i] + 2, sk); }
-    rect(cx - 70, cy + 6, 34, 24, ol); rect(cx - 66, cy + 10, 30, 16, sk);
-    // red ring + slash
-    Col red = C(255, 60, 60, a);
-    for (int k = 0; k < 120; k++) { float an = k * 0.05236f; rect(cx + cosf(an) * 96 - 4, cy + sinf(an) * 96 - 4, 9, 9, red); }
-    thickLine(cx - 68, cy - 68, cx + 68, cy + 68, 12, red);
-    text("PLAY WITH", 790, 245, 3.0f, C(255, 255, 255, a), 1, 3);
-    text("JOY-CONS", 790, 295, 3.4f, C(255, 90, 90, a), 1, 3);
-    text("Touch only works in menus.", 790, 372, 1.5f, C(255, 255, 255, (int)(a * 0.8f)), 1);
+    for (int i = 0; i < 4; i++) { float fx = cx + (-40 + i * 20) * k; rect(fx - 1, cy - (4 + fl[i] + 2) * k, 20 * k, (fl[i] + 4) * k, ol); rect(fx, cy - (4 + fl[i]) * k, 16 * k, (fl[i] + 2) * k, sk); }
+    rect(cx - 70 * k, cy + 6 * k, 34 * k, 24 * k, ol); rect(cx - 66 * k, cy + 10 * k, 30 * k, 16 * k, sk);
+    for (int j = 0; j < 60; j++) { float an = j * 0.1047f; rect(cx + cosf(an) * 36 - 2, cy - 14 + sinf(an) * 36 - 2, 4, 4, red); }
+    thickLine(cx - 26, cy - 40, cx + 26, cy + 12, 5, red);
+    text("PLAY WITH", x + 200, y + 18, 1.9f, C(255, 255, 255, a), 1, 2);
+    text("JOY-CONS", x + 200, y + 46, 2.2f, C(255, 90, 90, a), 1, 2);
+    text("Touch is for menus only", x + 200, y + 80, 1.0f, C(255, 255, 255, (int)(a * 0.8f)), 1);
 }

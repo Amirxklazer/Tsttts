@@ -3,9 +3,9 @@
 #include "script.hpp"
 #include <list>
 
-#define VERSION "v0.3.0"
+#define VERSION "v0.4.0"
 
-struct Settings { int textSpeed = 1; int autoAdv = 2; bool scanlines = true; int lastSlot = 0; int maxDay = 1; bool ch3 = false; };
+struct Settings { int textSpeed = 1; int autoAdv = 2; bool scanlines = true; int lastSlot = 0; int maxD[4] = {0, 1, 0, 0}; bool unl[4] = {true, true, false, false}; };
 struct Npc { std::string floor; float baseX = 0, x = 0; bool visible = true; float phase = 0; int dir = 1; bool still = false; float goal = -1, spd = 4; };
 struct Actor { std::string key; float x = 640, tx = 640, spd = 4; int dir = 1, anim = 0, animT = 0, emoteT = 0; std::string animName, emote; bool walking = false; };
 struct Particle { float x, y, vx, vy; int life, maxlife; Col c; int type; };
@@ -52,7 +52,7 @@ struct Game {
     std::vector<Actor> actors; std::vector<Particle> parts;
     float bars = 0; bool barsOn = false; bool rain = false; int fwT = 0, flickerT = 0, beesT = 0; float dark = 0;
     std::string focusKey; float pgoal = -1, pspd = 4;
-    int regScroll = 0, custSel = 0, custSpin = 0;
+    int regScroll = 0, custSel = 0, custSpin = 0, dsCh = 1, endCh = 1;
     // fx
     int flash = 0, shake = 0; float fade = 0, fadeTarget = 0;
     int fadePhase = 0; std::string pendingFloor;
@@ -116,8 +116,10 @@ static void applyLook() { CharDef* c = charBy("amir"); if (c) c->look = lookFrom
 static void saveSettings() {
     ensureDir();
     std::string s = "textspeed=" + std::to_string(g.st.textSpeed) + "\nscanlines=" + std::to_string(g.st.scanlines ? 1 : 0) +
-                    "\nlastslot=" + std::to_string(g.st.lastSlot) + "\nmaxday=" + std::to_string(g.st.maxDay) +
-                    "\nauto=" + std::to_string(g.st.autoAdv) + "\nch3=" + std::to_string(g.st.ch3 ? 1 : 0) + "\nlook=" + appearStr() + "\n";
+                    "\nlastslot=" + std::to_string(g.st.lastSlot) + "\nmaxday=" + std::to_string(g.st.maxD[1]) +
+                    "\nmax2=" + std::to_string(g.st.maxD[2]) + "\nmax3=" + std::to_string(g.st.maxD[3]) +
+                    "\nunl2=" + std::to_string(g.st.unl[2] ? 1 : 0) + "\nunl3=" + std::to_string(g.st.unl[3] ? 1 : 0) +
+                    "\nauto=" + std::to_string(g.st.autoAdv) + "\nlook=" + appearStr() + "\n";
     writeFile(std::string(SAVE_DIR) + "settings.cfg", s);
 }
 static void saveProgress() {
@@ -131,9 +133,15 @@ static void loadSettings() {
     if (kv.count("textspeed")) g.st.textSpeed = std::max(0, std::min(3, atoi(kv["textspeed"].c_str())));
     if (kv.count("scanlines")) g.st.scanlines = atoi(kv["scanlines"].c_str()) != 0;
     if (kv.count("lastslot")) g.st.lastSlot = atoi(kv["lastslot"].c_str());
-    if (kv.count("maxday")) g.st.maxDay = std::max(1, std::min(31, atoi(kv["maxday"].c_str())));
+    if (kv.count("maxday")) g.st.maxD[1] = std::max(1, std::min(31, atoi(kv["maxday"].c_str())));
+    if (kv.count("max2")) g.st.maxD[2] = std::max(0, std::min(35, atoi(kv["max2"].c_str())));
+    if (kv.count("max3")) g.st.maxD[3] = std::max(0, std::min(40, atoi(kv["max3"].c_str())));
+    if (kv.count("unl2")) g.st.unl[2] = atoi(kv["unl2"].c_str()) != 0;
+    else if (kv.count("ch3")) g.st.unl[2] = atoi(kv["ch3"].c_str()) != 0;   // v0.3.0 settings: "ch3" meant "finished Day 31"
+    if (kv.count("unl3")) g.st.unl[3] = atoi(kv["unl3"].c_str()) != 0;
+    if (g.st.unl[2] && g.st.maxD[2] < 1) g.st.maxD[2] = 1;
+    if (g.st.unl[3] && g.st.maxD[3] < 1) g.st.maxD[3] = 1;
     if (kv.count("auto")) g.st.autoAdv = std::max(0, std::min(3, atoi(kv["auto"].c_str())));
-    if (kv.count("ch3")) g.st.ch3 = atoi(kv["ch3"].c_str()) != 0;
     if (kv.count("look")) {
         std::vector<std::string> p = splitStr(kv["look"], ',');
         int* f[] = {&APP.skin, &APP.hairStyle, &APP.hairCol, &APP.height, &APP.top, &APP.topCol, &APP.pants, &APP.acc, &APP.tag14};
@@ -164,7 +172,7 @@ static bool readSlot(int s) {
     }
     g.slot = s;
     g.chapter = kv.count("chapter") ? std::max(1, std::min(3, atoi(kv["chapter"].c_str()))) : 1;
-    g.day = std::max(1, std::min(g.chapter == 3 ? 3 : 31, atoi(kv["day"].c_str())));
+    g.day = std::max(1, std::min(CH_LEN[g.chapter], atoi(kv["day"].c_str())));
     g.playFrames = atol(kv["frames"].c_str());
     parseFlags(kv["flags"], g.flags);
     return true;
@@ -281,12 +289,9 @@ static bool anyWalking() {
     for (auto& kv : g.npcs) if (kv.second.goal >= 0) return true;
     return g.pgoal >= 0;
 }
-static std::string blockName(int d) { return (g.chapter == 3 ? "c3_" : "day_") + std::to_string(d); }
-static int lastDay() { return g.chapter == 3 ? 3 : 31; }
-static std::string dayTitle(int d) {
-    auto& m = g.chapter == 3 ? DAY_TITLE3 : DAY_TITLE;
-    auto it = m.find(d); return it == m.end() ? "" : it->second;
-}
+static std::string blockName(int d) { return (g.chapter == 1 ? "day_" : g.chapter == 2 ? "c2_" : "c3_") + std::to_string(d); }
+static int lastDay() { return CH_LEN[g.chapter]; }
+static std::string dayTitle(int d) { return dayTitleOf(g.chapter, d); }
 
 static void vmRun() {
     int guard = 0;
@@ -296,6 +301,7 @@ static void vmRun() {
         Frame& f = g.stack.back();
         if (f.pc >= (int)f.b->cmds.size()) { g.stack.pop_back(); continue; }
         Cmd& c = f.b->cmds[f.pc];
+        if (getenv("BOTTRACE")) fprintf(stderr, "[vm] %s:%d op=%d line=%d a=%.30s\n", f.b->name.c_str(), f.pc, (int)c.op, c.line, c.a.c_str());
         switch (c.op) {
             case O_SAY: f.pc++; startSay(c.a, c.b); return;
             case O_CHOOSE:
@@ -318,7 +324,7 @@ static void vmRun() {
                 g.mini = m; g.vs = V_MINI; return;
             }
             case O_CARD: f.pc++; g.cTitle = c.a; g.cSub = c.b; g.cT = 0; g.vs = V_CARD; return;
-            case O_TITLE: f.pc++; g.cTitle = (g.chapter == 3 ? "CHAPTER 3 - DAY " : "DAY ") + std::to_string(g.day); g.cSub = c.a; g.cT = 0; g.vs = V_CARD; return;
+            case O_TITLE: f.pc++; g.cTitle = (g.chapter > 1 ? "CHAPTER " + std::to_string(g.chapter) + " - DAY " : std::string("DAY ")) + std::to_string(g.day); g.cSub = c.a; g.cT = 0; g.vs = V_CARD; return;
             case O_SCENE: {
                 f.pc++;
                 std::vector<std::string> w = words(c.a);
@@ -430,6 +436,7 @@ static void vmRun() {
 }
 
 static bool awaitEvent(const std::string& type, const std::string& arg) {
+    if (getenv("BOTDBG")) { fprintf(stderr, "[await] %s %s vs=%d stack=%zu top=%s pc=%d\n", type.c_str(), arg.c_str(), (int)g.vs, g.stack.size(), g.stack.empty() ? "-" : g.stack.back().b->name.c_str(), g.stack.empty() ? -1 : g.stack.back().pc); }
     if (g.vs != V_AWAIT || g.stack.empty()) return false;
     Frame& f = g.stack.back();
     if (f.pc >= (int)f.b->cmds.size()) return false;
@@ -441,11 +448,9 @@ static bool awaitEvent(const std::string& type, const std::string& arg) {
 static void startDay(int d) {
     g.day = std::max(1, std::min(lastDay(), d));
     g.dayFlags = g.flags;
-    if (g.chapter == 1) {
-        if (g.day > g.st.maxDay) g.st.maxDay = g.day;
-        g.progressFlags[g.day] = flagsStr(g.flags);
-        saveProgress();
-    }
+    if (g.day > g.st.maxD[g.chapter]) g.st.maxD[g.chapter] = g.day;
+    g.progressFlags[pkKey(g.chapter, g.day)] = flagsStr(g.flags);
+    saveProgress();
     writeSlot(g.slot);
     resetWorld();
     g.stack.clear();
@@ -462,28 +467,19 @@ static void newGame(int slot) {
     g.mode = M_PLAY;
     startDay(1);
 }
-static void startDayFromSelect(int d) {
-    // restore flag snapshot of that day if we have one
-    auto it = g.progressFlags.find(d);
+static void startDayFromSelect(int ch, int d) {
+    // restore flag snapshot of that day if we have one; otherwise carry the finished state of the chapter before
+    g.chapter = ch;
     g.flags.clear();
+    auto it = g.progressFlags.find(pkKey(ch, d));
     if (it != g.progressFlags.end()) parseFlags(it->second, g.flags);
-    else setF("lock_roof", d >= 10 ? 0 : 1);
-    if (d < 10) setF("lock_roof", 1);
+    else if (ch > 1 && (it = g.progressFlags.find(pkFinal(ch - 1))) != g.progressFlags.end()) { parseFlags(it->second, g.flags); g.flags.erase("won"); g.flags.erase("skipped"); }
+    if (ch == 1) setF("lock_roof", d >= 10 ? 0 : 1);
+    else setF("lock_roof", 0);
+    if (ch == 1 && d < 10) setF("lock_roof", 1);
     if (g.slot < 1) g.slot = 1;
-    g.chapter = 1;
     g.mode = M_PLAY;
     startDay(d);
-}
-static void startChapter3(int slot) {
-    g.slot = slot; g.chapter = 3; g.playFrames = 0;
-    g.flags.clear();
-    auto it = g.progressFlags.find(32);
-    if (it != g.progressFlags.end()) parseFlags(it->second, g.flags);
-    else { it = g.progressFlags.find(31); if (it != g.progressFlags.end()) parseFlags(it->second, g.flags); }
-    g.flags.erase("won"); g.flags.erase("skipped");
-    setF("lock_roof", 0);
-    g.mode = M_PLAY;
-    startDay(1);
 }
 
 // ------------------------------------------------------------ interactions
@@ -669,11 +665,17 @@ static void updateVM(const Input& in) {
             if ((g.cT > 60 && in.hit(B_A)) || g.cT > 260) {
                 if (g.day >= lastDay()) {
                     g.mode = M_ENDING; g.vs = V_NONE; g.stack.clear(); g.cT = 0;
-                    if (g.chapter == 1) {
-                        g.progressFlags[32] = flagsStr(g.flags); saveProgress();   // final state, used to start Chapter 3
-                        if (!g.st.ch3) { g.st.ch3 = true; setF("ch3_new", 1); }
-                        saveSettings();
+                    g.endCh = g.chapter;
+                    g.progressFlags[pkFinal(g.chapter)] = flagsStr(g.flags); saveProgress();   // final state of this chapter
+                    if (g.chapter < 3) {
+                        // same save slot continues straight into the next chapter
+                        int nx = g.chapter + 1;
+                        g.st.unl[nx] = true; if (g.st.maxD[nx] < 1) g.st.maxD[nx] = 1;
+                        g.flags.erase("won"); g.flags.erase("skipped");
+                        g.dayFlags = g.flags; g.chapter = nx; g.day = 1; g.playFrames = g.playFrames;
+                        writeSlot(g.slot);
                     }
+                    saveSettings();
                 } else startDay(g.day + 1);
             }
         } break;

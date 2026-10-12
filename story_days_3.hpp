@@ -149,7 +149,6 @@ endday
 # ================================================================ DAY 16
 script day_16
 title The Welcome Basket
-card CHAPTER 2|Further Inn
 bars on
 scene room amir
 cast amir 760

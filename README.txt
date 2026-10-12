@@ -1,4 +1,4 @@
-ILOT14 WORLD  v0.3.0  (Nintendo Switch homebrew, C++ / SDL2 / libnx)
+ILOT14 WORLD  v0.4.0  (Nintendo Switch homebrew, C++ / SDL2 / libnx)
 
 CONTROLS
   Left stick / D-pad   walk (menus: move)
@@ -57,3 +57,10 @@ WHAT'S NEW IN v0.3.0
 - Menu shortcuts: L/R chapter jump (Day Select), X random / Y reset (Customize), key repeat on D-pad.
 - Customize your look, bot owners, "YOUR BOT" = Bolt.
 - Old saves carry over (a .bak copy is made of each old save).
+
+v0.4.0
+- Chapter 1 = 31 days, Chapter 2 = 35 days, Chapter 3 = 40 days. All in ONE save slot; finishing a chapter continues into the next.
+- Chapter 2 unlocks after Ch1 Day 31, Chapter 3 after Ch2 Day 35.
+- New minigames: Memory Pads (simon), Sneak, Rhythm, Dodge arena, Defend lanes. Harder each chapter.
+- More cutscenes. Touch warning is small, top-right.
+- Saves from v0.2/v0.3 carry over (.bak copy kept).

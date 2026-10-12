@@ -23,7 +23,12 @@ struct Block {
 };
 
 static std::map<std::string, Block> BLOCKS;
-static std::map<int, std::string> DAY_TITLE, DAY_TITLE3;
+static const int CH_LEN[4] = {0, 31, 35, 40};
+static const char* CH_NAME[4] = {"", "Lost the Ash", "Further Inn", "Lowest Point"};
+static std::map<int, std::string> DAY_T[4];
+static std::string dayTitleOf(int ch, int d) { auto it = DAY_T[ch].find(d); return it == DAY_T[ch].end() ? "" : it->second; }
+static int pkKey(int ch, int d) { return ch == 1 ? d : ch * 100 + d; }
+static int pkFinal(int ch) { return ch == 1 ? 32 : ch * 100 + 99; }
 static std::vector<std::string> STORY_ERRORS;
 
 static std::vector<std::string> words(const std::string& s) {
@@ -76,7 +81,7 @@ static void parseStory(const std::string& text, const std::string& srcName) {
             continue;
         }
         if (!cur) { storyErr(srcName, ln, "command outside script"); continue; }
-        if (cmd == "label") { cur->labels[rest] = (int)cur->cmds.size(); continue; }
+        if (cmd == "label") { if (rest == "end") storyErr(srcName, ln, "label named 'end' is reserved (it ends the script)"); cur->labels[rest] = (int)cur->cmds.size(); continue; }
         auto it = OPS.find(cmd);
         if (it == OPS.end()) { storyErr(srcName, ln, "unknown command '" + cmd + "'"); continue; }
         Cmd c; c.op = it->second; c.line = ln;
@@ -126,8 +131,9 @@ static void parseStory(const std::string& text, const std::string& srcName) {
             case O_BARS: c.a = rest; break;
             case O_FOCUS: c.a = rest; break;
             case O_TITLE: c.a = rest;
-                if (cur->name.rfind("day_", 0) == 0) DAY_TITLE[atoi(cur->name.c_str() + 4)] = rest;
-                if (cur->name.rfind("c3_", 0) == 0) DAY_TITLE3[atoi(cur->name.c_str() + 3)] = rest;
+                if (cur->name.rfind("day_", 0) == 0) DAY_T[1][atoi(cur->name.c_str() + 4)] = rest;
+                if (cur->name.rfind("c2_", 0) == 0) DAY_T[2][atoi(cur->name.c_str() + 3)] = rest;
+                if (cur->name.rfind("c3_", 0) == 0) DAY_T[3][atoi(cur->name.c_str() + 3)] = rest;
                 break;
             case O_TOAST: c.a = rest; break;
             case O_LOCK: case O_UNLOCK: c.a = rest; break;
@@ -180,7 +186,7 @@ static void validateStory() {
                     break;
                 case O_MINI: {
                     std::vector<std::string> w = words(c.a);
-                    static const char* kinds[] = {"roundup", "timing", "fight", "catch", "maze", "roof"};
+                    static const char* kinds[] = {"roundup", "timing", "fight", "catch", "maze", "roof", "simon", "sneak", "rhythm", "dodge", "defend"};
                     bool ok = false; for (auto k : kinds) if (!w.empty() && w[0] == k) ok = true;
                     if (!ok) storyErr(b.name, c.line, "unknown minigame '" + c.a + "'");
                 } break;
@@ -188,10 +194,11 @@ static void validateStory() {
             }
         }
     }
-    for (int d = 1; d <= 31; d++)
-        if (!BLOCKS.count("day_" + std::to_string(d))) STORY_ERRORS.push_back("missing script day_" + std::to_string(d));
-    for (int d = 1; d <= 3; d++)
-        if (!BLOCKS.count("c3_" + std::to_string(d))) STORY_ERRORS.push_back("missing script c3_" + std::to_string(d));
+    for (int ch = 1; ch <= 3; ch++)
+        for (int d = 1; d <= CH_LEN[ch]; d++) {
+            std::string n = std::string(ch == 1 ? "day_" : ch == 2 ? "c2_" : "c3_") + std::to_string(d);
+            if (!BLOCKS.count(n)) STORY_ERRORS.push_back("missing script " + n);
+        }
     for (auto& ch : CHARS)
         if (!BLOCKS.count("chat_" + ch.key)) STORY_ERRORS.push_back("note: no chat_" + ch.key + " (will use chat_default)");
 }
