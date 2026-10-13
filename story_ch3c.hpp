@@ -8,9 +8,9 @@ scene room amir dalia gabriel
 say |Day 21. The Echo Room. A round white space where every sound comes back a heartbeat late. Dalia says "hello" and the room says "hello" and then "help."
 bars off
 scene off
-warp echo 200
-npc dalia echo 300
-npc gabriel echo 400
+warp ctrl 200
+npc dalia ctrl 300
+npc gabriel ctrl 400
 goal Talk to Dalia.
 await talk dalia
 mini simon 9 3 22
@@ -105,8 +105,8 @@ scene deep amir dalia
 say |Day 22. The echoes don't attack. They just stand there, watching, like friends who aren't sure they're allowed to sit down.
 bars off
 scene off
-warp echo 200
-npc dalia echo 300
+warp ctrl 200
+npc dalia ctrl 300
 goal Talk to Dalia.
 await talk dalia
 mini catch 14 3 echoes 3
@@ -189,8 +189,8 @@ scene deep amir amir_l4 prime
 say |Day 23. The echoes sit around Prime in a circle. He is explaining dust. Slowly. With diagrams.
 bars off
 scene off
-warp echo 200
-npc prime echo 600
+warp ctrl 200
+npc prime ctrl 600
 goal Talk to Prime.
 await talk prime
 mini roundup 10 45 3
@@ -272,9 +272,9 @@ scene deep amir gabriel
 say |Day 24. The Echo Room has a door we haven't opened. It's painted the color of the Backrooms wallpaper. Gabriel refuses to touch the handle.
 bars off
 scene off
-warp echo 200
-npc gabriel echo 350
-obj wrongdoor echo 1500 Wallpaper door
+warp ctrl 200
+npc gabriel ctrl 350
+obj wrongdoor ctrl 1500 Wallpaper door
 goal Open the wallpaper door.
 await use wrongdoor
 mini maze 3 6
@@ -369,9 +369,9 @@ scene deep amir sofia kenzy
 say |Day 25. The hum is louder. The whole level vibrates at a pitch just below hearing.
 bars off
 scene off
-warp echo 200
-npc sofia echo 500
-npc kenzy echo 700
+warp ctrl 200
+npc sofia ctrl 500
+npc kenzy ctrl 700
 goal Talk to Sofia.
 await talk sofia
 mini rhythm 34 4 130
@@ -453,12 +453,12 @@ scene deep amir dalia gabriel
 say |Day 26. The tokens from Chapter 1 are warm in my pocket. They start to pulse in time with the hum.
 bars off
 scene off
-warp echo 200
-npc dalia echo 320
+warp ctrl 200
+npc dalia ctrl 320
 clearitems
-spawn token echo 700
-spawn token echo 1100
-spawn token echo 1600
+spawn token ctrl 700
+spawn token ctrl 1100
+spawn token ctrl 1600
 goal Collect 3 brass tokens that have rolled away.
 await items 3
 clearitems
@@ -542,11 +542,11 @@ scene deep amir dalia gabriel prime
 say |Day 27. The staircase is a spiral. Each step has a nameplate. Some of them are scratched out.
 bars off
 scene off
-warp echo 200
-npc gabriel echo 350
-npc dalia echo 300
-npc prime echo 450
-obj stairs echo 1700 Staircase
+warp ctrl 200
+npc gabriel ctrl 350
+npc dalia ctrl 300
+npc prime ctrl 450
+obj stairs ctrl 1700 Staircase
 goal Walk to the top of the staircase and go down.
 await use stairs
 mini sneak 5 3 3
@@ -640,9 +640,9 @@ scene deep amir dalia
 say |Day 28. I put my hand on the handprint. It fits. It's warm. It's been waiting.
 bars off
 scene off
-warp echo 200
-npc dalia echo 300
-obj handprint echo 1400 Handprint door
+warp ctrl 200
+npc dalia ctrl 300
+obj handprint ctrl 1400 Handprint door
 goal Place your hand on the handprint.
 await use handprint
 mini timing 8 3 Hold_the_door 4
@@ -724,10 +724,10 @@ say |Day 29. She sits on the throne. A tall figure of grey and ash, wearing a cr
 say ???|I have kept this building clean for forty years. And you tracked mud into my kingdom.
 bars off
 scene off
-warp echo 200
-npc prime echo 350
-npc dalia echo 250
-npc gabriel echo 300
+warp ctrl 200
+npc prime ctrl 350
+npc dalia ctrl 250
+npc gabriel ctrl 300
 goal Talk to Prime.
 await talk prime
 mini fight 16 6 boss_Queen
@@ -810,8 +810,8 @@ scene deep amir prime amir_l4
 say |Day 30. The grey drifts rise and settle into the shape of a very small, very tired bot. Prime sits down next to it. He doesn't say anything for a long time.
 bars off
 scene off
-warp echo 200
-npc prime echo 400
+warp ctrl 200
+npc prime ctrl 400
 goal Talk to Prime.
 await talk prime
 mini catch 16 3 dust_motes 3

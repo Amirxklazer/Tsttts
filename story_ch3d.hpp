@@ -8,10 +8,10 @@ scene deep amir dalia gabriel
 say |Day 31. A trapdoor under the throne. Inside, a long ladder. Warm air, the smell of old paper and ozone.
 bars off
 scene off
-warp archive 200
-npc dalia archive 300
-npc gabriel archive 350
-obj trapdoor archive 1900 Trapdoor
+warp ulobby 200
+npc dalia ulobby 300
+npc gabriel ulobby 350
+obj trapdoor ulobby 1900 Trapdoor
 goal Climb down the trapdoor.
 await use trapdoor
 mini maze 4 7
@@ -93,8 +93,8 @@ scene deep amir kenzy gabriel
 say |Day 32. The heart is out of sync. Gears grind. A pressure gauge twitches in the red.
 bars off
 scene off
-warp archive 200
-npc kenzy archive 800
+warp ulobby 200
+npc kenzy ulobby 800
 goal Talk to Haydar at the control cage.
 await talk kenzy
 mini timing 9 3 Tune_the_gears 4
@@ -175,15 +175,15 @@ scene deep amir dalia gabriel bolt
 say |Day 33. The heart needs light. Dozens of emergency lamps have gone out across Level 18, and Bolt has the map.
 bars off
 scene off
-warp lvl18 250
-npc bolt lvl18 350
+warp shaft 250
+npc bolt shaft 350
 clearitems
-spawn lamp lvl18 500
-spawn lamp lvl18 900
-spawn lamp lvl18 1300
-spawn lamp lvl18 1800
-spawn lamp lvl18 2300
-spawn lamp lvl18 2800
+spawn lamp shaft 500
+spawn lamp shaft 900
+spawn lamp shaft 1300
+spawn lamp shaft 1800
+spawn lamp shaft 2300
+spawn lamp shaft 2800
 goal Relight 6 lamps along Level 18.
 await items 6
 clearitems
@@ -279,9 +279,9 @@ scene deep amir dalia gabriel prime
 say |Day 34. A line of familiar faces walks out of the grey door in Parking 2. Amine with snacks. Aya with a lamp. Youcef pulling a cart of batteries. They heard the knocking too.
 bars off
 scene off
-warp camp 300
-npc dalia camp 450
-npc gabriel camp 520
+warp bots 300
+npc dalia bots 450
+npc gabriel bots 520
 goal Talk to Dalia.
 await talk dalia
 mini defend 5 6 3
@@ -363,9 +363,9 @@ scene deep amir dalia gabriel kenzy prime
 say |Day 35. Haydar spreads a map across the table. A circle in the middle of the heart. A line from there to every door.
 bars off
 scene off
-warp camp 300
-npc kenzy camp 600
-npc prime camp 700
+warp bots 300
+npc kenzy bots 600
+npc prime bots 700
 goal Talk to Haydar.
 await talk kenzy
 mini simon 10 3 20
@@ -448,8 +448,8 @@ scene deep amir dalia
 say |Day 36. A quiet day. Dalia fixes my hoodie sleeve. Gabriel sharpens a rope. Prime is polishing the kettle.
 bars off
 scene off
-warp camp 300
-npc dalia camp 450
+warp bots 300
+npc dalia bots 450
 goal Talk to Dalia.
 await talk dalia
 mini rhythm 40 4 140
@@ -544,11 +544,11 @@ scene deep amir dalia gabriel prime
 say |Day 37. The Echo Room. The ten Amirs stand in a line, each holding a lit lamp.
 bars off
 scene off
-warp echo 200
-npc dalia echo 300
-npc gabriel echo 350
-npc prime echo 400
-obj finaldoor echo 1700 The last door
+warp ctrl 200
+npc dalia ctrl 300
+npc gabriel ctrl 350
+npc prime ctrl 400
+obj finaldoor ctrl 1700 The last door
 goal Walk to the last door.
 await use finaldoor
 mini sneak 6 3 4
@@ -632,10 +632,10 @@ say |Day 38. Through the door: a long white corridor. At the end, a figure that 
 say Shade|I'm what's left over. Every choice you didn't make. Every door you didn't open.
 bars off
 scene off
-warp echo 200
-npc prime echo 350
-npc dalia echo 250
-npc gabriel echo 300
+warp ctrl 200
+npc prime ctrl 350
+npc dalia ctrl 250
+npc gabriel ctrl 300
 goal Talk to Prime.
 await talk prime
 mini fight 22 7 boss_Shade
@@ -718,11 +718,11 @@ scene deep amir dalia gabriel prime
 say |Day 39. The heart restarts. The long lift, the one older than the building, hums back to life. We load everything. Bots, friends, ten Amirs, one piano. Somehow.
 bars off
 scene off
-warp lvl18 250
-npc dalia lvl18 350
-npc gabriel lvl18 400
-npc prime lvl18 450
-obj biglift lvl18 2600 Old lift
+warp shaft 250
+npc dalia shaft 350
+npc gabriel shaft 400
+npc prime shaft 450
+obj biglift shaft 2600 Old lift
 goal Walk to the old lift and go up.
 await use biglift
 mini dodge 34 4 5

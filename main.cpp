@@ -277,8 +277,16 @@ static void handleTaps(const Input& in) {
     }
 }
 
+static int introT = 0; static bool introOn = true;
 static void update(const Input& in) {
     g.frame++;
+    if (introOn) {
+        introT++;
+        bool skip = !in.taps.empty() || in.hit(B_A) || in.hit(B_B) || in.hit(B_PLUS) || in.hit(B_X) || in.hit(B_Y);
+        if (skip && introT > 15) { introOn = false; }
+        if (introT >= 270) introOn = false;
+        return;
+    }
     if (g.touchWarn > 0) g.touchWarn--;
     handleTaps(in);
     if (g.msgT > 0) g.msgT--;
@@ -309,6 +317,7 @@ static void drawPlay() {
 
 static void draw() {
     HITS.clear();
+    if (introOn) { drawIntro(introT); return; }
     g_backBtn = g.mode != M_TITLE && g.mode != M_PLAY && g.mode != M_ENDING;
     switch (g.mode) {
         case M_TITLE: g_hint = "D-pad Move    A Select"; break;
@@ -470,6 +479,7 @@ int main(int argc, char** argv) {
         else if (a == "--bot") BOT = true;
         else if (a == "--ai") ai = true;
         else if (a == "--nodraw") NODRAW = true;
+        else if (a == "--nointro") introOn = false;
         else if (a == "--fast") fast = true;
         else if (a == "--from") botFromDay = atoi(next().c_str());
         else if (a == "--to") botToDay = atoi(next().c_str());
@@ -525,6 +535,7 @@ int main(int argc, char** argv) {
 #endif
         Uint32 t0 = SDL_GetTicks();
         G.inject = tapInject; tapInject = 0;
+        if (BOT) introOn = false;
         if (BOT) botThink();
         applySeq();
         botFrames++;

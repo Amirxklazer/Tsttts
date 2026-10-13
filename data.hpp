@@ -110,14 +110,6 @@ static void buildData() {
         {{"NST-001", "Aya", "aya_n"}, {"NST-003", "Sofia", "sofia"}});
     // extra non-elevator places
     addFloor("out1", "Outside parking", "outside", 0, C(110, 150, 200), C(255, 255, 255), {}, false);
-    addFloor("lvl18", "Level 18", "deep", -9, C(30, 48, 58), C(255, 140, 50), {}, false);
-    addFloor("cradle", "Service Corridor 0", "deep", -9, C(60, 52, 40), C(255, 140, 50), {}, false);
-    addFloor("room0", "Room 000", "inn", -8, C(60, 40, 50), C(255, 190, 90), {}, false);
-    addFloor("camp", "Waystation", "deep", -9, C(40, 54, 60), C(120, 255, 190), {}, false);
-    addFloor("furnace", "The Furnace", "deep", -9, C(70, 36, 30), C(255, 110, 40), {}, false);
-    addFloor("flood", "Flooded Hall", "deep", -9, C(26, 50, 70), C(120, 200, 255), {}, false);
-    addFloor("archive", "The Archive", "deep", -9, C(50, 44, 66), C(220, 180, 255), {}, false);
-    addFloor("echo", "The Echo Room", "deep", -9, C(20, 20, 28), C(255, 255, 255), {}, false);
     addFloor("reghaia", "Reghaia", "outside", 0, C(110, 150, 200), C(255, 255, 255), {}, false);
     addFloor("madania", "El Madania", "outside", 0, C(150, 170, 200), C(255, 230, 160), {}, false);
     addFloor("cinema", "Cinema", "cinema", 0, C(60, 20, 40), C(255, 200, 80), {}, false);
@@ -125,15 +117,9 @@ static void buildData() {
     addFloor("room_amir", "Amir's room (L-001)", "roomint", 0, C(70, 80, 120), C(255, 140, 60), {}, false);
     addFloor("room_dalia", "Dalia's room (M-002)", "roomint", 0, C(90, 120, 170), C(255, 230, 240), {}, false);
     addFloor("room_gabriel", "Gabriel's room (M-004)", "roomint", 0, C(52, 54, 62), C(200, 200, 215), {}, false);
+    floorBy("shaft")->width = 3000; floorBy("vent")->width = 2800; floorBy("park2")->width = 2800; floorBy("ulobby")->width = 2600; floorBy("bots")->width = 2600; floorBy("inn")->width = 2600;
     floorBy("reghaia")->width = 3200; floorBy("madania")->width = 2800; floorBy("cinema")->width = 2200; floorBy("school")->width = 2600;
     floorBy("room_amir")->width = 1700; floorBy("room_dalia")->width = 1700; floorBy("room_gabriel")->width = 1700;
-    floorBy("lvl18")->width = 3000;
-    floorBy("room0")->width = 2200;
-    floorBy("camp")->width = 2400;
-    floorBy("furnace")->width = 2800;
-    floorBy("flood")->width = 2800;
-    floorBy("archive")->width = 2600;
-    floorBy("echo")->width = 2000;
 
     Col dk = C(30, 22, 18);
     // Main

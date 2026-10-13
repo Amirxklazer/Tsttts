@@ -78,9 +78,9 @@ say Gabriel|How many floors have we gone?
 say Dalia|I stopped counting at "too many".
 bars off
 scene off
-warp room0 400
-npc dalia room0 520
-npc gabriel room0 640
+warp inn 400
+npc dalia inn 520
+npc gabriel inn 640
 goal Walk through the stairwell. Dodge the falling debris.
 mini dodge 22 4 2
 ifnot skipped down
@@ -154,8 +154,8 @@ say Dalia|Prime! What are you doing down here?
 say Prime|THE CALLING. I RECEIVED A MESSAGE: "SWEEP THE FLOORS BELOW THE FLOORS."
 bars off
 scene off
-warp room0 600
-npc prime room0 900
+warp inn 600
+npc prime inn 900
 goal Talk to Prime.
 await talk prime
 say Prime|THE INN WAS BUILT ON A FLOOR THAT WAS BUILT ON A FLOOR THAT WAS BUILT ON A FLOOR. I HAVE SWEPT EIGHT SO FAR.
@@ -229,8 +229,8 @@ say Amir|What are they saying?
 say Sofia|Names. They're saying names. Everyone's names. And a place. "Level eighteen."
 bars off
 scene off
-warp room0 800
-npc sofia room0 1100
+warp inn 800
+npc sofia inn 1100
 goal Talk to Sofia.
 await talk sofia
 say Sofia|I can hear the order they say them in. Repeat it with me. It might open a way forward.
@@ -295,10 +295,10 @@ say Prime|DUST DETECTED. LOTS OF IT. IT IS... RUDE.
 emote dalia !
 bars off
 scene off
-warp room0 1200
-npc dalia room0 1000
-npc gabriel room0 900
-npc prime room0 1100
+warp inn 1200
+npc dalia inn 1000
+npc gabriel inn 900
+npc prime inn 1100
 goal Fight the Warden.
 mini fight 18 7 boss_Warden
 ifnot skipped beaten
@@ -521,8 +521,8 @@ say Gabriel|I lied. I always knew. I just didn't want to say it out loud.
 anim gabriel bow
 bars off
 scene off
-warp room0 1700
-npc gabriel room0 1900
+warp inn 1700
+npc gabriel inn 1900
 goal Talk to Gabriel at the broken bridge.
 await talk gabriel
 say Gabriel|I tie it. You walk. Hit each step when it lights up. If you miss, the plank drops.
@@ -949,10 +949,10 @@ say Gabriel|You labeled a lever to yourself?
 say Prime|IT IS A VERY IMPORTANT LEVER.
 bars off
 scene off
-warp room0 1300
-npc prime room0 1500
-npc dalia room0 1400
-npc gabriel room0 1600
+warp inn 1300
+npc prime inn 1500
+npc dalia inn 1400
+npc gabriel inn 1600
 goal Talk to Prime at the lever.
 await talk prime
 say Prime|THE LEVER OPENS THE LOWEST DOOR. BUT THE WAY IS SHAKING. THE WALLS ARE LOOSE.

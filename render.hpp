@@ -1092,3 +1092,68 @@ static void drawBadgeToast() {
     text("BADGE UNLOCKED", x + 76, y + 10, 1.1f, ORANGE);
     text(g.badgeToast, x + 76, y + 34, 1.7f, WHITE);
 }
+
+// ---------------------------------------------------------------- 14 logo + intro
+static void polyFill(const std::vector<SDL_FPoint>& p, Col c) {
+    std::vector<SDL_Vertex> v;
+    for (auto& q : p) { SDL_Vertex x; x.position = q; x.color = {c.r, c.g, c.b, c.a}; x.tex_coord = {0, 0}; v.push_back(x); }
+    std::vector<int> idx;
+    for (size_t i = 1; i + 1 < p.size(); i++) { idx.push_back(0); idx.push_back((int)i); idx.push_back((int)i + 1); }
+    SDL_RenderGeometry(G.ren, nullptr, v.data(), (int)v.size(), idx.data(), (int)idx.size());
+}
+// logo coordinates live in a 270x270 box; shapes are lists of convex polygons
+typedef std::vector<std::vector<SDL_FPoint>> Shapes;
+static void logoShapes(float ox, float oy, float s, const Shapes& sh, Col fill, float ay) {
+    float t = 5 * s / 2.2f;
+    auto map = [&](const std::vector<SDL_FPoint>& p) {
+        std::vector<SDL_FPoint> a;
+        for (auto& q : p) a.push_back({ox + (q.x - 128) * s, oy + (q.y - 130) * s + ay});
+        return a;
+    };
+    for (auto& p : sh) {
+        auto a = map(p);
+        for (int d = 0; d < 12; d++) {
+            float ang = d * 0.5236f;
+            std::vector<SDL_FPoint> o;
+            for (auto& q : a) o.push_back({q.x + cosf(ang) * t, q.y + sinf(ang) * t});
+            polyFill(o, C(0, 0, 0, fill.a));
+        }
+    }
+    for (auto& p : sh) polyFill(map(p), fill);
+}
+static void drawLogo14(float cx, float cy, float s, Col fill, float t1, float t4) {
+    float e1 = 1 - (1 - t1) * (1 - t1), e4 = 1 - (1 - t4) * (1 - t4);
+    Col f1 = fill; f1.a = (int)(255 * std::min(1.0f, t1 * 1.5f));
+    Col f4 = fill; f4.a = (int)(255 * std::min(1.0f, t4 * 1.5f));
+    Shapes one = {{{56, 98}, {104, 32}, {126, 26}, {80, 104}}, {{106, 28}, {126, 28}, {126, 112}, {106, 112}}};
+    Shapes four = {{{138, 30}, {156, 30}, {156, 160}, {138, 160}}, {{138, 142}, {200, 142}, {200, 160}, {138, 160}}, {{182, 40}, {200, 40}, {200, 234}, {182, 234}}};
+    logoShapes(cx, cy, s, one, f1, -(1 - e1) * 140 * s);
+    logoShapes(cx, cy, s, four, f4, (1 - e4) * 140 * s);
+}
+static void drawPencil(float x, float y, float s, float a) {
+    int al = (int)(255 * a);
+    // tilted pencil: body, tip, lead
+    float ang = 0.30f;
+    auto P = [&](float px, float py) { return SDL_FPoint{x + (px * cosf(ang) - py * sinf(ang)) * s, y + (px * sinf(ang) + py * cosf(ang)) * s}; };
+    polyFill({P(-7, -90), P(7, -90), P(7, 30), P(-7, 30)}, C(0, 0, 0, al));
+    polyFill({P(-5, -88), P(5, -88), P(5, 28), P(-5, 28)}, C(30, 144, 255, al));
+    polyFill({P(-7, 30), P(7, 30), P(0, 52)}, C(0, 0, 0, al));
+    polyFill({P(-4, 32), P(4, 32), P(0, 46)}, C(240, 210, 170, al));
+}
+static void drawIntro(int t) {
+    rect(0, 0, SCR_W, SCR_H, C(10, 8, 0));
+    float cx = 640, cy = 300, s = 1.5f;
+    // phase A (0-130): blue sketch version + pencil; phase B (130-250): turns orange, title text
+    float k = std::min(1.0f, std::max(0.0f, (t - 120) / 40.0f));
+    Col col = C((int)(30 + (249 - 30) * k), (int)(144 + (115 - 144) * k), (int)(255 + (22 - 255) * k));
+    float t1 = std::min(1.0f, t / 40.0f), t4 = std::min(1.0f, std::max(0.0f, (t - 25) / 40.0f));
+    drawLogo14(cx, cy, s, col, t1, t4);
+    if (t > 60 && k < 1) drawPencil(cx + 130 * s + std::min(1.0f, (t - 60) / 30.0f) * 0 , cy + 60 * s, 1.5f, std::min(1.0f, (t - 60) / 20.0f) * (1 - k));
+    if (t > 140) {
+        float a = std::min(1.0f, (t - 140) / 30.0f);
+        text("\xC3\x8E L O T 1 4   W O R L D", 640, 540, 3.4f, C(255, 255, 255, (int)(255 * a)), 1, 3);
+        text("A game by Amir", 640, 600, 1.5f, C(249, 115, 22, (int)(220 * a)), 1);
+    }
+    int fade = t < 20 ? 255 - t * 12 : (t > 245 ? (t - 245) * 17 : 0);
+    if (fade > 0) rect(0, 0, SCR_W, SCR_H, C(0, 0, 0, std::min(255, fade)));
+}

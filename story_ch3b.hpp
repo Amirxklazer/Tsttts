@@ -10,10 +10,10 @@ say Dalia|Every single plate has a name on it.
 say Gabriel|Some of them have two.
 bars off
 scene off
-warp archive 200
-npc dalia archive 320
-npc gabriel archive 420
-obj archdoor archive 1500 Archive doors
+warp ulobby 200
+npc dalia ulobby 320
+npc gabriel ulobby 420
+obj archdoor ulobby 1500 Archive doors
 goal Walk to the Archive doors at the east end and use them.
 await use archdoor
 mini timing 6 4 Open_the_Archive 3
@@ -84,9 +84,9 @@ say |Day 12. The folders don't open. They don't tear. They don't burn. Haydar tr
 say Haydar|They respond to sound. Specifically, a sequence.
 bars off
 scene off
-warp archive 300
-npc kenzy archive 900
-npc dalia archive 500
+warp ulobby 300
+npc kenzy ulobby 900
+npc dalia ulobby 500
 goal Talk to Haydar at the shelves.
 await talk kenzy
 mini simon 7 3 26
@@ -171,13 +171,13 @@ scene deep amir gabriel bolt
 say |Day 13. The Archive's lower stacks are crawling with dust wraiths. Bolt volunteers to be the first line of defence. Nobody asked him to.
 bars off
 scene off
-warp archive 250
-npc gabriel archive 350
+warp ulobby 250
+npc gabriel ulobby 350
 clearitems
-spawn page archive 700
-spawn page archive 1100
-spawn page archive 1600
-spawn page archive 2100
+spawn page ulobby 700
+spawn page ulobby 1100
+spawn page ulobby 1600
+spawn page ulobby 2100
 goal Collect 4 loose pages from the lower stacks.
 await items 4
 clearitems
@@ -248,9 +248,9 @@ scene deep amir dalia
 say |Day 14. Aisle K. The shelves whisper. Not words. Breathing, mostly. Dalia holds my sleeve and pretends she isn't.
 bars off
 scene off
-warp archive 200
-npc dalia archive 300
-obj aisleK archive 1300 Aisle K
+warp ulobby 200
+npc dalia ulobby 300
+obj aisleK ulobby 1300 Aisle K
 goal Walk to the end of Aisle K.
 await use aisleK
 mini sneak 4 3 2
@@ -321,9 +321,9 @@ say |Day 15. Prime has been sorting nameplates by owner. He has a very serious v
 say Prime|THIRTY-ONE PLATES FOR LEVEL ONE. THIRTY-FIVE FOR THE INN. FORTY FOR BELOW. ONE PLATE LEFT OVER.
 bars off
 scene off
-warp archive 300
-npc prime archive 600
-npc dalia archive 420
+warp ulobby 300
+npc prime ulobby 600
+npc dalia ulobby 420
 goal Talk to Prime.
 await talk prime
 mini catch 12 3 nameplates 2
@@ -405,9 +405,9 @@ scene deep amir kenzy sofia
 say |Day 16. A round room at the center of the Archive, with one reading table and thirty chairs. Sofia hums a single low note and the chairs all turn to face the same wall.
 bars off
 scene off
-warp archive 300
-npc sofia archive 800
-npc kenzy archive 1000
+warp ulobby 300
+npc sofia ulobby 800
+npc kenzy ulobby 1000
 goal Talk to Sofia.
 await talk sofia
 mini rhythm 28 5 120
@@ -477,8 +477,8 @@ scene deep amir dalia gabriel
 say |Day 17. The unlabelled floor connects to the Archive by a maze. A hedge of grey ribbons, taller than Gabriel.
 bars off
 scene off
-warp archive 200
-obj mazeexit archive 2000 Maze exit
+warp ulobby 200
+obj mazeexit ulobby 2000 Maze exit
 goal Find your way through the ribbons to the far end.
 await use mazeexit
 mini maze 3 5
@@ -549,9 +549,9 @@ scene deep amir dalia
 say |Day 18. The black water shows reflections. Not ours. The ones from the doors. Amir with a bandaged arm. Amir with a crown of paper. Amir alone on a roof, tiny against a big sky.
 bars off
 scene off
-warp archive 200
-npc dalia archive 300
-obj fountain archive 1200 Black fountain
+warp ulobby 200
+npc dalia ulobby 300
+obj fountain ulobby 1200 Black fountain
 goal Walk to the fountain and look into the water.
 await use fountain
 mini timing 7 3 Steady_the_water 3
@@ -633,14 +633,14 @@ scene deep amir sofia
 say |Day 19. A cart of ink bottles has tipped over. The ink forms words on the floor, then sinks before anyone can read them.
 bars off
 scene off
-warp archive 250
-npc sofia archive 500
+warp ulobby 250
+npc sofia ulobby 500
 clearitems
-spawn ink archive 600
-spawn ink archive 900
-spawn ink archive 1300
-spawn ink archive 1700
-spawn ink archive 2200
+spawn ink ulobby 600
+spawn ink ulobby 900
+spawn ink ulobby 1300
+spawn ink ulobby 1700
+spawn ink ulobby 2200
 goal Collect 5 ink bottles before the words fade.
 await items 5
 clearitems
@@ -711,10 +711,10 @@ scene deep amir dalia gabriel
 say |Day 20. A door inside a door inside a door. Each smaller, each plainer, each with the same brass plate: L-001 AMIR.
 bars off
 scene off
-warp archive 250
-npc gabriel archive 400
-npc dalia archive 300
-obj nestdoor archive 1800 Nested door
+warp ulobby 250
+npc gabriel ulobby 400
+npc dalia ulobby 300
+obj nestdoor ulobby 1800 Nested door
 goal Walk to the nested doors.
 await use nestdoor
 mini defend 4 5 2

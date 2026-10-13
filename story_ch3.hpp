@@ -39,7 +39,7 @@ label go
 say Aya@aya_n|Come back. All of you. I'm keeping your rooms warm.
 say Amir|We will.
 goal Walk to the elevator and press 18.
-await floor lvl18
+await floor shaft
 bars on
 scene elev amir dalia gabriel prime
 fx shake
@@ -54,10 +54,10 @@ fx fadeout
 wait 40
 bars off
 scene off
-warp lvl18 220
-npc dalia lvl18 330
-npc gabriel lvl18 420
-npc prime lvl18 520
+warp shaft 220
+npc dalia shaft 330
+npc gabriel shaft 420
+npc prime shaft 520
 fx fadein
 toast Level 18
 say |Level 18. Dark teal walls, orange lights, pipes that hum a note I almost recognize. This isn't the Backrooms. This is somewhere the building keeps for itself.
@@ -115,17 +115,17 @@ say Gabriel|My watch says it's Tuesday. It also says it's Thursday.
 say Dalia|Both could be true.
 bars off
 scene off
-warp lvl18 220
-npc dalia lvl18 330
-npc gabriel lvl18 420
+warp shaft 220
+npc dalia shaft 330
+npc gabriel shaft 420
 clearitems
-spawn fuse lvl18 600
-spawn fuse lvl18 1300
-spawn fuse lvl18 2000
+spawn fuse shaft 600
+spawn fuse shaft 1300
+spawn fuse shaft 2000
 goal Find 3 fuses in the pipes of Level 18. Walk over them.
 await items 3
 say Gabriel|Three fuses. The big door at the end needs them.
-obj bigdoor lvl18 2500 Sealed door
+obj bigdoor shaft 2500 Sealed door
 goal Walk to the sealed door at the east end of Level 18 and use it.
 await use bigdoor
 say |Three fuse slots, each blinking amber. Each slot needs a perfectly timed push.
@@ -190,16 +190,16 @@ emote prime !
 say Dalia|Tidy? Down here?
 bars off
 scene off
-warp camp 300
-npc dalia camp 420
-npc gabriel camp 500
-npc prime camp 600
+warp bots 300
+npc dalia bots 420
+npc gabriel bots 500
+npc prime bots 600
 clearitems
 goal Walk into the camp. Pick up the 4 supplies left on the ground.
-spawn supply camp 700
-spawn supply camp 1100
-spawn supply camp 1500
-spawn supply camp 1900
+spawn supply bots 700
+spawn supply bots 1100
+spawn supply bots 1500
+spawn supply bots 1900
 await items 4
 say |A small camp. A ring of stones. A kettle still warm. A row of neatly stacked crates labelled "FOR WHOEVER COMES NEXT".
 say Gabriel|It's been used. Recently.
@@ -280,8 +280,8 @@ say Amir|Pipes don't make patterns.
 say Haydar|These ones do.
 bars off
 scene off
-warp camp 600
-npc kenzy camp 900
+warp bots 600
+npc kenzy bots 900
 goal Talk to Haydar at the camp's map table.
 await talk kenzy
 say Haydar|The east corridor is a maze of old pipes. A hum drains your stamina. Grab bottled water and reach the green exit light.
@@ -346,9 +346,9 @@ say Amir|We have to go in.
 say Gabriel|I'm aware.
 bars off
 scene off
-warp furnace 300
-npc dalia furnace 420
-npc gabriel furnace 520
+warp vent 300
+npc dalia vent 420
+npc gabriel vent 520
 goal Cross the Furnace. Dodge the jets of flame.
 mini dodge 24 4 2
 ifnot skipped crossed
@@ -410,9 +410,9 @@ say Dalia|We need a line! A lane! A... lane line!
 fx shake
 bars off
 scene off
-warp camp 800
-npc prime camp 1000
-npc dalia camp 700
+warp bots 800
+npc prime bots 1000
+npc dalia bots 700
 goal Defend the Waystation!
 mini defend 4 5 2
 ifnot skipped held
@@ -484,13 +484,13 @@ say Bolt|Beep! The water is cold! I love it!
 emote bolt !
 bars off
 scene off
-warp flood 300
-npc gabriel flood 420
+warp park2 300
+npc gabriel park2 420
 clearitems
 goal Collect 3 paper boats floating in the Flooded Hall.
-spawn boat flood 800
-spawn boat flood 1500
-spawn boat flood 2200
+spawn boat park2 800
+spawn boat park2 1500
+spawn boat park2 2200
 await items 3
 say |Each boat has a name written in blue ink. Dalia. Gabriel. Amir. In the same handwriting as the camp note.
 say Gabriel|It's mine. It says "bring the rope".
@@ -555,8 +555,8 @@ say Amir|What's it singing?
 say Sofia|A name.
 bars off
 scene off
-warp camp 900
-npc sofia camp 1200
+warp bots 900
+npc sofia bots 1200
 goal Talk to Sofia at the campfire.
 await talk sofia
 say Sofia|The notes come in a sequence. If I play them back, the level answers. Watch. Then repeat.
@@ -619,8 +619,8 @@ say Haydar|It's speaking. In a code I don't know. Prime, did you hear that?
 say Prime|I HEARD A SEQUENCE. IT WAS IN FOUR PARTS. UP. RIGHT. DOWN. LEFT. IT SOUNDED... LONELY.
 bars off
 scene off
-warp camp 1000
-npc kenzy camp 1300
+warp bots 1000
+npc kenzy bots 1300
 goal Talk to Haydar at the radio.
 await talk kenzy
 say Haydar|Match the signal. Each beat, a button. If you get it right, the radio tunes itself.
@@ -699,9 +699,9 @@ say Amir|You always do.
 say Gabriel|Someone has to.
 bars off
 scene off
-warp camp 1000
-npc dalia camp 1100
-npc gabriel camp 1300
+warp bots 1000
+npc dalia bots 1100
+npc gabriel bots 1300
 goal Talk to Dalia by the campfire.
 await talk dalia
 say Dalia|Can I tell you something dumb?
