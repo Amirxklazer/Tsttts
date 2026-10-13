@@ -44,6 +44,19 @@ set greydoor_seen 1
 say Amir|...Okay. That's a door. And it knows I'm here.
 say |Something behind it knocks once. Politely.
 say Amir|I'll... come back. With friends. And probably a snack.
+# VIGNETTE
+bars on
+scene room amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |A door opens by itself, then politely closes.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini lights 3
 endday
 
 # ================================================================ DAY 14
@@ -98,6 +111,19 @@ say Fares|I did. Funny, that.
 label fin
 say Amir|Fares, have you heard knocking?
 say Fares|I hear everything. It's a gift and a curse. Mostly a gift. Don't tell Adam.
+# VIGNETTE
+bars on
+scene inn amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |The building hums. Somebody laughs two floors away.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini lights 4
 endday
 
 # ================================================================ DAY 15
@@ -144,6 +170,31 @@ await talk dalia
 say Dalia|The lights are back! You did that?! I want to say thank you with a hug, but I already used the hug this week.
 say Amir|It's fine. Save the hug.
 say Dalia|I'm saving it. For emergencies.
+# VIGNETTE
+bars on
+scene outside amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |A door opens by itself, then politely closes.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini quiz 4 ilot14
+bars on
+scene inn amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |A door opens by itself, then politely closes.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini lights 4
 endday
 
 # ================================================================ DAY 16
@@ -167,7 +218,7 @@ say Amir|Towel, mints, soap. A basket in the making. Now, the Further Inn. All t
 goal Take the elevator down to the Further Inn.
 await floor inn
 say |The Further Inn. Warm lamplight, old wallpaper, and a faint humming under everything. It smells like fresh sheets and distant rain.
-goal Talk to Aya at NST-001.
+goal Talk to Aya at the Further Inn desk.
 await talk aya_n
 say Aya@aya_n|A welcome basket! You remembered! Nobody remembers!
 say Aya@aya_n|The Further Inn used to host so many guests. Then the elevator stopped coming down this far, and the guests stopped coming. We keep the lamps on, just in case.
@@ -189,24 +240,37 @@ say Sofia|It's been getting closer. Every night. I've counted. It's coming up fr
 say Amir|Below the Further Inn? There's nothing below the Further Inn.
 say Sofia|That's what I thought.
 clearitems
+# VIGNETTE
+bars on
+scene lobby amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |A door opens by itself, then politely closes.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 5
 endday
 
 # ================================================================ DAY 17
 script day_17
 title Sofia's Radio
 scene room amir
-say |Day 17. A message from Kenzy: "Bring me to Sofia. I have a radio. She has ears. Together, magic."
+say |Day 17. A message from Haydar: "Bring me to Sofia. I have a radio. She has ears. Together, magic."
 scene off
 npc kenzy inn 1400
 goal Go down to the Further Inn and find Sofia (NST-003).
 await floor inn
-say |Kenzy is already there, hunched over a homemade radio the size of a toaster, with wires coming out like spaghetti.
+say |Haydar is already there, hunched over a homemade radio the size of a toaster, with wires coming out like spaghetti.
 goal Talk to Sofia.
 await talk sofia
-say Sofia|Kenzy says he can tune in to what the walls are saying. I can tell him if it's right. We need you to hold the antenna still.
-say Kenzy|Hold it here. Gently. No sneezing. Okay, Sofia, say when.
+say Sofia|Haydar says he can tune in to what the walls are saying. I can tell him if it's right. We need you to hold the antenna still.
+say Haydar|Hold it here. Gently. No sneezing. Okay, Sofia, say when.
 say Sofia|Now. Slowly. A little left. A little left. Stop.
-say Kenzy|It needs to be tuned by rhythm. When the signal pulses, press!
+say Haydar|It needs to be tuned by rhythm. When the signal pulses, press!
 mini timing 5 4 Tune_the_radio
 ifnot skipped tuned
 say |(The radio tuned itself after a few gentle taps.)
@@ -215,10 +279,23 @@ say |A burst of static, then a clear, quiet voice: slow, mechanical, as if readi
 say ???|CLEANING UNIT ZERO. STATUS: SEALED. SEEKING VISITOR. DOOR: PARKING 2, EAST. KEY: MISPLACED.
 say Sofia|It's looking for a key.
 say Amir|Iyad found a key behind a vending machine. With a note that said "for when it knocks".
-say Kenzy|That can't be a coincidence.
+say Haydar|That can't be a coincidence.
 say Amir|It's not. I think it's an invitation.
 set key_known 1
 say Sofia|Then we should answer. Carefully.
+# VIGNETTE
+bars on
+scene room amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |A door opens by itself, then politely closes.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 6
 endday
 
 # ================================================================ DAY 18
@@ -255,6 +332,31 @@ say |He hands you a little brass token with a 14 stamped on it. On the back, in 
 say Amir|Where did you get this?
 say Adam Tansaouti|From the machine. It was already in the slot. Years ago. It never worked in any lock. Maybe it will in one of yours.
 set brass_token 1
+# VIGNETTE
+bars on
+scene inn amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini popcorn 10 2 1
+bars on
+scene room amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |The building hums. Somebody laughs two floors away.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 6
 endday
 
 # ================================================================ DAY 19
@@ -270,7 +372,7 @@ choose
 > I'll take the buzzer. => buzzer
 > Where's Abdullah? => abd
 label abd
-say Alicia|Getting snacks. And probably counting something.
+say Alicia|Getting snacks! And probably counting something!
 label buzzer
 say Alicia|Round one: the buzzer. You have to hit it on the beat. Jalil's in charge of the rules. He made them up.
 goal Talk to Jalil (UC-003) and start round one.
@@ -300,15 +402,28 @@ choose
 > Favorite thing: the papercraft. => craft
 > Favorite thing: surviving. => surv
 label ice
-say Alicia|Amyas is nice to you? Wild. I'm jealous. Next time bring me one.
+say Alicia|Amyas is nice to you? Whoa! I'm jealous! Next time bring me one!
 goto fin
 label craft
 say Alicia|A paper model of the 14? I want one. Abdullah, make a note.
 goto fin
 label surv
-say Alicia|That's the best answer. Wise choice. Have a pistachio.
+say Alicia|That's the best answer. Good answer! Have a pistachio!
 label fin
 say |The night ends with five people asleep in a pile of cards and pistachio shells. Somebody puts a blanket on me. I don't even see who.
+# VIGNETTE
+bars on
+scene outside amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |The building hums. Somebody laughs two floors away.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini whack 10
 endday
 
 # ================================================================ DAY 20
@@ -343,6 +458,19 @@ say Anais|It's... beautiful. Disastrous. But beautiful.
 say Maysanne|I'll write a poem about it. "Color, color, everywhere, none of it was meant to be there."
 say Jilali|I found my watch. It's running forwards again. That's new.
 say Amir|Good. Because backwards watches are starting to worry me.
+# VIGNETTE
+bars on
+scene lobby amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini whack 12
 endday
 
 # ================================================================ DAY 21
@@ -351,38 +479,63 @@ title Science Fair
 scene room amir
 say |Day 21. A flyer taped to my door: "SPECIAL FLOOR SCIENCE FAIR. ONE EXHIBIT. NO REFUNDS."
 scene off
-goal Go to the Special floor and talk to Kenzy (S-002).
+goal Go to the Special floor and talk to Haydar (S-002).
 await talk kenzy
-say Kenzy|The only exhibit is mine. Look, I built a Prime detector. It's the radio from the Further Inn plus a bit of copper plus a lot of hope.
+say Haydar|The only exhibit is mine. Look, I built a Prime detector. It's the radio from the Further Inn plus a bit of copper plus a lot of hope.
 say Amir|Does it work?
-say Kenzy|It will. If you hold the antenna and I tune the dial. Very important: don't sneeze.
+say Haydar|It will. If you hold the antenna and I tune the dial. Very important: don't sneeze.
 choose
 > I never sneeze. => nosneeze
 > I'm already sneezing. => sneeze
 label sneeze
-say Kenzy|Fantastic. A real test of character. Hold your nose.
+say Haydar|Fantastic. A real test of character. Hold your nose.
 label nosneeze
-say |Kenzy lifts a wobbly antenna from a pile of cables. The detector clicks and hums and tries to be professional.
-say Kenzy|When the green light flashes, press it. Hit it on the beat. We want a clean signal.
+say |Haydar lifts a wobbly antenna from a pile of cables. The detector clicks and hums and tries to be professional.
+say Haydar|When the green light flashes, press it. Hit it on the beat. We want a clean signal.
 mini timing 6 3 Calibrate_the_antenna
 ifnot skipped cal
 say |(The detector self-calibrated while pretending to be a science fair project.)
 label cal
 say |A dial spins. A needle settles. A map flickers on a small screen: the 14, floor by floor, and a single blinking dot at the east end of Parking 2.
-say Kenzy|There. That's the source. Directly behind the grey door. And it's getting stronger.
+say Haydar|There. That's the source. Directly behind the grey door. And it's getting stronger.
 say Amir|Prime.
-say Kenzy|Prime. Do you want to tell the others, or should I?
+say Haydar|Prime. Do you want to tell the others, or should I?
 choose
 > I'll tell them. => tell
 > Let's tell them together. => together
 label tell
-say Kenzy|Good. I'll make a copy of the readings for you. Keep them somewhere safe.
+say Haydar|Good. I'll make a copy of the readings for you. Keep them somewhere safe.
 goto fin
 label together
 set kenzy_friend 1
-say Kenzy|Together. I like that. Better than science fairs alone.
+say Haydar|Together. I like that. Better than science fairs alone.
 label fin
-say Kenzy|Tomorrow, I'll bring the readings to the group. You bring the courage.
+say Haydar|Tomorrow, I'll bring the readings to the group. You bring the courage.
 say Amir|I'm bringing snacks. Courage is optional.
+# VIGNETTE
+bars on
+scene room amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |A door opens by itself, then politely closes.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini lights 3
+bars on
+scene lobby amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |The building hums. Somebody laughs two floors away.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini whack 12
 endday
 )IL";

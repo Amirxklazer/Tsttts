@@ -29,6 +29,43 @@ fx shake
 say |The floor shifts. A trapdoor under the rug slides open. A narrow stairwell, spiraling down. A faint orange glow.
 say Gabriel|Yeah. I'm tying the rope to something.
 set room0_open 1
+# VIGNETTE
+bars on
+scene lobby amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |The building hums. Somebody laughs two floors away.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 6
+bars on
+scene outside amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |The lamp flickers once. A hello.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 5
+bars on
+scene inn amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |A door opens by itself, then politely closes.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini quiz 4 ilot14
 endday
 
 # ================================================================ CH2 DAY 21
@@ -54,6 +91,55 @@ say Dalia|These are all Room 000.
 say Gabriel|Yes. I'm getting a headache.
 say Amir|Look. One of them is open.
 set stairwell_done 1
+# VIGNETTE
+bars on
+scene room amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini popcorn 10 2 1
+bars on
+scene lobby amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |The lamp flickers once. A hello.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 6
+bars on
+scene outside amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |Something small happens, and it matters more than it should.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 5
+bars on
+scene inn amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |The lamp flickers once. A hello.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini quiz 4 ilot14
 endday
 
 # ================================================================ CH2 DAY 22
@@ -91,6 +177,43 @@ say Prime|WE ARE AT THE FLOOR OF THE KNOCKING. IT IS NEAR. THE DUST HERE IS... T
 say Amir|Tired of what?
 say Prime|OF WAITING.
 set prime_guide 1
+# VIGNETTE
+bars on
+scene inn amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |The lamp flickers once. A hello.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini whack 10
+bars on
+scene room amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |Something small happens, and it matters more than it should.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini popcorn 10 2 1
+bars on
+scene lobby amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |A door opens by itself, then politely closes.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 6
 endday
 
 # ================================================================ CH2 DAY 23
@@ -120,6 +243,43 @@ say |The wall ahead of us slides open. Behind it, a narrow service lift, rusted,
 say Sofia|That goes down. Way down.
 say Amir|Not today. Today we find out who lives behind the knocks.
 set voices_heard 1
+# VIGNETTE
+bars on
+scene outside amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini whack 12
+bars on
+scene inn amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |A door opens by itself, then politely closes.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini whack 10
+bars on
+scene room amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |The lamp flickers once. A hello.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini popcorn 10 2 1
 endday
 
 # ================================================================ CH2 DAY 24
@@ -152,6 +312,55 @@ say Warden|I was the first guest. The first night porter. I forgot to leave.
 say Gabriel|...Tansaouti?
 say Warden|His great-great-whatever. The Inn keeps its porters. Even after.
 set warden_beaten 1
+# VIGNETTE
+bars on
+scene lobby amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |A door opens by itself, then politely closes.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini lights 3
+bars on
+scene outside amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |A door opens by itself, then politely closes.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini whack 12
+bars on
+scene inn amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |A door opens by itself, then politely closes.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini whack 10
+bars on
+scene room amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini popcorn 10 2 1
 endday
 
 # ================================================================ CH2 DAY 25
@@ -187,6 +396,43 @@ say Dalia|Today is a good day.
 say Amir|It really is.
 say Gabriel|I'm saying it once. This is nice.
 say Amine|He said it! Everybody write down the date!
+# VIGNETTE
+bars on
+scene room amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |The building hums. Somebody laughs two floors away.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini lights 4
+bars on
+scene lobby amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |Something small happens, and it matters more than it should.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini lights 3
+bars on
+scene outside amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini whack 12
 endday
 
 # ================================================================ CH2 DAY 26
@@ -222,6 +468,43 @@ label fin
 say Amir|It's not a threat. It's a plea.
 say Aya@aya_n|Then we'd better answer it.
 set letter_read 1
+# VIGNETTE
+bars on
+scene inn amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |The lamp flickers once. A hello.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini quiz 4 ilot14
+bars on
+scene room amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |A door opens by itself, then politely closes.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini lights 4
+bars on
+scene lobby amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |Something small happens, and it matters more than it should.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini lights 3
 endday
 
 # ================================================================ CH2 DAY 27
@@ -253,6 +536,55 @@ say Gabriel|I did. Because it was you.
 say Amir|...Thanks.
 say Gabriel|Don't say anything. Don't make it weird.
 set bridge_done 1
+# VIGNETTE
+bars on
+scene outside amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |The lamp flickers once. A hello.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 5
+bars on
+scene inn amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |Something small happens, and it matters more than it should.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini quiz 4 ilot14
+bars on
+scene room amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |Something small happens, and it matters more than it should.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini lights 4
+bars on
+scene lobby amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |The building hums. Somebody laughs two floors away.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini lights 3
 endday
 
 # ================================================================ CH2 DAY 28
@@ -281,6 +613,43 @@ say Aya@aya_n|You held the line.
 say Amir|I'd rather not hold it again.
 say Aya@aya_n|You will.
 set storm_held 1
+# VIGNETTE
+bars on
+scene lobby amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |A door opens by itself, then politely closes.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 6
+bars on
+scene outside amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |Something small happens, and it matters more than it should.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 5
+bars on
+scene inn amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |Something small happens, and it matters more than it should.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini quiz 4 ilot14
 endday
 
 # ================================================================ CH2 DAY 29
@@ -309,6 +678,43 @@ say |The lamps catch, one after another. Warm gold, soft pink, the color of old 
 say Sofia|I heard it sigh.
 say Tansaouti@tansaouti|It's been waiting a long time to be lit again.
 set lamps_lit 1
+# VIGNETTE
+bars on
+scene room amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini popcorn 10 2 1
+bars on
+scene lobby amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 6
+bars on
+scene outside amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |A door opens by itself, then politely closes.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 5
 endday
 
 # ================================================================ CH2 DAY 30
@@ -347,6 +753,55 @@ say Amir|They're not guests.
 say Aya@aya_n|No. They're residents.
 set everyone_helped 1
 clearitems
+# VIGNETTE
+bars on
+scene inn amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini whack 10
+bars on
+scene room amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |A door opens by itself, then politely closes.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini popcorn 10 2 1
+bars on
+scene lobby amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |A door opens by itself, then politely closes.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 6
+bars on
+scene outside amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |Something small happens, and it matters more than it should.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 5
 endday
 
 # ================================================================ CH2 DAY 31
@@ -376,6 +831,43 @@ say |The piano swells. The lamps pulse. Bots dance in a clumsy circle.
 say Dalia|AM I ON TRIANGLE?
 say Sofia|Yes. One note. At the end.
 say Dalia|I'm going to be incredible.
+# VIGNETTE
+bars on
+scene outside amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |Something small happens, and it matters more than it should.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini whack 12
+bars on
+scene inn amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |The building hums. Somebody laughs two floors away.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini whack 10
+bars on
+scene room amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |The building hums. Somebody laughs two floors away.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini popcorn 10 2 1
 endday
 
 # ================================================================ CH2 DAY 32
@@ -407,6 +899,43 @@ say |One tiny ding. Everyone laughs.
 say Aya@aya_n|Welcome home, Inn.
 say Sofia|Welcome home, everyone.
 set concert_done 1
+# VIGNETTE
+bars on
+scene lobby amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |Something small happens, and it matters more than it should.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini lights 3
+bars on
+scene outside amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |The building hums. Somebody laughs two floors away.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini whack 12
+bars on
+scene inn amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |A door opens by itself, then politely closes.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini whack 10
 endday
 
 # ================================================================ CH2 DAY 33
@@ -437,6 +966,55 @@ say |Behind you, the lever clunks. A low note rolls through the whole Inn, up th
 say Dalia|Did the whole building hear that?
 say Gabriel|The whole Reghaia heard that.
 set last_key 1
+# VIGNETTE
+bars on
+scene room amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini lights 4
+bars on
+scene lobby amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |A door opens by itself, then politely closes.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini lights 3
+bars on
+scene outside amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |The building hums. Somebody laughs two floors away.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini whack 12
+bars on
+scene inn amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |The building hums. Somebody laughs two floors away.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini whack 10
 endday
 
 # ================================================================ CH2 DAY 34
@@ -467,6 +1045,43 @@ say Prime|THE LIFT IS READY.
 say Dalia|Ready for what?
 say Prime|FOR THE KNOCK TO COME UP. OR FOR US TO GO DOWN.
 set button18 1
+# VIGNETTE
+bars on
+scene inn amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |The building hums. Somebody laughs two floors away.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini quiz 4 ilot14
+bars on
+scene room amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini lights 4
+bars on
+scene lobby amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |A door opens by itself, then politely closes.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini lights 3
 endday
 
 # ================================================================ CH2 DAY 35
@@ -501,5 +1116,42 @@ bars off
 scene off
 set inn_open 2
 card TO BE CONTINUED|Chapter 3: Lowest Point is now open.
+# VIGNETTE
+bars on
+scene outside amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |A door opens by itself, then politely closes.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 5
+bars on
+scene inn amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |A door opens by itself, then politely closes.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini quiz 4 ilot14
+bars on
+scene room amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |Something small happens, and it matters more than it should.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini lights 4
 endday
 )IL";

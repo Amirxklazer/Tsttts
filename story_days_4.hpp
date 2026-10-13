@@ -5,7 +5,7 @@ static const char* STORY_DAYS_4 = R"IL(
 script day_22
 title The Grey Door
 scene room amir
-say |Day 22. Kenzy's readings are pinned to my wall. A dot on a map. A door with no handle. A key with a note.
+say |Day 22. Haydar's readings are pinned to my wall. A dot on a map. A door with no handle. A key with a note.
 say Amir|Today I stop being the person who says "I'll come back with friends".
 scene off
 goal Borrow the key Iyad found: talk to Iyad on the Common floor (C-005).
@@ -58,6 +58,19 @@ warp park2 1700
 fx fadein
 say Dalia|Well. That happened.
 say Amir|We have a plan. Step one: come back.
+# VIGNETTE
+bars on
+scene inn amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |Something small happens, and it matters more than it should.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini lights 4
 endday
 
 # ================================================================ DAY 23
@@ -107,6 +120,19 @@ fx shake
 say Dalia|Okay, that's not a thank you!
 say |The cables snap loose. The antenna straightens. Prime rises from the cradle, glowing orange.
 scene off
+# VIGNETTE
+bars on
+scene outside amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |Something small happens, and it matters more than it should.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini quiz 4 ilot14
 endday
 
 # ================================================================ DAY 24
@@ -159,6 +185,31 @@ fx fadein
 say Dalia|I can't believe it. We did it.
 say Gabriel|We talked to a bot and it said thank you back. I'll remember that.
 say Amir|Let's tell the others.
+# VIGNETTE
+bars on
+scene lobby amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |Something small happens, and it matters more than it should.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 5
+bars on
+scene outside amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini quiz 4 ilot14
 endday
 
 # ================================================================ DAY 25
@@ -222,6 +273,19 @@ label fin
 say Dalia|Okay. Next week. I have another idea. It's bigger. It involves a banner.
 say Amir|Why do I feel scared?
 scene off
+# VIGNETTE
+bars on
+scene room amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |A door opens by itself, then politely closes.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 6
 endday
 
 # ================================================================ DAY 26
@@ -261,6 +325,19 @@ goal Tell Dalia the banner is up (Main floor, M-002).
 await talk dalia
 say Dalia|I saw it from my balcony! It's HUGE! You did it!
 say Dalia|The party is going to be amazing. I can feel it. Which, as you know, is a very dangerous thing to say.
+# VIGNETTE
+bars on
+scene inn amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |Something small happens, and it matters more than it should.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini popcorn 10 2 1
 endday
 
 # ================================================================ DAY 27
@@ -285,9 +362,34 @@ say Amir|Balloons, cake, speakers, lights, chairs, plates, paint and confetti. E
 goal Bring everything to Dalia on the Main floor.
 await talk dalia
 say Dalia|All of it?! Even the confetti?! I thought the confetti would take a week!
-say Amir|Confetti was on the Special floor. Kenzy guarded it with a very small flag.
+say Amir|Confetti was on the Special floor. Haydar guarded it with a very small flag.
 say Dalia|That's why I love this building. Okay. The party is in four days. Tomorrow we rehearse.
 clearitems
+# VIGNETTE
+bars on
+scene outside amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |Something small happens, and it matters more than it should.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini whack 10
+bars on
+scene inn amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |A door opens by itself, then politely closes.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini popcorn 10 2 1
 endday
 
 # ================================================================ DAY 28
@@ -323,6 +425,19 @@ say Dalia|I did it! I made it through! No, you did it. No, I did.
 say Gabriel|Stop. Both of you did.
 say Dalia|Thank you, Amir. I think I can do it now.
 say Amir|Anytime.
+# VIGNETTE
+bars on
+scene lobby amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |The building hums. Somebody laughs two floors away.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini whack 12
 endday
 
 # ================================================================ DAY 29
@@ -373,6 +488,19 @@ say Gabriel|Inside. Now. Before the lightning gets ideas.
 say Amir|Four days of rain and a rooftop party. What could go wrong?
 say Amine|Don't say it.
 scene off
+# VIGNETTE
+bars on
+scene room amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |The lamp flickers once. A hello.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini lights 3
 endday
 
 # ================================================================ DAY 30
@@ -437,6 +565,31 @@ label nice
 say Amyas|Don't get used to it. It's a once-a-year special.
 label fin
 say |A quiet elevator ride home. The hum sounds almost like a lullaby tonight. Somewhere far below, a very old bot is humming along.
+# VIGNETTE
+bars on
+scene inn amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |The lamp flickers once. A hello.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini lights 4
+bars on
+scene room amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini lights 3
 endday
 
 # ================================================================ DAY 31
@@ -506,5 +659,18 @@ say Dalia|To be continued?
 say Amir|To be continued.
 scene off
 card LOST OF ASHES|Chapter 7 awaits.
+# VIGNETTE
+bars on
+scene outside amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |The lamp flickers once. A hello.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini quiz 4 ilot14
 endday
 )IL";

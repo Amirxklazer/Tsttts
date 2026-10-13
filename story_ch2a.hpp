@@ -32,7 +32,7 @@ goal Take the elevator down to the Further Inn.
 await floor inn
 npc aya_n inn 900
 say |The Inn glows like a lantern at the bottom of a well. Someone has already swept the carpet, and someone else has already un-swept it.
-goal Talk to Aya at NST-001.
+goal Talk to Aya at the Further Inn desk.
 await talk aya_n
 say Aya@aya_n|You brought everything! Okay. Okay okay okay. Here's the situation.
 say Aya@aya_n|Three nights ago, a reservation slid under the front desk. Handwritten. Forty guests. Arrival: "soon".
@@ -55,6 +55,31 @@ label caught
 say Aya@aya_n|The Further Inn is officially in reopening mode. Come back tomorrow. Bring friends. Bring bots.
 set inn_open 1
 clearitems
+# VIGNETTE
+bars on
+scene room amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini lights 4
+bars on
+scene lobby amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |Something small happens, and it matters more than it should.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini lights 3
 endday
 
 # ================================================================ CH2 DAY 2
@@ -68,7 +93,7 @@ say |Day 2. The Inn at dawn, or what passes for dawn down here. A brass lamp fli
 emote tansaouti ...
 say Tansaouti@tansaouti|You're the one who brought a bell. Good. I've missed the sound of a bell.
 anim tansaouti bow
-say Tansaouti@tansaouti|I'm the night porter. Adam Tansaouti. My shift never ended. I just stopped being told.
+say Tansaouti@tansaouti|I live upstairs, Special floor, NST-002. I only work the night shift here. My shift never ended. I just stopped being told.
 say Amir|That sounds lonely.
 say Tansaouti@tansaouti|It was quiet. Different thing.
 bars off
@@ -96,6 +121,31 @@ label rooms
 say Tansaouti@tansaouti|Tomorrow. There's a piano that needs a favor. It's picky.
 label fin
 say Tansaouti@tansaouti|Go home. Sleep. The Inn will keep.
+# VIGNETTE
+bars on
+scene inn amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |Something small happens, and it matters more than it should.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini quiz 4 ilot14
+bars on
+scene room amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini lights 4
 endday
 
 # ================================================================ CH2 DAY 3
@@ -137,6 +187,43 @@ say Sofia|It's happy. I didn't know it could be.
 say Sofia|It asked me to tell you one thing. "Four floors deeper than the floor you thought was last."
 say Amir|...What does that mean?
 say Sofia|I don't know. It's a piano.
+# VIGNETTE
+bars on
+scene outside amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 5
+bars on
+scene inn amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |A door opens by itself, then politely closes.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini quiz 4 ilot14
+bars on
+scene room amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |The building hums. Somebody laughs two floors away.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini lights 4
 endday
 
 # ================================================================ CH2 DAY 4
@@ -180,6 +267,31 @@ fx flash
 say |Somewhere above, a soft chime. The elevator indicator jumps and stops on the Inn.
 say Youcef|Done. The Inn is back on the map.
 say Youcef|Not that I did anything. You did it. I just talked.
+# VIGNETTE
+bars on
+scene lobby amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |Something small happens, and it matters more than it should.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 6
+bars on
+scene outside amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |The lamp flickers once. A hello.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 5
 endday
 
 # ================================================================ CH2 DAY 5
@@ -230,6 +342,31 @@ bars off
 scene off
 set guest_one 1
 clearitems
+# VIGNETTE
+bars on
+scene room amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini popcorn 10 2 1
+bars on
+scene lobby amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |The building hums. Somebody laughs two floors away.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 6
 endday
 
 # ================================================================ CH2 DAY 6
@@ -258,6 +395,43 @@ say |All the lamps in the lobby bloom to warm gold, one after another, in rhythm
 say Sofia|Listen. The hum changed. It's not scary anymore. It sounds like... a lullaby.
 say Amir|Or like a really big refrigerator.
 say Sofia|You can't ruin this for me.
+# VIGNETTE
+bars on
+scene inn amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |A door opens by itself, then politely closes.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini whack 10
+bars on
+scene room amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |The lamp flickers once. A hello.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini popcorn 10 2 1
+bars on
+scene lobby amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 6
 endday
 
 # ================================================================ CH2 DAY 7
@@ -299,6 +473,31 @@ say Aya@aya_n|Saved. Mostly. There's a hole where the date should be.
 say Amir|Which date?
 say Aya@aya_n|The one next to your name.
 set saw_ledger 1
+# VIGNETTE
+bars on
+scene outside amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |The building hums. Somebody laughs two floors away.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini whack 12
+bars on
+scene inn amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |The lamp flickers once. A hello.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini whack 10
 endday
 
 # ================================================================ CH2 DAY 8
@@ -330,6 +529,31 @@ say Tansaouti@tansaouti|It had one. Before it was a Further Inn. Before it was a
 say Amir|Which was?
 say Tansaouti@tansaouti|I don't remember. That's the problem.
 set saw_page 1
+# VIGNETTE
+bars on
+scene lobby amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |A door opens by itself, then politely closes.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini lights 3
+bars on
+scene outside amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini whack 12
 endday
 
 # ================================================================ CH2 DAY 9
@@ -370,5 +594,42 @@ say |(Dalia sorted the last cards herself and gave herself a medal.)
 label sorted
 say Dalia|We find that room. I don't know how, I don't know when. But we find it.
 set matched_names 1
+# VIGNETTE
+bars on
+scene room amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |A door opens by itself, then politely closes.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini lights 4
+bars on
+scene lobby amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |Something small happens, and it matters more than it should.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini lights 3
+bars on
+scene outside amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |Something small happens, and it matters more than it should.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini whack 12
 endday
 )IL";

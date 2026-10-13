@@ -1,4 +1,4 @@
-ILOT14 WORLD  v0.4.0  (Nintendo Switch homebrew, C++ / SDL2 / libnx)
+ILOT14 WORLD  v0.5.0  (Nintendo Switch homebrew, C++ / SDL2 / libnx)
 
 CONTROLS
   Left stick / D-pad   walk (menus: move)
@@ -64,3 +64,16 @@ v0.4.0
 - New minigames: Memory Pads (simon), Sneak, Rhythm, Dodge arena, Defend lanes. Harder each chapter.
 - More cutscenes. Touch warning is small, top-right.
 - Saves from v0.2/v0.3 carry over (.bak copy kept).
+
+v0.5.0
+- Chapter 4 preview, longer days (ch2 and ch3 much longer), Reghaia outside area:
+  cable car -> El Madania cinema ("Do you love cinema ?"), Etusa bus -> school ("Teachers got yo back").
+- Amir / Dalia / Gabriel rooms open. Tansaouti lives on the Special floor (S-003).
+- Badges list, redeem codes (lore + custom endings), X = "say something", custom beef with IYKYK.
+- New touch minigames: Whack, Pairs, Lights, Slide, Popcorn, Quiz. Timing / roundup removed.
+- Local co-op: everyone picks a character in CO-OP (P1 = Amir, pads 2-4 / keyboard I J K L U O).
+- All characters redesigned, more customization, new UI.
+- Halloween prank: don't tell Gabriel numbers.
+- v0.5.0 beef is with Adam and Amyas (reason left unknown).
+- Canon update: Haydar (S-002), all NST/Tansaouti residents live on Special floor, Adam surnames, chapter 4 = "Never".
+- Kids (Alicia 5, Abdullah 6, Jalil 4) talk like kids. Amir is tsundere toward Amyas and Adam B. Gabriel x Dalia dynamic.

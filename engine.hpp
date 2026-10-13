@@ -1,11 +1,12 @@
 // engine.hpp - game state, saves, script VM, world logic
 #pragma once
 #include "script.hpp"
+#include "extras.hpp"
 #include <list>
 
-#define VERSION "v0.4.0"
+#define VERSION "v0.5.0"
 
-struct Settings { int textSpeed = 1; int autoAdv = 2; bool scanlines = true; int lastSlot = 0; int maxD[4] = {0, 1, 0, 0}; bool unl[4] = {true, true, false, false}; };
+struct Settings { int textSpeed = 1; int autoAdv = 2; bool scanlines = true; int lastSlot = 0; int maxD[5] = {0, 1, 0, 0, 0}; bool unl[5] = {true, true, false, false, false}; };
 struct Npc { std::string floor; float baseX = 0, x = 0; bool visible = true; float phase = 0; int dir = 1; bool still = false; float goal = -1, spd = 4; };
 struct Actor { std::string key; float x = 640, tx = 640, spd = 4; int dir = 1, anim = 0, animT = 0, emoteT = 0; std::string animName, emote; bool walking = false; };
 struct Particle { float x, y, vx, vy; int life, maxlife; Col c; int type; };
@@ -13,9 +14,10 @@ struct ItemSp { std::string key, floor; float x; };
 struct ObjSp { std::string id, floor, label; float x; };
 struct Toast { std::string t; int life; };
 
-enum VS { V_NONE, V_RUN, V_SAY, V_CHOOSE, V_AWAIT, V_MINI, V_CARD, V_WAIT, V_ENDDAY };
-enum Mode { M_TITLE, M_NEWSLOT, M_SLOTS, M_DAYSEL, M_SETTINGS, M_PLAY, M_PAUSE, M_PSET, M_ENDING, M_CHAPTERS, M_CHSLOT, M_CUSTOM, M_PCUSTOM, M_REG };
+enum VS { V_NONE, V_RUN, V_SAY, V_CHOOSE, V_AWAIT, V_MINI, V_CARD, V_WAIT, V_ENDDAY, V_ASK, V_SCARE };
+enum Mode { M_TITLE, M_NEWSLOT, M_SLOTS, M_DAYSEL, M_SETTINGS, M_PLAY, M_PAUSE, M_PSET, M_ENDING, M_CHAPTERS, M_CHSLOT, M_CUSTOM, M_PCUSTOM, M_REG, M_EXTRAS, M_REDEEM, M_BADGES, M_LORE, M_LOREVIEW, M_COOP };
 struct Frame { Block* b; int pc; };
+struct CoPlayer { bool on = false; std::string key, em; float x = 400; int dir = 1, walk = 0, pad = 1, emoteT = 0; bool moving = false; std::string floor; };
 
 struct Game {
     Settings st;
@@ -57,6 +59,11 @@ struct Game {
     int flash = 0, shake = 0; float fade = 0, fadeTarget = 0;
     int fadePhase = 0; std::string pendingFloor;
     int quitConfirm = 0;
+    // extras
+    Kb kb; std::string askText, askPrompt; int scareT = 0;
+    int extSel = 0, loreSel = 0, lorePage = 0, badgeSel = 0, redeemT = 0; std::string redeemMsg;
+    CoPlayer co[3]; int coSel[3] = {0, 0, 0}; int coStage = 0; bool coopOn = false;
+    int badgeToastT = 0; std::string badgeToast;
 } g;
 
 static bool AUTOWIN = false;
@@ -68,6 +75,23 @@ static void setF(const std::string& k, int v) { g.flags[k] = v; }
 static void toast(const std::string& t) {
     g.toasts.push_back({t, 170});
     if (g.toasts.size() > 4) g.toasts.erase(g.toasts.begin());
+}
+
+static void saveSettings();
+static void awardBadge(const std::string& id) {
+    if (U_BADGES.count(id)) return;
+    for (int i = 0; i < NBADGES; i++) if (id == BADGE_LIST[i].id) {
+        U_BADGES.insert(id);
+        g.badgeToast = BADGE_LIST[i].name; g.badgeToastT = 260;
+        saveSettings();
+        return;
+    }
+}
+static bool unlockLore(const std::string& id) {
+    if (U_LORE.count(id) || loreIndex(id) < 0) return false;
+    U_LORE.insert(id);
+    if (U_LORE.size() >= 5) awardBadge("collector");
+    return true;
 }
 
 // ------------------------------------------------------------ saves
@@ -109,7 +133,7 @@ static SlotInfo slotInfo(int s) {
 }
 static std::string appearStr() {
     char b[96];
-    snprintf(b, sizeof b, "%d,%d,%d,%d,%d,%d,%d,%d,%d", APP.skin, APP.hairStyle, APP.hairCol, APP.height, APP.top, APP.topCol, APP.pants, APP.acc, APP.tag14);
+    snprintf(b, sizeof b, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", APP.skin, APP.hairStyle, APP.hairCol, APP.height, APP.top, APP.topCol, APP.pants, APP.acc, APP.tag14, APP.shoes, APP.eyes);
     return b;
 }
 static void applyLook() { CharDef* c = charBy("amir"); if (c) c->look = lookFromAppear(APP); }
@@ -119,6 +143,8 @@ static void saveSettings() {
                     "\nlastslot=" + std::to_string(g.st.lastSlot) + "\nmaxday=" + std::to_string(g.st.maxD[1]) +
                     "\nmax2=" + std::to_string(g.st.maxD[2]) + "\nmax3=" + std::to_string(g.st.maxD[3]) +
                     "\nunl2=" + std::to_string(g.st.unl[2] ? 1 : 0) + "\nunl3=" + std::to_string(g.st.unl[3] ? 1 : 0) +
+                    "\nmax4=" + std::to_string(g.st.maxD[4]) + "\nunl4=" + std::to_string(g.st.unl[4] ? 1 : 0) +
+                    "\nbadges=" + joinSet(U_BADGES) + "\nlore=" + joinSet(U_LORE) + "\ncodes=" + joinSet(U_CODES) +
                     "\nauto=" + std::to_string(g.st.autoAdv) + "\nlook=" + appearStr() + "\n";
     writeFile(std::string(SAVE_DIR) + "settings.cfg", s);
 }
@@ -139,14 +165,20 @@ static void loadSettings() {
     if (kv.count("unl2")) g.st.unl[2] = atoi(kv["unl2"].c_str()) != 0;
     else if (kv.count("ch3")) g.st.unl[2] = atoi(kv["ch3"].c_str()) != 0;   // v0.3.0 settings: "ch3" meant "finished Day 31"
     if (kv.count("unl3")) g.st.unl[3] = atoi(kv["unl3"].c_str()) != 0;
+    if (kv.count("max4")) g.st.maxD[4] = std::max(0, std::min(CH_LEN[4], atoi(kv["max4"].c_str())));
+    if (kv.count("unl4")) g.st.unl[4] = atoi(kv["unl4"].c_str()) != 0;
+    if (kv.count("badges")) splitInto(kv["badges"], U_BADGES);
+    if (kv.count("lore")) splitInto(kv["lore"], U_LORE);
+    if (kv.count("codes")) splitInto(kv["codes"], U_CODES);
+    if (g.st.unl[4] && g.st.maxD[4] < 1) g.st.maxD[4] = 1;
     if (g.st.unl[2] && g.st.maxD[2] < 1) g.st.maxD[2] = 1;
     if (g.st.unl[3] && g.st.maxD[3] < 1) g.st.maxD[3] = 1;
     if (kv.count("auto")) g.st.autoAdv = std::max(0, std::min(3, atoi(kv["auto"].c_str())));
     if (kv.count("look")) {
         std::vector<std::string> p = splitStr(kv["look"], ',');
-        int* f[] = {&APP.skin, &APP.hairStyle, &APP.hairCol, &APP.height, &APP.top, &APP.topCol, &APP.pants, &APP.acc, &APP.tag14};
-        for (size_t i = 0; i < p.size() && i < 9; i++) *f[i] = std::max(0, atoi(p[i].c_str()));
-        APP.skin %= 8; APP.hairStyle %= 7; APP.hairCol %= 8; APP.height %= 5; APP.top %= 4; APP.topCol %= 12; APP.pants %= 8; APP.acc %= 5; APP.tag14 %= 2;
+        int* f[] = {&APP.skin, &APP.hairStyle, &APP.hairCol, &APP.height, &APP.top, &APP.topCol, &APP.pants, &APP.acc, &APP.tag14, &APP.shoes, &APP.eyes};
+        for (size_t i = 0; i < p.size() && i < 11; i++) *f[i] = std::max(0, atoi(p[i].c_str()));
+        APP.skin %= 8; APP.hairStyle %= 12; APP.hairCol %= 12; APP.height %= 5; APP.top %= 9; APP.topCol %= 12; APP.pants %= 8; APP.acc %= 12; APP.tag14 %= 2; APP.shoes %= 6; APP.eyes %= 4;
     }
     applyLook();
     G.scanlines = g.st.scanlines;
@@ -171,7 +203,7 @@ static bool readSlot(int s) {
         if (readFile(bak).empty()) writeFile(bak, raw);
     }
     g.slot = s;
-    g.chapter = kv.count("chapter") ? std::max(1, std::min(3, atoi(kv["chapter"].c_str()))) : 1;
+    g.chapter = kv.count("chapter") ? std::max(1, std::min(4, atoi(kv["chapter"].c_str()))) : 1;
     g.day = std::max(1, std::min(CH_LEN[g.chapter], atoi(kv["day"].c_str())));
     g.playFrames = atol(kv["frames"].c_str());
     parseFlags(kv["flags"], g.flags);
@@ -289,7 +321,7 @@ static bool anyWalking() {
     for (auto& kv : g.npcs) if (kv.second.goal >= 0) return true;
     return g.pgoal >= 0;
 }
-static std::string blockName(int d) { return (g.chapter == 1 ? "day_" : g.chapter == 2 ? "c2_" : "c3_") + std::to_string(d); }
+static std::string blockName(int d) { return (g.chapter == 1 ? "day_" : g.chapter == 2 ? "c2_" : g.chapter == 3 ? "c3_" : "c4_") + std::to_string(d); }
 static int lastDay() { return CH_LEN[g.chapter]; }
 static std::string dayTitle(int d) { return dayTitleOf(g.chapter, d); }
 
@@ -352,6 +384,12 @@ static void vmRun() {
                 g.px = c.n >= 0 ? (float)c.n : (fl ? fl->elevX + 90 : 300);
                 f.pc++;
             } break;
+            case O_BADGE: awardBadge(c.a); f.pc++; break;
+            case O_ENDING: { if (unlockLore(c.a)) { int li = loreIndex(c.a); toast(std::string("Unlocked: ") + (li >= 0 ? LORE_LIST[li].title : c.a.c_str())); } f.pc++; } break;
+            case O_ASK: f.pc++; if (AUTOWIN) { g.askText.clear(); break; } g.askPrompt = c.a; g.kb = Kb(); g.askText.clear(); g.vs = V_ASK; return;
+            case O_IFSAY: if (g.askText.find(c.a) != std::string::npos) vmGoto(c.b); else f.pc++; break;
+            case O_SCARE: f.pc++; if (AUTOWIN) break; awardBadge("haunted"); unlockLore("e_scare"); g.scareT = 0; g.vs = V_SCARE; return;
+            case O_STAY: f.pc++; break;
             case O_ENDDAY:
                 f.pc++;
                 g.cTitle = "END OF DAY " + std::to_string(g.day);
@@ -496,6 +534,32 @@ static std::vector<ObjSp> builtinObjs(const std::string& fl) {
     if (fl == "roof") { v.push_back({"edge", "roof", "Roof edge", 1500}); v.push_back({"tank", "roof", "Water tank", 800}); }
     if (fl == "park1") v.push_back({"car1", "park1", "Parked car", 1500});
     if (fl == "park2") v.push_back({"car2", "park2", "Parked car", 1500});
+    if (fl == "reghaia") {
+        v.push_back({"p_home", "reghaia", "Îlot14 front door", 260});
+        v.push_back({"p_busstop", "reghaia", "Etusa bus stop", 900});
+        v.push_back({"p_cable", "reghaia", "Cable car station", 2300});
+        v.push_back({"p_kiosk", "reghaia", "Kiosk", 1600});
+    }
+    if (fl == "madania") {
+        v.push_back({"p_cableback", "madania", "Cable car (back to Reghaia)", 260});
+        v.push_back({"p_cinemadoor", "madania", "Cinema entrance", 1500});
+        v.push_back({"p_viewpoint", "madania", "Viewpoint", 2200});
+    }
+    if (fl == "cinema") {
+        v.push_back({"p_cinexit", "cinema", "Exit to El Madania", 200});
+        v.push_back({"p_ticket", "cinema", "Ticket desk", 800});
+        v.push_back({"p_snack", "cinema", "Popcorn stand", 1300});
+        v.push_back({"p_hall", "cinema", "Screening hall", 1900});
+    }
+    if (fl == "school") {
+        v.push_back({"p_schoolexit", "school", "Etusa bus stop", 200});
+        v.push_back({"p_class", "school", "Classroom door", 900});
+        v.push_back({"p_yard", "school", "School yard", 1600});
+        v.push_back({"p_office", "school", "Teachers' room", 2200});
+    }
+    if (fl == "room_amir") { v.push_back({"p_exit_amir", fl, "Door (leave)", 160}); v.push_back({"p_amir_bed", fl, "Bed", 500}); v.push_back({"p_amir_desk", fl, "Desk", 900}); v.push_back({"p_amir_wall", fl, "Wall of photos", 1300}); }
+    if (fl == "room_dalia") { v.push_back({"p_exit_dalia", fl, "Door (leave)", 160}); v.push_back({"p_dalia_bed", fl, "Mopsy's charging spot", 500}); v.push_back({"p_dalia_phone", fl, "Phone (6 unsent texts)", 900}); v.push_back({"p_dalia_board", fl, "Plan board", 1300}); }
+    if (fl == "room_gabriel") { v.push_back({"p_exit_gabriel", fl, "Door (leave)", 160}); v.push_back({"p_gab_rope", fl, "Coil of rope", 520}); v.push_back({"p_gab_shelf", fl, "Shelf", 1000}); v.push_back({"p_gab_zed", fl, "Zed's corner", 1300}); }
     return v;
 }
 
@@ -527,7 +591,8 @@ static Target nearestTarget() {
 static void startChat(const std::string& key) {
     setF("talk_" + key, F("talk_" + key) + 1);
     std::string a = "chat_" + key + "_d" + std::to_string(g.day), b = "chat_" + key;
-    if (BLOCKS.count(a)) vmPush(a);
+    if (g.floorKey == "room_" + key && BLOCKS.count("chatroom_" + key)) vmPush("chatroom_" + key);
+    else if (BLOCKS.count(a)) vmPush(a);
     else if (BLOCKS.count(b)) vmPush(b);
     else if (charBy(key) && charBy(key)->isBot && botOf(key)) {
         const BotInfo* bi = botOf(key);
@@ -665,9 +730,9 @@ static void updateVM(const Input& in) {
             if ((g.cT > 60 && in.hit(B_A)) || g.cT > 260) {
                 if (g.day >= lastDay()) {
                     g.mode = M_ENDING; g.vs = V_NONE; g.stack.clear(); g.cT = 0;
-                    g.endCh = g.chapter;
+                    g.endCh = g.chapter; awardBadge("ch" + std::to_string(g.chapter)); if (g.chapter == 3) { g.st.unl[4] = true; if (g.st.maxD[4] < 1) g.st.maxD[4] = 1; }
                     g.progressFlags[pkFinal(g.chapter)] = flagsStr(g.flags); saveProgress();   // final state of this chapter
-                    if (g.chapter < 3) {
+                    if (g.chapter < 4) {
                         // same save slot continues straight into the next chapter
                         int nx = g.chapter + 1;
                         g.st.unl[nx] = true; if (g.st.maxD[nx] < 1) g.st.maxD[nx] = 1;
@@ -678,6 +743,17 @@ static void updateVM(const Input& in) {
                     saveSettings();
                 } else startDay(g.day + 1);
             }
+        } break;
+        case V_ASK: {
+            g.kb.update(in);
+            if (g.kb.done) {
+                std::string t = g.kb.text; for (auto& ch : t) ch = tolower(ch);
+                g.askText = t; g.vs = V_RUN; vmRun();
+            }
+        } break;
+        case V_SCARE: {
+            g.scareT++;
+            if (g.scareT > 560) { g.vs = V_RUN; vmRun(); }
         } break;
         case V_WAIT: {
             if (g.waitT < 0) { if (!anyWalking()) { g.vs = V_RUN; vmRun(); } }
@@ -742,6 +818,34 @@ static void updateElevator(const Input& in) {
         case 7: g.elevDoor = std::min(1.0f, g.elevT / 28.0f); if (g.elevDoor >= 1 && g.elevT > 34) elevFinish(false); break;
     }
 }
+static void updateCoop() {
+    if (!g.coopOn) return;
+    FloorDef* f = floorBy(g.floorKey); if (!f) return;
+    float camX = std::max(0.0f, std::min(f->width - SCR_W, g.px - 640));
+    for (int k = 0; k < 3; k++) {
+        CoPlayer& c = g.co[k]; if (!c.on) continue;
+        Input& ci = G.coIn[k];
+        if (c.floor != g.floorKey) { c.floor = g.floorKey; c.x = g.px + (k % 2 ? -1 : 1) * (80 + 60 * k); }
+        c.moving = fabsf(ci.ax) > 0.2f;
+        if (c.moving) { c.x += ci.ax * 5.2f; c.dir = ci.ax > 0 ? 1 : -1; c.walk++; }
+        c.x = std::max(std::max(70.0f, camX + 50), std::min(std::min(f->width - 70, camX + SCR_W - 50), c.x));
+        if (c.emoteT > 0) c.emoteT--;
+        static const char* em[] = {"!", "...", "<3", "haha", "?", "hi!"};
+        if (ci.hit(B_A)) { c.em = em[rnd() % 6]; c.emoteT = 90; }
+        if (ci.hit(B_B)) { c.em = "wave"; c.emoteT = 70; }
+    }
+}
+
+static void startSayCustom(const std::string& key) {
+    TMPBLOCKS.emplace_back();
+    Block& b = TMPBLOCKS.back();
+    CharDef* c = charBy(key);
+    Cmd a; a.op = O_ASK; a.a = "SAY SOMETHING TO " + (c ? c->name : std::string("THEM")); b.cmds.push_back(a);
+    Cmd r; r.op = O_RUN; r.a = BLOCKS.count("reply_" + key) ? "reply_" + key : "reply_default"; b.cmds.push_back(r);
+    g.stack.push_back({&b, 0}); g.vs = V_RUN;
+    vmRun();
+}
+
 static void updateWorld(const Input& in) {
     FloorDef* f = floorBy(g.floorKey);
     if (!f) return;
@@ -766,6 +870,10 @@ static void updateWorld(const Input& in) {
     if (in.hit(B_A)) {
         Target t = nearestTarget();
         if (t.kind >= 0) doInteract(t);
+    }
+    if (in.hit(B_X) && g.vs == V_NONE) {
+        Target t = nearestTarget();
+        if (t.kind == 0) startSayCustom(t.id);
     }
 }
 

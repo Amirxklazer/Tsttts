@@ -40,12 +40,12 @@ say Adam|One down. Alicia, Uncommon floor!
 goal Visit Alicia on the Uncommon floor (UC-001).
 await talk alicia
 say Adam|Alicia, I... sat on your cards once. All of them.
-say Alicia|Fifty-two cards, ruined. I had to play with a bottle cap deck for a week.
+say Alicia|My cards are ALL gone! I had to play with bottle caps for a whole week!
 choose
 > It was an accident. => acc
 > Why a bottle cap deck? => cap
 label acc
-say Alicia|Accidents have consequences. But fine. I forgive you. Sign.
+say Alicia|That was mean! But okay. I forgive you. Sign here!
 goto next2
 label cap
 say Alicia|Iyad lent me his collection. It was a nightmare. We kept losing the Queen of Spades to the Number 14 cap.
@@ -73,6 +73,31 @@ await talk dalia
 say Dalia|I heard! Apology tour! My brother is doing a tour! Is the world ending?
 say Amir|Your brother is a hurricane. A well-meaning hurricane.
 say Dalia|That's exactly what he is. And Amyas is the weather report. Welcome to the Bachouche family.
+# VIGNETTE
+bars on
+scene inn amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |A door opens by itself, then politely closes.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini lights 4
+bars on
+scene room amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |A door opens by itself, then politely closes.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini lights 3
 endday
 
 # ================================================================ DAY 7
@@ -121,6 +146,19 @@ await talk youcef
 say Youcef|It sounds right again! Beautiful. I'll buy you a drink.
 say Amir|Youcef, the screen said something was knocking. From below.
 say Youcef|Pipes. Always pipes. Don't think about it. Go enjoy your evening.
+# VIGNETTE
+bars on
+scene outside amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |A door opens by itself, then politely closes.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini quiz 4 ilot14
 endday
 
 # ================================================================ DAY 8
@@ -159,6 +197,19 @@ await talk gabriel
 say Gabriel|A hum that says "Prime"? Same word as yesterday?
 say Amir|And the elevator screen said something was knocking from below.
 say Gabriel|That's two. Two is a pattern. Let's keep our eyes open.
+# VIGNETTE
+bars on
+scene lobby amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |Something small happens, and it matters more than it should.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 5
 endday
 
 # ================================================================ DAY 9
@@ -200,6 +251,31 @@ say Dustin|Do you hear that?
 say Amir|Pipes.
 say Dustin|That's not pipes.
 say Amir|...I know. Let's go upstairs.
+# VIGNETTE
+bars on
+scene room amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |The lamp flickers once. A hello.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 6
+bars on
+scene lobby amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |A door opens by itself, then politely closes.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 5
 endday
 
 # ================================================================ DAY 10
@@ -245,6 +321,19 @@ say Dalia|My kite! You actually got it! You went all the way up!
 say Dalia|You are the best, Amir. I'm going to hug you. Hold still.
 say Amir|I'm holding still.
 say Dalia|Okay, hug complete. Now I owe you ten favors. Choose wisely.
+# VIGNETTE
+bars on
+scene inn amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |The lamp flickers once. A hello.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini popcorn 10 2 1
 endday
 
 # ================================================================ DAY 11
@@ -296,16 +385,29 @@ goto next3
 label weapon
 say Amira|A weapon! I'll take it! Weapons are expensive!
 label next3
-say Amira|Kenzy is on the Special floor. She... he... Kenzy! Kenzy said he picked up some weird signal. Go ask.
-goal Talk to Kenzy on the Special floor (S-002).
+say Amira|Haydar is on the Special floor. She... he... Haydar! Haydar said he picked up some weird signal. Go ask.
+goal Talk to Haydar on the Special floor (S-002).
 await talk kenzy
-say Kenzy|Oh! Amir! You came! Don't touch the wires. Okay. Listen to this.
+say Haydar|Oh! Amir! You came! Don't touch the wires. Okay. Listen to this.
 say |A crackle. A burst of static. Then, very faint, almost a whisper: a slow, mechanical voice repeating a single word.
-say Kenzy|"Prime". It's coming from underground. Strongest at the Parking 2 level.
+say Haydar|"Prime". It's coming from underground. Strongest at the Parking 2 level.
 say Amir|Prime again. Three times now.
-say Kenzy|Four, counting the radio. I'm recording it. If it says something new, I'll tell you.
-say Amir|Thanks, Kenzy. Don't unplug anything.
-say Kenzy|No promises.
+say Haydar|Four, counting the radio. I'm recording it. If it says something new, I'll tell you.
+say Amir|Thanks, Haydar. Don't unplug anything.
+say Haydar|No promises.
+# VIGNETTE
+bars on
+scene outside amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |The lamp flickers once. A hello.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini whack 10
 endday
 
 # ================================================================ DAY 12
@@ -359,5 +461,30 @@ say Amir|Your secret's safe.
 say Amyas|I know. Because I know where you live. Third door on Lethal.
 say Amir|...Noted.
 scene off
+# VIGNETTE
+bars on
+scene lobby amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |The lamp flickers once. A hello.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini whack 12
+bars on
+scene outside amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |Something small happens, and it matters more than it should.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini whack 10
 endday
 )IL";

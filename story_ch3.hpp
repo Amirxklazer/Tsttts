@@ -62,6 +62,43 @@ fx fadein
 toast Level 18
 say |Level 18. Dark teal walls, orange lights, pipes that hum a note I almost recognize. This isn't the Backrooms. This is somewhere the building keeps for itself.
 say Amir|Stay close.
+# VIGNETTE
+bars on
+scene room amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini whack 10
+bars on
+scene lobby amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini popcorn 10 2 1
+bars on
+scene outside amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |The building hums. Somebody laughs two floors away.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 6
 endday
 
 # ================================================================ CH3 DAY 2
@@ -103,6 +140,43 @@ say Dalia|That was NOT in the brochure.
 say Gabriel|There's no brochure.
 say |Beyond the door, a faint orange glow. A campfire's worth of light, somewhere far ahead.
 set l18_door 1
+# VIGNETTE
+bars on
+scene inn amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini whack 12
+bars on
+scene room amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |The building hums. Somebody laughs two floors away.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini whack 10
+bars on
+scene lobby amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |A door opens by itself, then politely closes.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini popcorn 10 2 1
 endday
 
 # ================================================================ CH3 DAY 3
@@ -144,6 +218,55 @@ say Dalia|We have a base.
 say Amir|We have a base.
 set camp_found 1
 clearitems
+# VIGNETTE
+bars on
+scene outside amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |The lamp flickers once. A hello.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini lights 3
+bars on
+scene inn amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |The lamp flickers once. A hello.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini whack 12
+bars on
+scene room amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |The building hums. Somebody laughs two floors away.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini whack 10
+bars on
+scene lobby amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |The lamp flickers once. A hello.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini popcorn 10 2 1
 endday
 
 # ================================================================ CH3 DAY 4
@@ -151,27 +274,64 @@ script c3_4
 title The Pipe Maze
 bars on
 scene deep amir kenzy
-say |Day 4. Kenzy joined us overnight via the old service lift. He's carrying a bag of wires, a map, and a face that says "I regret nothing".
-say Kenzy|Prime picked up a sound from the east. A rhythm. I mapped it. It's coming from the pipes, in a pattern.
+say |Day 4. Haydar joined us overnight via the old service lift. He's carrying a bag of wires, a map, and a face that says "I regret nothing".
+say Haydar|Prime picked up a sound from the east. A rhythm. I mapped it. It's coming from the pipes, in a pattern.
 say Amir|Pipes don't make patterns.
-say Kenzy|These ones do.
+say Haydar|These ones do.
 bars off
 scene off
 warp camp 600
 npc kenzy camp 900
-goal Talk to Kenzy at the camp's map table.
+goal Talk to Haydar at the camp's map table.
 await talk kenzy
-say Kenzy|The east corridor is a maze of old pipes. A hum drains your stamina. Grab bottled water and reach the green exit light.
-say Kenzy|I'd go with you, but my bag is heavy and I've made some questionable decisions.
+say Haydar|The east corridor is a maze of old pipes. A hum drains your stamina. Grab bottled water and reach the green exit light.
+say Haydar|I'd go with you, but my bag is heavy and I've made some questionable decisions.
 mini maze 4 7
 ifnot skipped through
 say |(The pipes spat you out. A little bruised, a little dusty, a little offended.)
 label through
 say |You come out on the far side with four cool bottles and a dent in your elbow. The corridor behind you slides shut with a click.
-say Kenzy|And?
+say Haydar|And?
 say Amir|It was a maze.
-say Kenzy|I KNEW IT. Put it on the map.
+say Haydar|I KNEW IT. Put it on the map.
 set pipes_done 1
+# VIGNETTE
+bars on
+scene lobby amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini lights 4
+bars on
+scene outside amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini lights 3
+bars on
+scene inn amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |A door opens by itself, then politely closes.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini whack 12
 endday
 
 # ================================================================ CH3 DAY 5
@@ -199,6 +359,43 @@ say Gabriel|That's the heart of the building, isn't it.
 say Amir|I think it's the heart of something.
 say Dalia|I don't like it. I want to hug it.
 set furnace_seen 1
+# VIGNETTE
+bars on
+scene room amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |The lamp flickers once. A hello.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini quiz 4 ilot14
+bars on
+scene lobby amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini lights 4
+bars on
+scene outside amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |Something small happens, and it matters more than it should.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini lights 3
 endday
 
 # ================================================================ CH3 DAY 6
@@ -225,6 +422,55 @@ say |The last wraith pops. Grey drifts settle across the camp like tired snow.
 say Dalia|Okay. Okay. We can do this.
 say Prime|WE CAN. THE KETTLE IS STILL WARM.
 set camp_held 1
+# VIGNETTE
+bars on
+scene inn amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |The building hums. Somebody laughs two floors away.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 5
+bars on
+scene room amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |The lamp flickers once. A hello.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini quiz 4 ilot14
+bars on
+scene lobby amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |The lamp flickers once. A hello.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini lights 4
+bars on
+scene outside amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |A door opens by itself, then politely closes.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini lights 3
 endday
 
 # ================================================================ CH3 DAY 7
@@ -259,6 +505,43 @@ say Gabriel|They're strangers.
 say Bolt|Friends I haven't met yet!
 set flood_done 1
 clearitems
+# VIGNETTE
+bars on
+scene outside amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |Something small happens, and it matters more than it should.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 6
+bars on
+scene inn amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |A door opens by itself, then politely closes.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 5
+bars on
+scene room amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |Something small happens, and it matters more than it should.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini quiz 4 ilot14
 endday
 
 # ================================================================ CH3 DAY 8
@@ -287,6 +570,43 @@ say Dalia|"M-002 - DALIA". It's mine.
 say Sofia|It's a key to something.
 say Amir|Doors. There are doors.
 set first_plate 1
+# VIGNETTE
+bars on
+scene lobby amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |The building hums. Somebody laughs two floors away.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini popcorn 10 2 1
+bars on
+scene outside amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |The building hums. Somebody laughs two floors away.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 6
+bars on
+scene inn amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |Something small happens, and it matters more than it should.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 5
 endday
 
 # ================================================================ CH3 DAY 9
@@ -294,16 +614,16 @@ script c3_9
 title Static
 bars on
 scene deep amir kenzy prime
-say |Day 9. Kenzy's radio has been picking up a new signal. A voice, almost words. A rhythm, definitely music.
-say Kenzy|It's speaking. In a code I don't know. Prime, did you hear that?
+say |Day 9. Haydar's radio has been picking up a new signal. A voice, almost words. A rhythm, definitely music.
+say Haydar|It's speaking. In a code I don't know. Prime, did you hear that?
 say Prime|I HEARD A SEQUENCE. IT WAS IN FOUR PARTS. UP. RIGHT. DOWN. LEFT. IT SOUNDED... LONELY.
 bars off
 scene off
 warp camp 1000
 npc kenzy camp 1300
-goal Talk to Kenzy at the radio.
+goal Talk to Haydar at the radio.
 await talk kenzy
-say Kenzy|Match the signal. Each beat, a button. If you get it right, the radio tunes itself.
+say Haydar|Match the signal. Each beat, a button. If you get it right, the radio tunes itself.
 mini rhythm 30 5 120
 ifnot skipped tuned
 say |(The radio tuned itself. It was more sophisticated than it looked.)
@@ -313,9 +633,58 @@ say |The static clears. A voice. Raspy, young, familiar. Not quite my voice. Not
 say ???|"...If you're hearing this, you passed the furnace. Good. I'm sorry about the heat."
 say ???|"The Archive is south of the Waystation. Everything you need is behind the doors. Don't go alone."
 say Amir|That's me.
-say Kenzy|That is a very good impression of you.
+say Haydar|That is a very good impression of you.
 say Amir|It isn't an impression.
 set radio3 1
+# VIGNETTE
+bars on
+scene room amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |The building hums. Somebody laughs two floors away.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini whack 10
+bars on
+scene lobby amir prime
+cast amir 300
+cast prime 1100
+walk prime 700 5 wait
+emote prime !
+anim prime wave
+say |The building hums. Somebody laughs two floors away.
+say Prime|Got a minute? Quick game.
+bars off
+scene off
+mini popcorn 10 2 1
+bars on
+scene outside amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |A door opens by itself, then politely closes.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 6
+bars on
+scene inn amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |The lamp flickers once. A hello.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini pairs 4 5
 endday
 
 # ================================================================ CH3 DAY 10
@@ -368,5 +737,42 @@ say |Above the camp, a shape on the ledge. Not a wraith. A tall, thin silhouette
 say Amir|That wasn't a wraith.
 say Gabriel|No. It wasn't.
 set saw_shape 1
+# VIGNETTE
+bars on
+scene inn amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |The lamp flickers once. A hello.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini whack 12
+bars on
+scene room amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |The building hums. Somebody laughs two floors away.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini whack 10
+bars on
+scene lobby amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini popcorn 10 2 1
 endday
 )IL";

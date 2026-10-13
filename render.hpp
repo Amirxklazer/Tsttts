@@ -171,6 +171,38 @@ static void wallBG(const FloorDef& f) {
     rect(0, 46, SCR_W, 46, dim(f.wall, 0.5f));
 }
 
+
+static void drawOutsideDecor(const FloorDef& f, float camX) {
+    auto sx = [&](float wx) { return wx - camX; };
+    for (int x = -((int)camX % 220); x < SCR_W; x += 220) rect(x + 20, 640, 110, 6, C(240, 240, 240, 120));
+    if (f.key == "reghaia") {
+        // the building
+        rect(sx(60), 150, 420, 440, C(150, 140, 130)); for (int r = 0; r < 6; r++) for (int c = 0; c < 4; c++) rect(sx(90) + c * 100, 180 + r * 66, 60, 40, ((r + c) % 3 == 0) ? C(255, 220, 140) : C(70, 90, 130));
+        rect(sx(200), 470, 120, 120, C(40, 30, 30)); frameR(sx(200), 470, 120, 120, ORANGE, 4); text("14", sx(260), 430, 3, ORANGE, 1);
+        // bus stop
+        rect(sx(820), 420, 180, 12, C(60, 90, 150)); rect(sx(826), 432, 8, 158, C(60, 60, 70)); rect(sx(986), 432, 8, 158, C(60, 60, 70));
+        rect(sx(850), 300, 14, 290, C(200, 200, 205)); rect(sx(820), 250, 76, 52, C(40, 150, 90)); text("ETUSA", sx(858), 258, 1.2f, WHITE, 1); text("14", sx(858), 278, 1.4f, WHITE, 1);
+        // a bus
+        float bx = sx(1180 + fmodf(g.frame * 0.6f, 600));
+        if (F("bus_passing")) { rect(bx, 450, 300, 110, C(40, 150, 90)); rect(bx + 20, 466, 60, 36, C(170, 220, 240)); rect(bx + 100, 466, 60, 36, C(170, 220, 240)); rect(bx + 180, 466, 60, 36, C(170, 220, 240)); fillCircle(bx + 60, 560, 24, BLACK); fillCircle(bx + 230, 560, 24, BLACK); }
+        // kiosk
+        rect(sx(1540), 430, 150, 160, C(210, 110, 60)); rect(sx(1530), 410, 170, 26, C(240, 190, 80)); rect(sx(1560), 460, 110, 50, C(250, 235, 190)); text("KIOSK", sx(1615), 420, 1.3f, C(60, 30, 20), 1);
+        // cable car station + wire
+        rect(sx(2230), 190, 140, 400, C(120, 130, 150)); rect(sx(2220), 170, 160, 30, C(80, 90, 110)); text("TELEPHERIQUE", sx(2300), 120, 1.3f, WHITE, 1); text("EL MADANIA", sx(2300), 146, 1.1f, C(255, 220, 120), 1);
+        line(sx(2380), 190, sx(3200), 40, C(40, 40, 50)); line(sx(2380), 192, sx(3200), 42, C(40, 40, 50));
+        float cx2 = sx(2500 + fmodf(g.frame * 0.8f, 600)); float cy2 = 190 - (cx2 - sx(2380)) * (150.0f / 820.0f) + 30;
+        rect(cx2 - 30, cy2, 60, 40, C(230, 90, 60)); rect(cx2 - 22, cy2 + 8, 44, 18, C(170, 220, 240));
+    } else {   // madania
+        for (int i = 0; i < 6; i++) rect(sx(900 + i * 140), 220 + (i % 2) * 40, 100, 370 - (i % 2) * 40, C(190, 180, 170));
+        rect(sx(180), 230, 160, 360, C(120, 130, 150)); text("TELEPHERIQUE", sx(260), 190, 1.2f, WHITE, 1); text("REGHAIA", sx(260), 212, 1.1f, C(255, 220, 120), 1);
+        rect(sx(1380), 240, 340, 350, C(60, 20, 40)); rect(sx(1370), 220, 360, 30, C(255, 200, 80)); text("CINEMA", sx(1550), 224, 2.2f, C(60, 20, 40), 1);
+        for (int k = 0; k < 8; k++) fillCircle(sx(1390) + k * 44, 235, 5, ((g.frame / 8 + k) % 2) ? WHITE : C(255, 200, 80));
+        rect(sx(1450), 330, 100, 90, C(250, 240, 200)); rect(sx(1570), 330, 100, 90, C(250, 240, 200)); rect(sx(1490), 470, 120, 120, C(30, 18, 24));
+        rect(sx(2140), 500, 330, 10, C(60, 60, 70)); for (int k = 0; k < 7; k++) rect(sx(2140) + k * 52, 440, 8, 70, C(60, 60, 70));
+        fillCircle(sx(2300), 240, 70, C(255, 190, 120, 120));
+    }
+}
+
 static void drawTheme(const FloorDef& f, float camX) {
     const std::string& th = f.theme;
     auto sx = [&](float wx) { return wx - camX; };
@@ -184,6 +216,8 @@ static void drawTheme(const FloorDef& f, float camX) {
             rect(0, 500, SCR_W, 5, C(60, 60, 70)); for (int x = -((int)camX % 60); x < SCR_W; x += 60) rect(x, 500, 5, 90, C(60, 60, 70));
             rect(sx(760), 380, 130, 200, C(120, 90, 70)); rect(sx(750), 365, 150, 20, C(90, 65, 50));
             rect(sx(1450), 330, 8, 260, C(60, 60, 70)); rect(sx(1415), 380, 80, 5, C(60, 60, 70)); rect(sx(1425), 430, 60, 5, C(60, 60, 70));
+        } else if (f.key != "out1") {
+            drawOutsideDecor(f, camX);
         } else {
             for (int x = -((int)camX % 220); x < SCR_W; x += 220) { rect(x + 20, 640, 110, 6, C(240, 240, 240, 140)); }
             rect(sx(300), 440, 240, 70, C(190, 60, 60)); rect(sx(330), 410, 150, 40, C(190, 60, 60)); rect(sx(345), 416, 55, 28, C(140, 190, 230));
@@ -200,6 +234,35 @@ static void drawTheme(const FloorDef& f, float camX) {
         rect(0, 590, SCR_W, 130, C(20, 34, 40)); rect(0, 588, SCR_W, 4, C(255, 140, 50));
         for (int x = -((int)camX % 260); x < SCR_W; x += 260) rect(x + 40, 470, 10, 10, C(255, 140, 50, 120 + (int)(100 * sinf(g.frame * 0.1f + x))));
         text(f.name, 640, 110, 2.4f, C(255, 140, 50, 90), 1, 6);
+        return;
+    }
+    if (th == "cinema") {
+        rect(0, 0, SCR_W, SCR_H, C(30, 12, 24)); rect(0, 590, SCR_W, 130, C(70, 20, 30)); rect(0, 586, SCR_W, 6, C(255, 200, 80));
+        for (int x = -((int)camX % 200); x < SCR_W; x += 200) { rect(x + 20, 140, 120, 170, C(40, 30, 60)); frameR(x + 20, 140, 120, 170, C(255, 200, 80), 3); text("NOW", x + 80, 190, 1.4f, C(255, 200, 80), 1); text("SHOWING", x + 80, 214, 1.2f, WHITE, 1); }
+        rect(sx(700), 440, 240, 150, C(100, 70, 40)); text("TICKETS", sx(820), 400, 1.8f, C(255, 200, 80), 1);
+        rect(sx(1200), 430, 220, 160, C(200, 50, 60)); for (int k = 0; k < 6; k++) rect(sx(1200) + k * 37, 430, 18, 160, WHITE); fillCircle(sx(1310), 410, 40, C(255, 245, 200)); text("POPCORN", sx(1310), 380, 1.5f, WHITE, 1);
+        rect(sx(1800), 300, 280, 290, C(20, 20, 30)); frameR(sx(1800), 300, 280, 290, C(255, 200, 80), 4); text("SALLE 1", sx(1940), 260, 2, C(255, 200, 80), 1);
+        rect(sx(110), 380, 150, 210, C(50, 30, 30)); text("EXIT", sx(185), 340, 1.6f, C(120, 255, 190), 1);
+        return;
+    }
+    if (th == "school") {
+        gradient(46, 560, C(235, 225, 190), C(215, 205, 165)); rect(0, 560, SCR_W, 30, C(150, 140, 110)); rect(0, 590, SCR_W, 130, C(120, 110, 90)); rect(0, 586, SCR_W, 6, C(60, 120, 90));
+        for (int x = -((int)camX % 300); x < SCR_W; x += 300) { rect(x + 60, 150, 140, 130, C(170, 210, 235)); frameR(x + 60, 150, 140, 130, C(90, 80, 70), 4); }
+        text("ECOLE", sx(320), 110, 3, C(60, 120, 90), 0, 4);
+        rect(sx(820), 360, 160, 230, C(110, 70, 40)); text("CLASS 3B", sx(900), 330, 1.5f, C(60, 40, 30), 1);
+        rect(sx(1500), 380, 280, 14, C(90, 60, 40)); fillCircle(sx(1560), 340, 36, C(250, 250, 250)); rect(sx(1620), 350, 100, 40, C(150, 150, 150)); text("YARD", sx(1640), 300, 1.6f, C(60, 120, 90), 1);
+        rect(sx(2130), 360, 160, 230, C(60, 90, 70)); text("TEACHERS", sx(2210), 330, 1.5f, WHITE, 1);
+        rect(sx(110), 380, 120, 210, C(40, 150, 90)); text("BUS", sx(170), 350, 1.6f, WHITE, 1);
+        return;
+    }
+    if (th == "roomint") {
+        gradient(46, 560, mix(f.wall, WHITE, 0.08f), dim(f.wall, 0.85f)); rect(0, 560, SCR_W, 30, dim(f.wall, 0.6f)); rect(0, 590, SCR_W, 130, C(98, 72, 52)); rect(0, 586, SCR_W, 6, f.trim);
+        rect(sx(1250), 150, 220, 240, C(150, 200, 240)); frameR(sx(1250), 150, 220, 240, C(40, 40, 50), 6); rect(sx(1356), 150, 8, 240, C(40, 40, 50));
+        rect(sx(160), 380, 120, 210, C(40, 34, 30)); frameR(sx(160), 380, 120, 210, f.trim, 4);
+        if (f.key == "room_amir") { rect(sx(380), 500, 280, 90, C(235, 235, 235)); rect(sx(380), 470, 90, 40, C(249, 115, 22)); rect(sx(820), 470, 240, 20, C(110, 80, 60)); rect(sx(840), 420, 120, 50, C(30, 40, 60)); for (int k = 0; k < 8; k++) rect(sx(1240) + (k % 4) * 52, 410 + (k / 4) * 60, 40, 44, C(240, 230, 200)); }
+        else if (f.key == "room_dalia") { rect(sx(380), 556, 170, 34, C(120, 190, 255)); fillCircle(sx(430), 546, 14, C(120, 190, 255)); rect(sx(820), 470, 200, 20, C(240, 180, 200)); rect(sx(1240), 330, 240, 140, C(250, 245, 230)); for (int k = 0; k < 5; k++) rect(sx(1255) + k * 44, 350 + (k % 2) * 30, 34, 20, C(255, 120, 150)); }
+        else { rect(sx(380), 560, 140, 30, C(150, 120, 80)); rect(sx(420), 540, 60, 22, C(150, 120, 80)); rect(sx(900), 380, 220, 210, C(80, 60, 50)); for (int k = 0; k < 4; k++) rect(sx(910), 400 + k * 50, 200, 6, C(40, 30, 26)); rect(sx(1240), 470, 130, 120, C(70, 74, 84)); rect(sx(1250), 440, 110, 40, C(255, 255, 255)); }
+        text(f.name, 640, 110, 1.8f, C(255, 255, 255, 110), 1, 4);
         return;
     }
     wallBG(f);
@@ -317,7 +380,7 @@ static void drawWorld() {
     for (auto& o : all) {
         float x = o.x - camX;
         if (x < -100 || x > SCR_W + 100) continue;
-        bool plain = (o.id == "backdoor" || o.id == "frontdoor" || o.id == "reception" || o.id == "vending" || o.id == "fan" || o.id == "car1" || o.id == "car2" || o.id == "tank" || o.id == "shaftgap");
+        bool plain = (o.id.rfind("p_", 0) == 0 || o.id == "backdoor" || o.id == "frontdoor" || o.id == "reception" || o.id == "vending" || o.id == "fan" || o.id == "car1" || o.id == "car2" || o.id == "tank" || o.id == "shaftgap");
         if (!plain) { rect(x - 28, 520, 56, 70, C(40, 50, 70)); frameR(x - 28, 520, 56, 70, C(120, 255, 190), 3); rect(x - 20, 530, 40, 24, C(120, 255, 190, 150)); }
         else rect(x - 3, 596, 6, 6, C(255, 255, 255, 100 + (int)(100 * sinf(g.frame * 0.1f))));
     }
@@ -345,12 +408,22 @@ static void drawWorld() {
     // player
     CharDef* pc = charBy("amir");
     drawPerson(g.px - camX, GY, g.pdir, pc->look, g.walk, g.moving);
+    // co-op players
+    if (g.coopOn) for (int k = 0; k < 3; k++) {
+        CoPlayer& cp = g.co[k]; CharDef* cc = charBy(cp.key);
+        if (!cp.on || !cc || cp.floor != g.floorKey) continue;
+        float x = cp.x - camX;
+        if (cc->isBot) drawBot(x, GY, cc->look.shirt, g.frame + k * 9, cp.dir); else drawPerson(x, GY, cp.dir, cc->look, cp.walk, cp.moving);
+        float hh = cc->isBot ? 0.6f : cc->look.h;
+        text("P" + std::to_string(k + 2) + " " + cc->name, x, GY - 112 * hh - 46, 1.1f, k == 0 ? C(120, 220, 255) : k == 1 ? C(255, 150, 200) : C(200, 255, 130), 1, 2);
+        if (cp.emoteT > 0) drawEmote(x, GY - 112 * hh - 70, cp.em, g.frame);
+    }
     // prompt
     if (!g.elevOpen && g.fadePhase == 0 && (g.vs == V_AWAIT || g.vs == V_NONE)) {
         Target t = nearestTarget();
         if (t.kind >= 0) {
             float x = g.px - camX;
-            std::string s = "A  " + t.label;
+            std::string s = "A  " + t.label + (t.kind == 0 ? "    X  Say..." : "");
             float w = textW(s, 1.4f) + 24;
             rect(x - w / 2, 330 - 6, w, 34, C(0, 0, 0, 190)); frameR(x - w / 2, 330 - 6, w, 34, ORANGE, 2);
             text(s, x, 330, 1.4f, WHITE, 1);
@@ -617,14 +690,17 @@ static void drawTower() {
 static void drawTitleMenu() {
     blueprintBG();
     drawTower();
-    text("\xC3\x8E L O T 1 4", 110, 100, 6.6f, WHITE, 0, 4);
-    text("W O R L D   //   BLUEPRINT SERIES", 114, 190, 1.5f, C(255, 255, 255, 200));
+    text("\xC3\x8E L O T 1 4", 110, 98, 6.6f, WHITE, 0, 4);
+    text("W O R L D   //   BLUEPRINT SERIES", 114, 180, 1.5f, C(255, 255, 255, 200));
     SlotInfo last; if (g.st.lastSlot > 0) last = slotInfo(g.st.lastSlot);
-    const char* names[] = {"CONTINUE", "NEW GAME", "SAVE SLOTS", "DAY SELECT", "CHAPTERS", "CUSTOMIZE", "SETTINGS", "EXIT TO HOMEBREW MENU"};
-    for (int i = 0; i < 8; i++) bpButton(130, 226 + i * 50, 560, 42, names[i], g.sel == i, i != 0 || last.exists, i);
+    const char* names[] = {"CONTINUE", "NEW GAME", "SAVE SLOTS", "DAY SELECT", "CHAPTERS", "CO-OP", "CUSTOMIZE", "EXTRAS", "SETTINGS", "EXIT TO HOMEBREW MENU"};
+    for (int i = 0; i < 10; i++) bpButton(130, 212 + i * 42, 560, 36, names[i], g.sel == i, i != 0 || last.exists, i);
     if (g.msgT > 0) text(g.msg, 130, 642, 1.4f, C(255, 220, 120));
-    if (g.sel == 0 && last.exists) text("Slot " + std::to_string(g.st.lastSlot) + " - " + ("Ch." + std::to_string(last.chapter) + " ") + "Day " + std::to_string(last.day), 710, 236, 1.3f, C(255, 255, 255, 180));
-    if (g.sel == 4 && g.st.unl[2]) text(g.st.unl[3] ? "Chapters 2 and 3 unlocked!" : "Chapter 2 unlocked!", 710, 436, 1.3f, C(120, 255, 190));
+    if (g.sel == 0 && last.exists) text("Slot " + std::to_string(g.st.lastSlot) + " - Ch." + std::to_string(last.chapter) + " Day " + std::to_string(last.day), 710, 224, 1.3f, C(255, 255, 255, 180));
+    if (g.sel == 4) text(g.st.unl[2] ? "Next chapters unlocked!" : "3 chapters + a Chapter 4 preview", 710, 392, 1.3f, C(120, 255, 190));
+    if (g.sel == 5) text("Local multiplayer: up to 4 players", 710, 434, 1.3f, C(120, 255, 190));
+    if (g.sel == 7) text("Badges, redeem codes, lore, endings", 710, 518, 1.3f, C(120, 255, 190));
+    text(std::to_string(U_BADGES.size()) + "/" + std::to_string(NBADGES) + " badges", 1210, 668, 1.2f, C(255, 255, 255, 150), 2);
 }
 
 static void drawSlotList(const std::string& heading, const std::string& hint) {
@@ -650,14 +726,14 @@ static void drawSlotList(const std::string& heading, const std::string& hint) {
 static void drawDaySelect() {
     blueprintBG();
     text("DAY SELECT", 110, 90, 3.4f, WHITE, 0, 6);
-    Col cc[4] = {WHITE, ORANGE, C(120, 255, 220), C(255, 120, 150)};
+    Col cc[5] = {WHITE, WHITE, ORANGE, C(120, 255, 220), C(255, 120, 150)};
     int ch = g.dsCh, len = CH_LEN[ch];
-    for (int c = 1; c <= 3; c++) {
-        float x = 130 + (c - 1) * 330; bool un = g.st.unl[c], on = c == ch;
-        HITS.push_back({x, 148, 310, 40, 5, c});
-        if (on) rect(x, 148, 310, 40, cc[c]);
-        else frameR(x, 148, 310, 40, un ? cc[c] : C(255, 255, 255, 70), 2);
-        text("CH" + std::to_string(c) + " " + std::string(CH_NAME[c]) + (un ? "" : "  [LOCKED]"), x + 155, 158, 1.2f, on ? C(20, 30, 70) : (un ? cc[c] : C(255, 255, 255, 90)), 1);
+    for (int c = 1; c <= 4; c++) {
+        float x = 130 + (c - 1) * 250; bool un = g.st.unl[c], on = c == ch;
+        HITS.push_back({x, 148, 238, 40, 5, c});
+        if (on) rect(x, 148, 238, 40, cc[c]);
+        else frameR(x, 148, 238, 40, un ? cc[c] : C(255, 255, 255, 70), 2);
+        text("CH" + std::to_string(c) + " " + std::string(CH_NAME[c]) + (un ? "" : " [LOCKED]"), x + 119, 158, 1.0f, on ? C(20, 30, 70) : (un ? cc[c] : C(255, 255, 255, 90)), 1);
     }
     int maxd = g.st.maxD[ch];
     for (int d = 1; d <= len; d++) {
@@ -724,27 +800,27 @@ static void drawChapters() {
     blueprintBG();
     text("CHAPTERS", 110, 100, 3.4f, WHITE, 0, 6);
     struct Ch { const char* n; const char* t; std::string d; bool un; };
-    Ch chs[3] = {{"CHAPTER 1  -  31 DAYS", "LOST THE ASH", "The Dalia quest, the hornets, the Backrooms, Prime, Îlot14 Day.", true},
+    Ch chs[4] = {{"CHAPTER 1  -  31 DAYS", "LOST THE ASH", "The Dalia quest, the hornets, the Backrooms, Prime, Îlot14 Day.", true},
                  {"CHAPTER 2  -  35 DAYS", "FURTHER INN", g.st.unl[2] ? "Reopen the Inn. The ledger, the knocking, Room 000." : "Finish Day 31 of Chapter 1 to unlock.", g.st.unl[2]},
-                 {"CHAPTER 3  -  40 DAYS", "LOWEST POINT", g.st.unl[3] ? "Level 18. Doors with names. The shape behind the glass." : "Finish Day 35 of Chapter 2 to unlock.", g.st.unl[3]}};
-    for (int i = 0; i < 3; i++) {
-        float y = 190 + i * 130; bool sel = g.sel == i;
-        HITS.push_back({110, y, 1060, 112, 0, i});
-        if (sel) rect(110, y, 1060, 112, C(255, 255, 255, 40));
-        frameR(110, y, 1060, 112, chs[i].un ? WHITE : C(255, 255, 255, 90), sel ? 4 : 2);
+                 {"CHAPTER 3  -  40 DAYS", "LOWEST POINT", g.st.unl[3] ? "Level 18. Doors with names. The shape behind the glass." : "Finish Day 35 of Chapter 2 to unlock.", g.st.unl[3]},
+                 {"CHAPTER 4  -  NEVER", "??? (PREVIEW)", g.st.unl[4] ? "A short look at what comes next." : "Finish Day 40 of Chapter 3 to peek.", g.st.unl[4]}};
+    for (int i = 0; i < 4; i++) {
+        float y = 150 + i * 118; bool sel = g.sel == i;
+        HITS.push_back({110, y, 1060, 104, 0, i});
+        if (sel) rect(110, y, 1060, 104, C(255, 255, 255, 40));
+        frameR(110, y, 1060, 104, chs[i].un ? WHITE : C(255, 255, 255, 90), sel ? 4 : 2);
         Col c = chs[i].un ? WHITE : C(255, 255, 255, 110);
-        text(chs[i].n, 140, y + 14, 1.6f, sel ? ORANGE : c, 0, 4);
-        text(chs[i].t, 140, y + 46, 2.0f, c);
-        text(chs[i].d, 140, y + 82, 1.3f, C(255, 255, 255, chs[i].un ? 190 : 110));
-        if (!chs[i].un) { rect(1066, y + 38, 60, 44, C(255, 255, 255, 40)); frameR(1066, y + 38, 60, 44, C(255, 255, 255, 140), 3); text("LOCK", 1096, y + 50, 1.0f, C(255, 255, 255, 170), 1); }
+        text(chs[i].n, 140, y + 12, 1.6f, sel ? ORANGE : c, 0, 4);
+        text(chs[i].t, 140, y + 42, 2.0f, c);
+        text(chs[i].d, 140, y + 76, 1.3f, C(255, 255, 255, chs[i].un ? 190 : 110));
+        if (!chs[i].un) { rect(1066, y + 30, 60, 44, C(255, 255, 255, 40)); frameR(1066, y + 30, 60, 44, C(255, 255, 255, 140), 3); text("LOCK", 1096, y + 42, 1.0f, C(255, 255, 255, 170), 1); }
     }
-    if (g.msgT > 0) text(g.msg, 110, 600, 1.4f, C(255, 220, 120));
+    if (g.msgT > 0) text(g.msg, 110, 622, 1.4f, C(255, 220, 120));
 }
 
 static void drawCustomize() {
     blueprintBG();
     text("CUSTOMIZE", 110, 100, 3.4f, WHITE, 0, 6);
-    // preview
     Look l = lookFromAppear(APP); l.h *= 2.4f;
     frameR(800, 150, 360, 480, WHITE, 3); dashH(810, 580, 340, C(255, 255, 255, 120));
     int dirv = ((g.custSpin / 90) % 2) ? -1 : 1;
@@ -752,25 +828,26 @@ static void drawCustomize() {
     text("YOU", 980, 160, 1.6f, WHITE, 1, 6);
     struct Row { std::string a, b; };
     std::vector<Row> rows = {
-        {"SKIN", SKIN_N[APP.skin]}, {"HAIR STYLE", HAIR_N[APP.hairStyle]}, {"HAIR COLOR", std::to_string(APP.hairCol + 1) + " / 8"},
+        {"SKIN", SKIN_N[APP.skin]}, {"HAIR STYLE", HAIR_N[APP.hairStyle]}, {"HAIR COLOR", std::to_string(APP.hairCol + 1) + " / 12"},
         {"HEIGHT", HEIGHT_N[APP.height]}, {"CLOTHES", TOP_N[APP.top]}, {"CLOTHES COLOR", std::to_string(APP.topCol + 1) + " / 12"},
-        {"PANTS", std::to_string(APP.pants + 1) + " / 8"}, {"EXTRA", ACC_N[APP.acc]}, {"14 BADGE", APP.tag14 ? "ON" : "OFF"},
-        {"RESET", ""}, {"DONE", ""}};
+        {"PANTS", std::to_string(APP.pants + 1) + " / 8"}, {"SHOES", std::to_string(APP.shoes + 1) + " / 6"}, {"EYES", EYES_N[APP.eyes]},
+        {"EXTRA", ACC_N[APP.acc]}, {"14 BADGE", APP.tag14 ? "ON" : "OFF"}, {"RESET", ""}, {"DONE", ""}};
     for (size_t i = 0; i < rows.size(); i++) {
-        float y = 160 + i * 42; bool sel = g.custSel == (int)i;
-        if (i < 9) { HITS.push_back({110, y, 320, 36, 3, (int)i}); HITS.push_back({430, y, 320, 36, 4, (int)i}); } else HITS.push_back({110, y, 640, 36, 0, (int)i});
-        if (sel) { rect(110, y, 640, 36, WHITE); rect(88, y + 10, 14, 16, ORANGE); }
-        else frameR(110, y, 640, 36, WHITE, 2);
+        float y = 142 + i * 37; bool sel = g.custSel == (int)i;
+        if (i < 11) { HITS.push_back({110, y, 320, 33, 3, (int)i}); HITS.push_back({430, y, 320, 33, 4, (int)i}); } else HITS.push_back({110, y, 640, 33, 0, (int)i});
+        if (sel) { rect(110, y, 640, 33, WHITE); rect(88, y + 9, 14, 15, ORANGE); }
+        else frameR(110, y, 640, 33, WHITE, 2);
         Col c = sel ? C(28, 66, 156) : WHITE;
-        text(rows[i].a, 130, y + 6, 1.6f, c, 0, 2);
-        if (!rows[i].b.empty()) text((sel ? "<  " : "") + rows[i].b + (sel ? "  >" : ""), 730, y + 6, 1.6f, c, 2);
+        text(rows[i].a, 130, y + 5, 1.5f, c, 0, 2);
+        if (!rows[i].b.empty()) text((sel ? "<  " : "") + rows[i].b + (sel ? "  >" : ""), 730, y + 5, 1.5f, c, 2);
     }
-    // swatches
-    float sy = 630;
-    if (g.custSel == 0) for (int i = 0; i < 8; i++) { rect(110 + i * 44, sy, 36, 20, SKIN_C[i]); if (i == APP.skin) frameR(108 + i * 44, sy - 2, 40, 24, WHITE, 2); }
-    if (g.custSel == 2) for (int i = 0; i < 8; i++) { rect(110 + i * 44, sy, 36, 20, HAIR_C[i]); if (i == APP.hairCol) frameR(108 + i * 44, sy - 2, 40, 24, WHITE, 2); }
-    if (g.custSel == 5) for (int i = 0; i < 12; i++) { rect(110 + i * 44, sy, 36, 20, TOP_C[i]); if (i == APP.topCol) frameR(108 + i * 44, sy - 2, 40, 24, WHITE, 2); }
-    if (g.custSel == 6) for (int i = 0; i < 8; i++) { rect(110 + i * 44, sy, 36, 20, PANT_C[i]); if (i == APP.pants) frameR(108 + i * 44, sy - 2, 40, 24, WHITE, 2); }
+    float sy = 626;
+    auto sw = [&](const Col* cs, int n, int cur) { for (int i = 0; i < n; i++) { rect(110 + i * 44, sy, 36, 18, cs[i]); if (i == cur) frameR(108 + i * 44, sy - 2, 40, 22, WHITE, 2); } };
+    if (g.custSel == 0) sw(SKIN_C, 8, APP.skin);
+    if (g.custSel == 2) sw(HAIR_C, 12, APP.hairCol);
+    if (g.custSel == 5) sw(TOP_C, 12, APP.topCol);
+    if (g.custSel == 6) sw(PANT_C, 8, APP.pants);
+    if (g.custSel == 7) sw(SHOE_C, 6, APP.shoes);
 }
 
 static void drawRegistry() {
@@ -803,8 +880,8 @@ static void drawEnding() {
     rect(0, 0, SCR_W, SCR_H, C(8, 10, 22));
     float a = std::min(1.0f, g.cT / 90.0f);
     text("CHAPTER " + std::to_string(g.endCh) + " COMPLETE", 640, 200, 4, C(255, 255, 255, (int)(255 * a)), 1, 8);
-    text(g.endCh < 3 ? std::string(CH_NAME[g.endCh]) + " - done" : "TO BE CONTINUED...", 640, 300, 3, C(249, 115, 22, (int)(255 * a)), 1, 6);
-    if (g.endCh < 3 && g.cT > 100) text("CHAPTER " + std::to_string(g.endCh + 1) + ": " + std::string(CH_NAME[g.endCh + 1]) + " - UNLOCKED. Press Continue!", 640, 520, 2, C(120, 255, 190, 220), 1, 3);
+    text(g.endCh < 4 ? std::string(CH_NAME[g.endCh]) + " - done" : "TO BE CONTINUED...", 640, 300, 3, C(249, 115, 22, (int)(255 * a)), 1, 6);
+    if (g.endCh < 4 && g.cT > 100) text("CHAPTER " + std::to_string(g.endCh + 1) + ": " + std::string(CH_NAME[g.endCh + 1]) + (g.endCh == 3 ? " (PREVIEW)" : "") + " - UNLOCKED. Press Continue!", 640, 520, 2, C(120, 255, 190, 220), 1, 3);
     text("LOST OF ASHES  -  the story goes on", 640, 400, 1.8f, C(255, 255, 255, (int)(200 * a)), 1);
     text("Thanks for playing  " VERSION, 640, 460, 1.6f, C(255, 255, 255, (int)(160 * a)), 1);
     if (g.cT > 120) text("A", 640, 580, 2, C(255, 255, 255, 120 + (int)(100 * sinf(g.cT * 0.12f))), 1);
@@ -828,4 +905,190 @@ static void drawTouchWarn() {
     text("PLAY WITH", x + 200, y + 18, 1.9f, C(255, 255, 255, a), 1, 2);
     text("JOY-CONS", x + 200, y + 46, 2.2f, C(255, 90, 90, a), 1, 2);
     text("Touch is for menus only", x + 200, y + 80, 1.0f, C(255, 255, 255, (int)(a * 0.8f)), 1);
+}
+
+// ================================================================ v0.5 screens: extras, redeem, badges, lore, co-op, keyboard, scare
+static void drawKeyboard(float y0) {
+    const float kw = 78, kh = 54, gp = 6, x0 = 640 - (10 * (kw + gp) - gp) / 2;
+    for (int r = 0; r < 5; r++) {
+        int n = g.kb.rowLen(r);
+        for (int c = 0; c < n; c++) {
+            float w = r < 4 ? kw : (10 * (kw + gp) - gp - 2 * gp) / 3.0f;
+            float x = x0 + c * (w + gp), y = y0 + r * (kh + gp);
+            bool sel = g.kb.r == r && g.kb.c == c;
+            HITS.push_back({x, y, w, kh, 6, r * 16 + c});
+            if (sel) rect(x, y, w, kh, WHITE); else frameR(x, y, w, kh, C(255, 255, 255, 200), 2);
+            std::string lab = r < 4 ? std::string(1, Kb::ROW(r)[c]) : (c == 0 ? "SPACE" : c == 1 ? "DEL" : "OK");
+            text(lab, x + w / 2, y + 14, 2.0f, sel ? C(28, 66, 156) : (r == 4 && c == 2 ? C(120, 255, 190) : WHITE), 1);
+        }
+    }
+}
+
+static void drawExtras() {
+    blueprintBG();
+    text("EXTRAS", 110, 100, 3.4f, WHITE, 0, 6);
+    const char* n[3] = {"REDEEM CODE", "BADGES", "LORE & ENDINGS"};
+    std::string d[3] = {"Type a code to unlock lore and custom endings.", std::to_string(U_BADGES.size()) + " of " + std::to_string(NBADGES) + " badges earned.", std::to_string(U_LORE.size()) + " of " + std::to_string(NLORE) + " entries unlocked."};
+    for (int i = 0; i < 3; i++) {
+        float y = 190 + i * 130; bool sel = g.extSel == i;
+        HITS.push_back({110, y, 1060, 112, 0, i});
+        if (sel) rect(110, y, 1060, 112, C(255, 255, 255, 40));
+        frameR(110, y, 1060, 112, WHITE, sel ? 4 : 2);
+        text(n[i], 140, y + 20, 2.4f, sel ? ORANGE : WHITE, 0, 4);
+        text(d[i], 140, y + 70, 1.4f, C(255, 255, 255, 190));
+    }
+}
+
+static void drawRedeem() {
+    blueprintBG();
+    text("REDEEM CODE", 110, 100, 3.4f, WHITE, 0, 6);
+    text("Type a code, then press OK (or +).", 114, 160, 1.4f, C(255, 255, 255, 190));
+    rect(300, 196, 680, 62, C(8, 18, 50)); frameR(300, 196, 680, 62, WHITE, 3);
+    std::string t = g.kb.text + (((g.frame / 25) % 2) ? "_" : "");
+    text(t, 320, 212, 2.6f, WHITE, 0, 4);
+    drawKeyboard(280);
+    if (g.redeemT > 0) text(g.redeemMsg, 640, 614, 1.6f, C(255, 220, 120), 1);
+}
+
+static void drawBadges() {
+    blueprintBG();
+    text("BADGES", 110, 90, 3.0f, WHITE, 0, 6);
+    text(std::to_string(U_BADGES.size()) + " / " + std::to_string(NBADGES), 1150, 100, 2, ORANGE, 2);
+    const int per = 8; int top = std::max(0, std::min(NBADGES - per, g.badgeSel - per / 2));
+    for (int k = 0; k < per && top + k < NBADGES; k++) {
+        int i = top + k; const BadgeDef& b = BADGE_LIST[i]; bool un = U_BADGES.count(b.id) > 0;
+        float y = 146 + k * 58; bool sel = g.badgeSel == i;
+        HITS.push_back({110, y, 1060, 52, 0, i});
+        if (sel) rect(110, y, 1060, 52, C(255, 255, 255, 36));
+        frameR(110, y, 1060, 52, un ? ORANGE : C(255, 255, 255, 90), sel ? 3 : 2);
+        fillCircle(146, y + 26, 18, un ? ORANGE : C(255, 255, 255, 50));
+        if (un) text("*", 146, y + 12, 2.0f, C(28, 66, 156), 1); else text("?", 146, y + 12, 2.0f, C(255, 255, 255, 120), 1);
+        text(un ? b.name : "???", 185, y + 6, 1.6f, un ? WHITE : C(255, 255, 255, 120));
+        text(b.desc, 185, y + 30, 1.1f, C(255, 255, 255, un ? 190 : 110));
+    }
+}
+
+static void drawLore() {
+    blueprintBG();
+    text("LORE & ENDINGS", 110, 90, 3.0f, WHITE, 0, 6);
+    std::vector<std::string> es = loreEntries();
+    text(std::to_string(es.size()) + " / " + std::to_string(NLORE) + " unlocked.  Redeem codes in Extras to find more.", 114, 140, 1.2f, C(255, 255, 255, 190));
+    if (es.empty()) { text("Nothing here yet.", 640, 330, 2.4f, C(255, 255, 255, 130), 1); return; }
+    const int per = 8; int top = std::max(0, std::min((int)es.size() - per, g.loreSel - per / 2));
+    for (int k = 0; k < per && top + k < (int)es.size(); k++) {
+        int i = top + k; const LoreDef& L = LORE_LIST[loreIndex(es[i])]; bool sel = g.loreSel == i;
+        float y = 172 + k * 56;
+        HITS.push_back({110, y, 1060, 50, 0, i});
+        if (sel) rect(110, y, 1060, 50, C(255, 255, 255, 36));
+        frameR(110, y, 1060, 50, sel ? WHITE : C(255, 255, 255, 120), sel ? 3 : 2);
+        text(std::string(L.kind), 130, y + 14, 1.2f, std::string(L.kind) == "ENDING" ? ORANGE : C(120, 255, 220));
+        text(L.title, 260, y + 12, 1.7f, WHITE);
+    }
+}
+
+static void drawLoreView() {
+    blueprintBG();
+    std::vector<std::string> es = loreEntries();
+    if (g.loreSel >= (int)es.size()) return;
+    const LoreDef& L = LORE_LIST[loreIndex(es[g.loreSel])];
+    std::vector<std::string> pg = pagesOf(L.pages);
+    text(std::string(L.kind) + ":  " + L.title, 640, 110, 2.8f, ORANGE, 1, 4);
+    frameR(160, 170, 960, 380, WHITE, 3);
+    // little animated backdrop
+    for (int i = 0; i < 14; i++) { float x = 180 + fmodf(i * 97 + g.frame * (0.3f + (i % 3) * 0.2f), 920), y = 190 + (i * 53) % 340; fillCircle(x, y, 2 + i % 3, C(255, 255, 255, 40)); }
+    int p = std::max(0, std::min((int)pg.size() - 1, g.lorePage));
+    auto ls = wrapText(pg[p], 46);
+    for (size_t i = 0; i < ls.size(); i++) text(ls[i], 640, 230 + i * 40, 2.0f, WHITE, 1);
+    text("Page " + std::to_string(p + 1) + " / " + std::to_string(pg.size()), 640, 580, 1.3f, C(255, 255, 255, 170), 1);
+    HITS.push_back({160, 170, 960, 380, 0, 0});
+}
+
+static std::vector<std::string> coopList() {
+    std::vector<std::string> v;
+    for (auto& c : CHARS) { if (c.key == "amir") continue; if (c.isBot) { const BotInfo* b = botOf(c.key); if (!b || !b->named) continue; } v.push_back(c.key); }
+    return v;
+}
+
+static void drawCoop() {
+    blueprintBG();
+    text("CO-OP", 110, 96, 3.4f, WHITE, 0, 6);
+    text("Player 1 is Amir. Players 2-4: press A on your own controller to join.", 114, 150, 1.3f, C(255, 255, 255, 200));
+    text("Keyboard player 2:  I J K L move, U = A, O = B.   Left / Right changes your character.", 114, 176, 1.1f, C(255, 255, 255, 150));
+    std::vector<std::string> ls = coopList();
+    for (int k = 0; k < 3; k++) {
+        float x = 110 + k * 360, y = 214; bool sel = g.sel == k;
+        HITS.push_back({x, y, 340, 330, 0, k});
+        if (sel) rect(x, y, 340, 330, C(255, 255, 255, 36));
+        frameR(x, y, 340, 330, g.co[k].on ? C(120, 255, 190) : WHITE, sel ? 4 : 2);
+        text("PLAYER " + std::to_string(k + 2), x + 170, y + 12, 1.8f, sel ? ORANGE : WHITE, 1, 3);
+        if (g.co[k].on) {
+            CharDef* c = charBy(ls[g.coSel[k] % ls.size()]);
+            if (c) {
+                if (c->isBot) drawBot(x + 170, y + 230, c->look.shirt, g.frame, 1);
+                else { Look l = c->look; l.h *= 1.8f; drawPerson(x + 170, y + 270, 1, l, g.frame, false); }
+                text("<  " + c->name + "  >", x + 170, y + 290, 1.6f, WHITE, 1);
+            }
+        } else text(std::string(k == 0 ? "Press A (pad 2 or U)" : "Press A on your pad"), x + 170, y + 150, 1.3f, C(255, 255, 255, 170), 1);
+    }
+    bool s3 = g.sel == 3;
+    HITS.push_back({440, 566, 400, 52, 0, 3});
+    bpButton(440, 566, 400, 52, "START CO-OP", s3, true, -1);
+}
+
+static void drawAskOverlay() {
+    rect(0, 0, SCR_W, SCR_H, C(0, 0, 0, 200));
+    text(g.askPrompt.empty() ? "SAY SOMETHING" : g.askPrompt, 640, 70, 2.4f, ORANGE, 1, 4);
+    rect(300, 130, 680, 62, C(8, 18, 50)); frameR(300, 130, 680, 62, WHITE, 3);
+    text(g.kb.text + (((g.frame / 25) % 2) ? "_" : ""), 320, 146, 2.6f, WHITE, 0, 4);
+    drawKeyboard(230);
+    text("A type   B delete   Y clear   + / OK send", 640, 650, 1.2f, C(255, 255, 255, 170), 1);
+}
+
+static void drawScare(int T) {
+    rect(0, 0, SCR_W, SCR_H, BLACK);
+    if (T < 36) {   // glitch the game for a moment
+        for (int i = 0; i < 40; i++) rect(rndi(0, 1280), rndi(0, 720), rndi(40, 400), rndi(2, 16), C(rndi(0, 255), rndi(0, 255), rndi(0, 255), 160));
+        if (T > 18) rect(0, 0, SCR_W, SCR_H, BLACK);
+        return;
+    }
+    if (T < 120) { if (T > 50 && T < 100) text("Ilot14 World has stopped responding.", 640, 340, 1.6f, C(160, 160, 160), 1); return; }
+    float t = (T - 120) / 60.0f;
+    float a = std::min(1.0f, t);
+    // moonlit background
+    gradient(0, 720, C((int)(30 * a), (int)(8 * a), (int)(20 * a)), C((int)(90 * a), (int)(30 * a), 0));
+    fillCircle(1020, 150, 90, C(255, 200, 90, (int)(200 * a)));
+    for (int i = 0; i < 6; i++) { float bx = fmodf(100 + i * 220 + (T * (1.5f + i * 0.3f)), 1400) - 60, by = 90 + i * 40 + sinf(T * 0.1f + i) * 20; rect(bx, by, 26, 8, C(10, 10, 14)); rect(bx - 12, by - 6, 14, 6, C(10, 10, 14)); rect(bx + 24, by - 6, 14, 6, C(10, 10, 14)); }
+    for (int i = 0; i < 6; i++) { line(0, 0, 160 - i * 12, i * 40, C(230, 230, 230, 120)); line(1280, 0, 1120 + i * 12, i * 40, C(230, 230, 230, 120)); }
+    // rope from the ceiling to the ankle
+    float sway = sinf(T * 0.05f) * 26;
+    float ax = 640 + sway, ay = 190;
+    rect(639, 0, 3, 120, C(150, 120, 80)); line(640, 120, ax, ay, C(150, 120, 80));
+    Look L = playerLook();
+    // upside-down Amir: ankles at the top, head at the bottom
+    rect(ax - 14, ay, 12, 100, L.pants); rect(ax + 2, ay, 12, 100, dim(L.pants, 0.85f));
+    rect(ax - 16, ay - 6, 16, 10, L.shoes); rect(ax, ay - 6, 16, 10, L.shoes);
+    rect(ax - 24, ay + 100, 48, 70, L.shirt); text("14", ax, ay + 124, 1.4f, BLACK, 1);
+    rect(ax - 36, ay + 104, 12, 70, dim(L.shirt, 0.9f)); rect(ax + 24, ay + 104, 12, 70, dim(L.shirt, 0.9f));
+    rect(ax - 36, ay + 174, 12, 14, L.skin); rect(ax + 24, ay + 174, 12, 14, L.skin);
+    rect(ax - 6, ay + 168, 12, 8, L.skin);
+    // pumpkin mask head
+    fillCircle(ax, ay + 212, 40, C(240, 120, 20)); rect(ax - 4, ay + 244, 8, 12, C(60, 120, 40));
+    float fl = 0.7f + 0.3f * sinf(T * 0.3f);
+    for (int i = 0; i < 3; i++) { /* eyes (upside-down triangles) */ }
+    rect(ax - 22, ay + 196, 14, 12, C(255, (int)(220 * fl), 60)); rect(ax + 8, ay + 196, 14, 12, C(255, (int)(220 * fl), 60));
+    for (int k = 0; k < 5; k++) rect(ax - 20 + k * 9, ay + 222 + (k % 2) * 6, 7, 8, C(255, (int)(220 * fl), 60));
+    text("BOO", ax, ay + 262, 1.6f, C(255, 255, 255, 180), 1);
+    if (T > 220) text("HAPPY HALLOWEEN", 640, 560, 3.2f, C(255, 150, 40), 1, 6);
+    if (T > 300) text("It's just a prank. Amir is fine. The pumpkin is the scary part.", 640, 620, 1.4f, C(255, 255, 255, 190), 1);
+    if (T > 520) rect(0, 0, SCR_W, SCR_H, C(0, 0, 0, (int)(255 * std::min(1.0f, (T - 520) / 40.0f))));
+}
+
+static void drawBadgeToast() {
+    if (g.badgeToastT <= 0) return;
+    float p = std::min(1.0f, g.badgeToastT / 20.0f) * std::min(1.0f, (260 - g.badgeToastT) / 12.0f);
+    float w = 460, h = 70, x = 24, y = 720 - 24 - h * p;
+    rect(x, y, w, h, C(10, 16, 36, 235)); frameR(x, y, w, h, ORANGE, 3);
+    fillCircle(x + 38, y + 35, 22, ORANGE); text("*", x + 38, y + 18, 2.4f, C(28, 66, 156), 1);
+    text("BADGE UNLOCKED", x + 76, y + 10, 1.1f, ORANGE);
+    text(g.badgeToast, x + 76, y + 34, 1.7f, WHITE);
 }

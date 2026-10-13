@@ -59,6 +59,10 @@ struct Gfx {
     std::vector<std::pair<float, float>> taps;
     float drag = 0;
     int holdT[4] = {0, 0, 0, 0};
+    // local co-op: players 2-4 (pad index 1..3; player 2 can also use the keyboard: I J K L, U = A, O = B)
+    bool coop = false;
+    u32 padHeldN[4] = {0, 0, 0, 0}, p2Key = 0;
+    Input coIn[3];
 } G;
 
 // ---------- touch hit regions (menus register these while drawing) ----------
@@ -163,6 +167,12 @@ static u32 mapKey(SDL_Keycode k) {
     }
     return 0;
 }
+static u32 mapKey2(SDL_Keycode k) {
+    switch (k) {
+        case SDLK_u: return B_A; case SDLK_o: return B_B; case SDLK_i: return B_UP; case SDLK_k: return B_DOWN; case SDLK_j: return B_LEFT; case SDLK_l: return B_RIGHT;
+    }
+    return 0;
+}
 static u32 mapPad(int b) {
     switch (b) {
         case 0: return B_A; case 1: return B_B; case 2: return B_X; case 3: return B_Y;
@@ -178,10 +188,15 @@ static void pollInput(Input& in) {
     while (SDL_PollEvent(&e)) {
         switch (e.type) {
             case SDL_QUIT: in.quit = true; break;
-            case SDL_KEYDOWN: if (!e.key.repeat) G.keyHeld |= mapKey(e.key.keysym.sym); break;
-            case SDL_KEYUP: G.keyHeld &= ~mapKey(e.key.keysym.sym); break;
-            case SDL_JOYBUTTONDOWN: G.padHeld |= mapPad(e.jbutton.button); break;
-            case SDL_JOYBUTTONUP: G.padHeld &= ~mapPad(e.jbutton.button); break;
+            case SDL_KEYDOWN: if (!e.key.repeat) { G.keyHeld |= mapKey(e.key.keysym.sym); G.p2Key |= mapKey2(e.key.keysym.sym); } break;
+            case SDL_KEYUP: G.keyHeld &= ~mapKey(e.key.keysym.sym); G.p2Key &= ~mapKey2(e.key.keysym.sym); break;
+            case SDL_JOYBUTTONDOWN: case SDL_JOYBUTTONUP: {
+                int idx = 0;
+                for (size_t i = 0; i < G.pads.size(); i++) if (SDL_JoystickInstanceID(G.pads[i]) == e.jbutton.which) idx = (int)i;
+                u32 b = mapPad(e.jbutton.button);
+                if (idx > 3) idx = 3;
+                if (e.type == SDL_JOYBUTTONDOWN) G.padHeldN[idx] |= b; else G.padHeldN[idx] &= ~b;
+            } break;
             case SDL_FINGERDOWN: G.taps.push_back({e.tfinger.x * SCR_W, e.tfinger.y * SCR_H}); break;
             case SDL_FINGERMOTION: G.drag += e.tfinger.dy * SCR_H; break;
             case SDL_MOUSEBUTTONDOWN:
@@ -197,7 +212,9 @@ static void pollInput(Input& in) {
     }
     // sticks (poll so any pad counts)
     float ax = 0, ay = 0;
-    for (SDL_Joystick* j : G.pads) {
+    for (size_t pi = 0; pi < G.pads.size(); pi++) {
+        SDL_Joystick* j = G.pads[pi];
+        if (G.coop && pi > 0) continue;
         if (!SDL_JoystickGetAttached(j)) continue;
         float x = SDL_JoystickGetAxis(j, 0) / 32767.0f;
         float y = SDL_JoystickGetAxis(j, 1) / 32767.0f;
@@ -206,6 +223,8 @@ static void pollInput(Input& in) {
     }
     if (fabsf(ax) < 0.25f) ax = 0;
     if (fabsf(ay) < 0.25f) ay = 0;
+    G.padHeld = G.padHeldN[0];
+    if (!G.coop) G.padHeld |= G.padHeldN[1] | G.padHeldN[2] | G.padHeldN[3];
     u32 h = G.keyHeld | G.padHeld | G.inject;
     if (ax < -0.5f) h |= B_LEFT;
     if (ax > 0.5f) h |= B_RIGHT;
@@ -231,6 +250,19 @@ static void pollInput(Input& in) {
     in.taps = G.taps; G.taps.clear();
     in.drag = G.drag; G.drag = 0;
     in.ax = dx; in.ay = dy;
+    // co-op players 2..4
+    for (int k = 0; k < 3; k++) {
+        Input& ci = G.coIn[k];
+        u32 hh = G.padHeldN[k + 1] | (k == 0 ? G.p2Key : 0);
+        float cx = 0;
+        if ((size_t)(k + 1) < G.pads.size() && SDL_JoystickGetAttached(G.pads[k + 1])) {
+            float x = SDL_JoystickGetAxis(G.pads[k + 1], 0) / 32767.0f;
+            if (fabsf(x) > 0.3f) cx = x;
+            if (x < -0.5f) hh |= B_LEFT; if (x > 0.5f) hh |= B_RIGHT;
+        }
+        if (hh & B_LEFT) cx = -1; if (hh & B_RIGHT) cx = 1;
+        ci.prev = ci.held; ci.held = hh; ci.pressed = ci.held & ~ci.prev; ci.ax = cx;
+    }
 }
 
 // ---------- drawing ----------
@@ -342,7 +374,7 @@ static void scanlineOverlay() {
 }
 
 // ---------- pixel people / bots ----------
-struct Look { Col shirt, hair, skin, pants; int hairStyle; float h; bool tag14; int topStyle = 0, acc = 0; };
+struct Look { Col shirt, hair, skin, pants; int hairStyle; float h; bool tag14; int topStyle = 0, acc = 0, eyes = 0; Col shoes = {30, 30, 30, 255}; Col trim = {255, 255, 255, 255}; };
 
 // feet at (x, gy). dir -1 left / 1 right. walk = frame counter for legs
 static void drawPerson(float x, float gy, int dir, const Look& L, int walk, bool moving) {
@@ -355,8 +387,8 @@ static void drawPerson(float x, float gy, int dir, const Look& L, int walk, bool
     rect(x - 12 * s, gy - legH + (swing > 0 ? -swing * 0.3f : 0), 10 * s, legH + (swing > 0 ? swing * 0.3f : 0), L.pants);
     rect(x + 2 * s, gy - legH + (swing < 0 ? swing * 0.3f : 0), 10 * s, legH - (swing < 0 ? swing * 0.3f : 0), dim(L.pants, 0.85f));
     // shoes
-    rect(x - 14 * s, gy - 5, 14 * s, 5, C(30, 30, 30));
-    rect(x + 1 * s, gy - 5, 14 * s, 5, C(30, 30, 30));
+    rect(x - 14 * s, gy - 5, 14 * s, 5, L.shoes);
+    rect(x + 1 * s, gy - 5, 14 * s, 5, L.shoes);
     // body
     float by = gy - legH - bodyH;
     rect(x - bw / 2, by, bw, bodyH, L.shirt);
@@ -374,6 +406,20 @@ static void drawPerson(float x, float gy, int dir, const Look& L, int walk, bool
         rect(x - bw / 2, by + bodyH - 6, bw, 6, dim(L.shirt, 0.75f));
     } else if (L.topStyle == 3) { // striped
         for (int k = 0; k < 4; k++) rect(x - bw / 2, by + 6 + k * 10 * s, bw, 4, mix(L.shirt, WHITE, 0.55f));
+    } else if (L.topStyle == 4) { // vest over white shirt
+        rect(x - bw / 2, by, bw, bodyH, mix(L.shirt, WHITE, 0.8f)); rect(x - bw / 2, by, 10 * s, bodyH, L.shirt); rect(x + bw / 2 - 10 * s, by, 10 * s, bodyH, L.shirt);
+        for (int k = 0; k < 3; k++) rect(x - 1, by + 8 + k * 11 * s, 3, 3, L.trim);
+    } else if (L.topStyle == 5) { // overalls
+        rect(x - bw / 2, by, bw, bodyH, mix(L.shirt, WHITE, 0.7f)); rect(x - bw / 2 + 3, by + 14 * s, bw - 6, bodyH - 14 * s, L.pants);
+        rect(x - bw / 2 + 4, by, 5, 16 * s, L.pants); rect(x + bw / 2 - 9, by, 5, 16 * s, L.pants); rect(x - 4, by + 20 * s, 8, 7, dim(L.pants, 0.8f));
+    } else if (L.topStyle == 6) { // long coat
+        rect(x - bw / 2 - 2, by, bw + 4, bodyH + 22 * s, L.shirt); rect(x - 1, by, 3, bodyH + 22 * s, dim(L.shirt, 0.6f));
+        rect(x - bw / 2 - 2, by + bodyH + 18 * s, bw + 4, 4, L.trim);
+    } else if (L.topStyle == 7) { // track jacket w/ side stripes
+        rect(x - bw / 2, by, 5, bodyH, L.trim); rect(x + bw / 2 - 5, by, 5, bodyH, L.trim); rect(x - 1, by, 3, bodyH, dim(L.shirt, 0.6f));
+        rect(x - bw / 2, by, bw, 6, dim(L.shirt, 0.8f));
+    } else if (L.topStyle == 8) { // logo tee
+        fillCircle(x, by + 16 * s, 7 * s, L.trim); fillCircle(x, by + 16 * s, 4 * s, L.shirt);
     }
     if (L.tag14) {
         text("14", x, by + 8 * s, 1.1f * s, BLACK, 1);
@@ -398,14 +444,30 @@ static void drawPerson(float x, float gy, int dir, const Look& L, int walk, bool
     } else if (L.hairStyle == 5) { // ponytail
         rect(x - headS / 2 - 1, hy - 4, headS + 2, 11 * s, L.hair);
         rect(x + (dir > 0 ? -headS / 2 - 8 : headS / 2 + 1), hy + 2, 8, 24 * s, L.hair);
-    } else { // 6 = bun
+    } else if (L.hairStyle == 6) { // bun
         rect(x - headS / 2 - 1, hy - 4, headS + 2, 11 * s, L.hair);
         fillCircle(x, hy - 10, 8 * s, L.hair);
+    } else if (L.hairStyle == 7) { // side-swept
+        rect(x - headS / 2 - 1, hy - 4, headS + 2, 9 * s, L.hair);
+        rect(x - headS / 2 - 1, hy, headS * 0.55f, 12 * s, L.hair);
+    } else if (L.hairStyle == 8) { // twin tails
+        rect(x - headS / 2 - 1, hy - 4, headS + 2, 11 * s, L.hair);
+        rect(x - headS / 2 - 9, hy + 4, 8, 26 * s, L.hair); rect(x + headS / 2 + 1, hy + 4, 8, 26 * s, L.hair);
+    } else if (L.hairStyle == 9) { // mohawk
+        rect(x - 5, hy - 14, 10, 14, L.hair); rect(x - headS / 2 - 1, hy - 1, headS + 2, 4, dim(L.hair, 0.8f));
+    } else if (L.hairStyle == 10) { // messy tall
+        rect(x - headS / 2 - 2, hy - 8, headS + 4, 14 * s, L.hair);
+        for (int k = 0; k < 3; k++) rect(x - headS / 2 + k * 11, hy - 15 - (k % 2) * 4, 8, 9, L.hair);
+    } else { // 11 = long straight with fringe
+        rect(x - headS / 2 - 2, hy - 4, headS + 4, 13 * s, L.hair);
+        rect(x - headS / 2 - 4, hy, 8 * s, headS + 16, L.hair); rect(x + headS / 2 - 4 * s, hy, 8 * s, headS + 16, L.hair);
     }
     // eyes
     float ex = dir > 0 ? 4 : -4;
-    rect(x + ex - 8 * s, hy + 12 * s, 5 * s, 6 * s, BLACK);
-    rect(x + ex + 4 * s, hy + 12 * s, 5 * s, 6 * s, BLACK);
+    if (L.eyes == 1) { rect(x + ex - 8 * s, hy + 15 * s, 6 * s, 2, BLACK); rect(x + ex + 3 * s, hy + 15 * s, 6 * s, 2, BLACK); }
+    else if (L.eyes == 2) { rect(x + ex - 8 * s, hy + 14 * s, 5 * s, 3, BLACK); rect(x + ex + 4 * s, hy + 14 * s, 5 * s, 3, BLACK); }
+    else if (L.eyes == 3) { rect(x + ex - 9 * s, hy + 10 * s, 7 * s, 9 * s, WHITE); rect(x + ex + 3 * s, hy + 10 * s, 7 * s, 9 * s, WHITE); rect(x + ex - 7 * s, hy + 12 * s, 4 * s, 5 * s, BLACK); rect(x + ex + 5 * s, hy + 12 * s, 4 * s, 5 * s, BLACK); }
+    else { rect(x + ex - 8 * s, hy + 12 * s, 5 * s, 6 * s, BLACK); rect(x + ex + 4 * s, hy + 12 * s, 5 * s, 6 * s, BLACK); }
     rect(x + ex * 1.5f - 4 * s, hy + 23 * s, 8 * s, 2, dim(L.skin, 0.55f));
     // accessories
     if (L.acc == 1) { // glasses
@@ -419,6 +481,20 @@ static void drawPerson(float x, float gy, int dir, const Look& L, int walk, bool
         rect(x - headS / 2 - 6, hy + 8, 8, 14 * s, C(40, 40, 50)); rect(x + headS / 2 - 2, hy + 8, 8, 14 * s, C(40, 40, 50));
     } else if (L.acc == 4) { // scarf
         rect(x - headS / 2 - 1, hy + headS - 2, headS + 2, 9, C(240, 240, 240)); rect(x + 4, hy + headS, 8, 20, C(240, 240, 240));
+    } else if (L.acc == 5) { // beanie
+        rect(x - headS / 2 - 2, hy - 8, headS + 4, 14 * s, L.trim); fillCircle(x, hy - 9, 4 * s, L.trim); rect(x - headS / 2 - 2, hy + 4, headS + 4, 3, dim(L.trim, 0.7f));
+    } else if (L.acc == 6) { // headband
+        rect(x - headS / 2 - 1, hy + 2, headS + 2, 5, L.trim);
+    } else if (L.acc == 7) { // tie / bow
+        rect(x - 4, hy + headS + 2, 8, 6, C(200, 40, 40)); rect(x - 7, hy + headS + 1, 5, 8, C(200, 40, 40)); rect(x + 3, hy + headS + 1, 5, 8, C(200, 40, 40));
+    } else if (L.acc == 8) { // eyepatch
+        rect(x + ex + 2 * s, hy + 9 * s, 11 * s, 11 * s, C(20, 20, 24)); rect(x - headS / 2, hy + 6 * s, headS, 2, C(20, 20, 24));
+    } else if (L.acc == 9) { // little crown
+        rect(x - 10, hy - 11, 20, 8, C(250, 210, 60)); for (int k = 0; k < 3; k++) rect(x - 10 + k * 8, hy - 15, 4, 5, C(250, 210, 60));
+    } else if (L.acc == 10) { // bandana
+        rect(x - headS / 2 - 1, hy - 2, headS + 2, 7, C(200, 50, 50)); rect(x + (dir > 0 ? -headS / 2 - 8 : headS / 2), hy + 2, 8, 6, C(200, 50, 50));
+    } else if (L.acc == 11) { // goggles on forehead
+        rect(x - headS / 2, hy, headS, 4, C(50, 50, 60)); fillCircle(x - 7, hy + 2, 5, C(120, 220, 255)); fillCircle(x + 7, hy + 2, 5, C(120, 220, 255));
     }
 }
 

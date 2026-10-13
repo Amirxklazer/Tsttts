@@ -61,45 +61,67 @@ goto top
 
 script chat_kenzy
 label top
-say Kenzy|Careful, careful, don't touch the wires. They're not plugged in. Probably.
+say Haydar|Careful, careful, don't touch the wires. They're not plugged in. Probably.
 choose
 > What are you building? => a
 > Is that safe? => b
 > I'll stay back. => end
 label a
-say Kenzy|A radio that picks up everything. Cleaning bot chatter, the elevator's secrets, maybe something stranger.
+say Haydar|A radio that picks up everything. Cleaning bot chatter, the elevator's secrets, maybe something stranger.
 goto top
 label b
-say Kenzy|Define safe. I've only been shocked twice this week, which is an improvement.
+say Haydar|Define safe. I've only been shocked twice this week, which is an improvement.
 goto top
 
 # ================================================================ TEEN FLOOR
 script chat_amyas
+ifnot beef_on cb_amyas
+ifge beef_over 1 cb_amyas
+run beef_amyas
+end
+label cb_amyas
 label top
 say Amyas|Amir. Careful, I'm off shift. Which means I'm only partially nice. Do not ask for ice cream.
 choose
 > Can I ask for ice cream? => a
 > How's the shop? => b
+> (mutter) Not that I care about the shop. => t
 > See you, Amyas. => end
 label a
 say Amyas|You just did. Hmm. Okay. Strawberry. But we're not friends.
+goto top
+label t
+say Amir|I-It's not like I came to see you. I was just passing by. Don't get the wrong idea.
+say Amyas|You walked up three floors to "pass by". Sure. Strawberry?
+say Amir|...Fine. But it's not a favor.
 goto top
 label b
 say Amyas|Busy. Everybody wants cones on a hot day. Nobody wants to hold the cone on a hot day.
 goto top
 
 script chat_adam_t
+ifnot beef_on cb_adam_t
+ifge beef_over 1 cb_adam_t
+run beef_adam
+end
+label cb_adam_t
 label top
 say Adam|Amir!! Hey! Don't worry, I'm walking now. Look, walking. No sprinting. Don't make me regret it.
 choose
 > Where were you running to? => a
 > Please look where you go. => b
+> (mutter) Not that I was worried. => t
 > I'll leave you in peace. => end
 label a
 say Adam|Everywhere. All the time. I think my legs are on a schedule my brain doesn't know about.
 goto top
 label b
 say Adam|I will. Seriously. I'm adding it to my list. It's a long list, but it has good items.
+goto top
+label t
+say Amir|D-don't misunderstand. I'm only saying it because you'd break something. Not because I care.
+say Adam|Sure, sure. You totally don't care. You're a terrible liar, Amir.
+say Amir|Shut up. ...Be careful anyway.
 goto top
 
 script chat_lilian

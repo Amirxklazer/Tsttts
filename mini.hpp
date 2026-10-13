@@ -9,7 +9,7 @@ struct Mini {
     std::string title = "Minigame", hint = "";
     int phase = 0;        // 0 intro, 1 play, 2 result
     int phaseT = 0;
-    bool won = false, ended = false, finished = false, skipped = false;
+    bool won = false, ended = false, finished = false, skipped = false, touch = false;
     std::string resultMsg;
     virtual ~Mini() {}
     virtual void reset() = 0;
@@ -22,16 +22,16 @@ struct Mini {
     void update(const Input& in) {
         phaseT++;
         if (phase == 0) {
-            if (in.hit(B_A) || (TEST_AI && phaseT > 5)) { phase = 1; phaseT = 0; ended = false; reset(); }
+            if (in.hit(B_A) || (touch && !in.taps.empty()) || (TEST_AI && phaseT > 5)) { phase = 1; phaseT = 0; ended = false; reset(); }
         } else if (phase == 1) {
             play(in);
             if (ended) { phase = 2; phaseT = 0; }
         } else {
-            if (phaseT > 20 && (in.hit(B_A) || (TEST_AI && phaseT > 40))) {
+            if (phaseT > 20 && (in.hit(B_A) || (touch && !in.taps.empty() && !(in.taps[0].first > 980 && in.taps[0].second > 400 && !won)) || (TEST_AI && phaseT > 40))) {
                 if (won) finished = true;
                 else { phase = 1; phaseT = 0; ended = false; reset(); }
             }
-            if (!won && in.hit(B_Y)) { won = true; skipped = true; finished = true; }
+            if (!won && (in.hit(B_Y) || (touch && !in.taps.empty() && in.taps[0].first > 980 && in.taps[0].second > 400))) { won = true; skipped = true; finished = true; }
         }
     }
     void draw() {
@@ -45,7 +45,7 @@ struct Mini {
             text(title, 640, 220, 3, ORANGE, 1);
             auto ls = wrapText(hint, 52);
             for (size_t i = 0; i < ls.size(); i++) text(ls[i], 640, 330 + i * 40, 2, WHITE, 1);
-            text("Press A to start", 640, 520, 2, C(255, 255, 255, 150 + (int)(100 * sinf(phaseT * 0.1f))), 1);
+            text(touch ? "Press A or tap to start" : "Press A to start", 640, 520, 2, C(255, 255, 255, 150 + (int)(100 * sinf(phaseT * 0.1f))), 1);
         } else if (phase == 2) {
             rect(0, 0, SCR_W, SCR_H, C(0, 0, 0, 150));
             rect(240, 220, 800, 280, won ? C(20, 90, 60) : C(100, 30, 40));
@@ -584,14 +584,30 @@ struct Roof : Mini {
 
 // ---------------------------------------------------------------- factory
 #include "mini2.hpp"
+#include "mini3.hpp"
 
 static Mini* makeMini(const std::vector<std::string>& a) {
     auto ai = [&](size_t i, int d) { return a.size() > i ? atoi(a[i].c_str()) : d; };
     auto as = [&](size_t i, const char* d) { std::string s = a.size() > i ? a[i] : d; for (auto& c : s) if (c == '_') c = ' '; return s; };
     if (a.empty()) return nullptr;
     const std::string& k = a[0];
-    if (k == "roundup") return new Roundup(ai(1, 5), ai(2, 45), ai(3, 1));
-    if (k == "timing") return new Timing(ai(1, 5), ai(2, 3), as(3, "Timing"), ai(4, 1));
+    if (k == "whack") return new Whack(ai(1, 10), ai(2, 30), ai(3, 1));
+    if (k == "pairs") return new Pairs(ai(1, 6), ai(2, 6));
+    if (k == "lights") return new Lights(ai(1, 3), ai(2, 0));
+    if (k == "slide") return new Slide(ai(1, 90));
+    if (k == "popcorn") return new Popcorn(ai(1, 12), ai(2, 4), ai(3, 1));
+    if (k == "quiz") return new Quiz(ai(1, 5), a.size() > 2 ? a[2] : "ilot14");
+    // the old calibration / roundup minigames were removed: old scripts are mapped onto the new touch games
+    if (k == "roundup") { int n = ai(1, 5), lv = ai(3, 1); return new Whack(std::max(8, n * 2), 28, std::min(4, lv + 1)); }
+    if (k == "timing") {
+        int n = ai(1, 5), lv = ai(4, 1); std::string t = as(3, "Timing"); unsigned h = 0; for (char c : t) h = h * 31 + (unsigned char)c;
+        switch (h % 4) {
+            case 0: return new Whack(n * 2 + 4, 26, std::min(4, 1 + n / 4 + lv / 2));
+            case 1: return new Pairs(std::min(10, 3 + n / 2), 3 + lv);
+            case 2: return new Lights(n >= 8 ? 4 : 3, 0);
+            default: return new Slide(100 - n * 3);
+        }
+    }
     if (k == "fight") return new Fight(ai(1, 8), ai(2, 5), as(3, "hornets"));
     if (k == "catch") return new Catch(ai(1, 10), ai(2, 3), as(3, "items"), ai(4, 1));
     if (k == "maze") return new Maze(ai(1, 3), ai(2, 1));

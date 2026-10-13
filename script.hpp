@@ -6,7 +6,7 @@ enum Op {
     O_SAY, O_CHOOSE, O_GOTO, O_SET, O_ADD, O_IF, O_IFNOT, O_IFGE, O_IFDAY, O_MINI, O_CARD, O_SCENE, O_GOAL,
     O_AWAIT, O_SPAWN, O_CLEARITEMS, O_WARP, O_ENDDAY, O_RUN, O_END, O_NPC, O_OBJ, O_DELOBJ, O_FX, O_WAIT,
     O_TITLE, O_TOAST, O_LOCK, O_UNLOCK,
-    O_CAST, O_WALK, O_EMOTE, O_ANIM, O_BARS, O_NPCGO, O_PGO, O_FOCUS
+    O_CAST, O_WALK, O_EMOTE, O_ANIM, O_BARS, O_NPCGO, O_PGO, O_FOCUS, O_ASK, O_IFSAY, O_BADGE, O_ENDING, O_SCARE, O_STAY
 };
 
 struct Cmd {
@@ -23,9 +23,9 @@ struct Block {
 };
 
 static std::map<std::string, Block> BLOCKS;
-static const int CH_LEN[4] = {0, 31, 35, 40};
-static const char* CH_NAME[4] = {"", "Lost the Ash", "Further Inn", "Lowest Point"};
-static std::map<int, std::string> DAY_T[4];
+static const int CH_LEN[5] = {0, 31, 35, 40, 3};
+static const char* CH_NAME[5] = {"", "Lost the Ash", "Further Inn", "Lowest Point", "Never"};
+static std::map<int, std::string> DAY_T[5];
 static std::string dayTitleOf(int ch, int d) { auto it = DAY_T[ch].find(d); return it == DAY_T[ch].end() ? "" : it->second; }
 static int pkKey(int ch, int d) { return ch == 1 ? d : ch * 100 + d; }
 static int pkFinal(int ch) { return ch == 1 ? 32 : ch * 100 + 99; }
@@ -54,7 +54,8 @@ static void parseStory(const std::string& text, const std::string& srcName) {
         {"warp", O_WARP}, {"endday", O_ENDDAY}, {"run", O_RUN}, {"end", O_END}, {"return", O_END}, {"npc", O_NPC},
         {"obj", O_OBJ}, {"delobj", O_DELOBJ}, {"fx", O_FX}, {"wait", O_WAIT}, {"title", O_TITLE}, {"toast", O_TOAST},
         {"lock", O_LOCK}, {"unlock", O_UNLOCK}, {"cast", O_CAST}, {"walk", O_WALK}, {"emote", O_EMOTE}, {"anim", O_ANIM},
-        {"bars", O_BARS}, {"npcgo", O_NPCGO}, {"pgo", O_PGO}, {"focus", O_FOCUS}};
+        {"bars", O_BARS}, {"npcgo", O_NPCGO}, {"pgo", O_PGO}, {"focus", O_FOCUS},
+        {"ask", O_ASK}, {"ifsay", O_IFSAY}, {"badge", O_BADGE}, {"ending", O_ENDING}, {"scare", O_SCARE}, {"stay", O_STAY}};
     std::vector<std::string> lines = splitStr(text, '\n');
     Block* cur = nullptr;
     int ln = 0;
@@ -134,9 +135,13 @@ static void parseStory(const std::string& text, const std::string& srcName) {
                 if (cur->name.rfind("day_", 0) == 0) DAY_T[1][atoi(cur->name.c_str() + 4)] = rest;
                 if (cur->name.rfind("c2_", 0) == 0) DAY_T[2][atoi(cur->name.c_str() + 3)] = rest;
                 if (cur->name.rfind("c3_", 0) == 0) DAY_T[3][atoi(cur->name.c_str() + 3)] = rest;
+                if (cur->name.rfind("c4_", 0) == 0) DAY_T[4][atoi(cur->name.c_str() + 3)] = rest;
                 break;
             case O_TOAST: c.a = rest; break;
             case O_LOCK: case O_UNLOCK: c.a = rest; break;
+            case O_ASK: c.a = rest; break;
+            case O_IFSAY: if (w.size() < 2) storyErr(srcName, ln, "ifsay word label"); else { c.a = w[0]; for (auto& ch2 : c.a) ch2 = tolower(ch2); c.b = w[1]; } break;
+            case O_BADGE: case O_ENDING: c.a = rest; break;
             default: break;
         }
         cur->cmds.push_back(c);
@@ -154,7 +159,7 @@ static void validateStory() {
         for (auto& c : b.cmds) {
             switch (c.op) {
                 case O_GOTO: chk(b, c, c.a); break;
-                case O_IF: case O_IFNOT: case O_IFGE: case O_IFDAY: chk(b, c, c.b); break;
+                case O_IF: case O_IFNOT: case O_IFGE: case O_IFDAY: case O_IFSAY: chk(b, c, c.b); break;
                 case O_CHOOSE:
                     if (c.opts.empty()) storyErr(b.name, c.line, "choose with no options");
                     for (auto& o : c.opts) chk(b, c, o.second);
@@ -186,7 +191,7 @@ static void validateStory() {
                     break;
                 case O_MINI: {
                     std::vector<std::string> w = words(c.a);
-                    static const char* kinds[] = {"roundup", "timing", "fight", "catch", "maze", "roof", "simon", "sneak", "rhythm", "dodge", "defend"};
+                    static const char* kinds[] = {"roundup", "timing", "fight", "catch", "maze", "roof", "simon", "sneak", "rhythm", "dodge", "defend", "whack", "pairs", "lights", "popcorn", "quiz", "tapcatch", "slide", "memo"};
                     bool ok = false; for (auto k : kinds) if (!w.empty() && w[0] == k) ok = true;
                     if (!ok) storyErr(b.name, c.line, "unknown minigame '" + c.a + "'");
                 } break;
@@ -194,9 +199,9 @@ static void validateStory() {
             }
         }
     }
-    for (int ch = 1; ch <= 3; ch++)
+    for (int ch = 1; ch <= 4; ch++)
         for (int d = 1; d <= CH_LEN[ch]; d++) {
-            std::string n = std::string(ch == 1 ? "day_" : ch == 2 ? "c2_" : "c3_") + std::to_string(d);
+            std::string n = std::string(ch == 1 ? "day_" : ch == 2 ? "c2_" : ch == 3 ? "c3_" : "c4_") + std::to_string(d);
             if (!BLOCKS.count(n)) STORY_ERRORS.push_back("missing script " + n);
         }
     for (auto& ch : CHARS)

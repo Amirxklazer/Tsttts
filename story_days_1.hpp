@@ -264,6 +264,31 @@ fx fadein
 say |Yellow wallpaper. Buzzing lights. A carpet that smells like wet cardboard.
 say Amir|...That wasn't the Special floor.
 card NOCLIP|Day 3 ends somewhere it shouldn't.
+# VIGNETTE
+bars on
+scene outside amir gabriel
+cast amir 300
+cast gabriel 1100
+walk gabriel 700 5 wait
+emote gabriel !
+anim gabriel wave
+say |Something small happens, and it matters more than it should.
+say Gabriel|Got a minute? Quick game.
+bars off
+scene off
+mini whack 10
+bars on
+scene inn amir bolt
+cast amir 300
+cast bolt 1100
+walk bolt 700 5 wait
+emote bolt !
+anim bolt wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Bolt|Got a minute? Quick game.
+bars off
+scene off
+mini popcorn 10 2 1
 endday
 
 # ================================================================ DAY 4
@@ -318,6 +343,19 @@ label talk
 say Dalia|Sit. We'll order food. No more disappearing.
 say Amine|Tomorrow we make the papercraft. For REAL. In a room with a floor.
 say Amir|Please. I want a floor.
+# VIGNETTE
+bars on
+scene lobby amir adam_t
+cast amir 300
+cast adam_t 1100
+walk adam_t 700 5 wait
+emote adam_t !
+anim adam_t wave
+say |Someone left a snack on the stairs. A tiny miracle.
+say Adam|Got a minute? Quick game.
+bars off
+scene off
+mini whack 12
 endday
 
 # ================================================================ DAY 5
@@ -381,5 +419,18 @@ say Adam|DEAL. The best coffee. In a cup that doesn't fly.
 label fin
 say Amine|Okay! Tomorrow, we do nothing! We eat ice cream and sit around like legends.
 say Amir|I like that plan.
+# VIGNETTE
+bars on
+scene room amir dalia
+cast amir 300
+cast dalia 1100
+walk dalia 700 5 wait
+emote dalia !
+anim dalia wave
+say |The building hums. Somebody laughs two floors away.
+say Dalia|Got a minute? Quick game.
+bars off
+scene off
+mini lights 3
 endday
 )IL";

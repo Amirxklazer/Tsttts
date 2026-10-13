@@ -29,7 +29,13 @@ choose
 > How's your day? => a
 > Any gossip? => b
 > What's with the secret door? => c
+> What do you think of Gabriel? => g
 > See you. => end
+label g
+say Dalia|Gabriel? UGH. He follows me around and breathes loudly. I do NOT like him. Not even a little.
+say Amir|...He only sat next to you once.
+say Dalia|Once is too many!
+goto top
 label a
 ifday 16 a2
 say Dalia|Busy! Everybody on this floor needs me for something. It's flattering and exhausting.
@@ -70,7 +76,13 @@ say Gabriel|Hey. Don't touch my headphones, they're on the desk for a reason.
 choose
 > What are you listening to? => a
 > You're calm about everything. => b
+> Why do you look at Dalia so much? => d
 > Catch you later. => end
+label d
+say Gabriel|I do NOT. I look at the wall behind her. It is a very interesting wall.
+say Amir|...You turned red.
+say Gabriel|It's warm in here. Don't tell her anything.
+goto top
 label a
 say Gabriel|Old stuff. Slow drums, one guitar. It helps me think. And helps me ignore Youcef's hammering.
 goto top
@@ -233,44 +245,46 @@ goto top
 # ================================================================ UNCOMMON FLOOR
 script chat_alicia
 label top
-say Alicia|Amir! Perfect. We need a fourth for cards. Abdullah is cheating again.
+say Alicia|Amiiir! Big brother! Play with me! Abdullah is cheating at cards again!
 choose
 > Cheating how? => a
-> I'm not good at cards. => b
+> I'm busy, Alicia. => b
 > Later! => end
 label a
-say Alicia|He counts out loud. Then pretends he didn't. Then wins. It's infuriating.
+say Alicia|He counts out loud! And he hides a card under his shoe! I SAW it!
 goto top
 label b
-say Alicia|That's fine, nobody is. We just yell a lot and eat pistachios.
+say Alicia|Nooo! Five minutes! Only five! ...Okay, ten. Please?
+say Amir|...Fine. Five. Only because you asked nicely.
+say Alicia|Yaaay! You're the best! (Don't tell anyone you said yes.)
 goto top
 
 script chat_abdullah
 label top
-say Abdullah|I'm not cheating. I'm calculating. There's a difference.
+say Abdullah|I'm NOT cheating! I just got lucky. Very lucky. Six times!
 choose
 > That's cheating. => a
 > Teach me. => b
 > Bye. => end
 label a
-say Abdullah|It's strategy! Also Alicia hides cards in her sleeve. Don't tell her I told you.
+say Abdullah|Nuh-uh! Alicia cheats too! She hides cards in her sleeve. Don't tell her I told you!
 goto top
 label b
-say Abdullah|Lesson one: smile when you lose. Lesson two: smile louder when you win. Lesson three: pistachios.
+say Abdullah|Okay! Rule one: don't lose. Rule two: if you lose, say 'again!' Rule three: sweets!
 goto top
 
 script chat_jalil
 label top
-say Jalil|Oh, Amir. Do me a favor, tell me what color this wall is. I've been staring at it for ten minutes.
+say Jalil|Hi Amir! Look, I drew a bus! It has legs! Buses need legs!
 choose
-> Beige? => a
-> Why are you staring at it? => b
-> I'll leave you to it. => end
+> Cool bus. => a
+> Where is Arwa? => b
+> Bye, Jalil. => end
 label a
-say Jalil|BEIGE. Ha. I knew it. Alicia says it's "ivory". There's a difference apparently. I'm out of my depth.
+say Jalil|Thank you! I drew a bot too. He is green. He is fast. Like Bolt!
 goto top
 label b
-say Jalil|I'm designing a mural. In my head. It has a moon, a bus, and a very confident bot.
+say Jalil|She said 'five minutes' and that was a hundred minutes ago. Can I have a cookie?
 goto top
 
 script chat_adam_uc

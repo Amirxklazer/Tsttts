@@ -18,8 +18,6 @@ end
 label closed
 say |Just a dark panel in the wall next to Dalia's room. Probably nothing.
 
-script door_L-001
-say |My room. I'm not going back to bed. Probably.
 
 # ---------------------------------------------------------------- objects
 script use_backdoor
@@ -36,9 +34,6 @@ toast Main floor
 
 script use_reception
 say |The reception desk. A bell, a pile of mail for the Îlot14 residents, and a sticky note that says "BE NICE TO THE BOTS".
-
-script use_frontdoor
-say |The front door. Outside is Reghaia, the main road, the real Îlot grid. Not today.
 
 script use_panel
 say |The elevator control panel. Rows of green lights. One of them is blinking like it wants to tell me something.

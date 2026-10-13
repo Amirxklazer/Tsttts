@@ -21,6 +21,7 @@ static void loadStory() {
     parseStory(STORY_CH3B, "story_ch3b");
     parseStory(STORY_CH3C, "story_ch3c");
     parseStory(STORY_CH3D, "story_ch3d");
+    parseStory(STORY_V5, "story_v5");
     validateStory();
 }
 
@@ -35,9 +36,9 @@ static void settingsInput(const Input& in, int back) {
     if (g.sel == 0 && d) { g.st.textSpeed = (g.st.textSpeed + d + 4) % 4; ch = true; }
     else if (g.sel == 1 && d) { g.st.autoAdv = (g.st.autoAdv + d + 4) % 4; ch = true; }
     else if (g.sel == 2 && d) { g.st.scanlines = !g.st.scanlines; G.scanlines = g.st.scanlines; ch = true; }
-    else if (g.sel == 3 && in.hit(B_A)) { saveSettings(); g.mode = (Mode)back; g.sel = back == M_TITLE ? 6 : 4; return; }
+    else if (g.sel == 3 && in.hit(B_A)) { saveSettings(); g.mode = (Mode)back; g.sel = back == M_TITLE ? 8 : 4; return; }
     if (ch) saveSettings();
-    if (in.hit(B_B)) { saveSettings(); g.mode = (Mode)back; g.sel = back == M_TITLE ? 6 : 4; }
+    if (in.hit(B_B)) { saveSettings(); g.mode = (Mode)back; g.sel = back == M_TITLE ? 8 : 4; }
 }
 
 static void enterPlayFromSlot(int s) {
@@ -49,8 +50,8 @@ static void enterPlayFromSlot(int s) {
 static void updateMenus(const Input& in) {
     switch (g.mode) {
         case M_TITLE: {
-            if (in.hit(B_UP)) g.sel = (g.sel + 7) % 8;
-            if (in.hit(B_DOWN)) g.sel = (g.sel + 1) % 8;
+            if (in.hit(B_UP)) g.sel = (g.sel + 9) % 10;
+            if (in.hit(B_DOWN)) g.sel = (g.sel + 1) % 10;
             if (in.hit(B_A)) {
                 if (g.sel == 0) {
                     if (g.st.lastSlot > 0 && slotInfo(g.st.lastSlot).exists) enterPlayFromSlot(g.st.lastSlot);
@@ -65,18 +66,20 @@ static void updateMenus(const Input& in) {
                     if (g.slot < 1) g.slot = g.st.lastSlot > 0 ? g.st.lastSlot : 1;
                 }
                 else if (g.sel == 4) { g.mode = M_CHAPTERS; g.sel = 0; }
-                else if (g.sel == 5) { g.mode = M_CUSTOM; g.custSel = 0; }
-                else if (g.sel == 6) { g.mode = M_SETTINGS; g.sel = 0; }
+                else if (g.sel == 5) { g.mode = M_COOP; g.sel = 3; }
+                else if (g.sel == 6) { g.mode = M_CUSTOM; g.custSel = 0; }
+                else if (g.sel == 7) { g.mode = M_EXTRAS; g.extSel = 0; }
+                else if (g.sel == 8) { g.mode = M_SETTINGS; g.sel = 0; }
                 else g.quit = true;
             }
         } break;
         case M_CHAPTERS: {
-            if (in.hit(B_UP)) g.sel = (g.sel + 2) % 3;
-            if (in.hit(B_DOWN)) g.sel = (g.sel + 1) % 3;
+            if (in.hit(B_UP)) g.sel = (g.sel + 3) % 4;
+            if (in.hit(B_DOWN)) g.sel = (g.sel + 1) % 4;
             if (in.hit(B_B)) { g.mode = M_TITLE; g.sel = 4; }
             if (in.hit(B_A)) {
                 int c = g.sel + 1;
-                if (!g.st.unl[c]) setMsg(c == 2 ? "Locked. Finish Day 31 of Chapter 1 first." : "Locked. Finish Day 35 of Chapter 2 first.");
+                if (!g.st.unl[c]) setMsg(c == 2 ? "Locked. Finish Day 31 of Chapter 1 first." : c == 3 ? "Locked. Finish Day 35 of Chapter 2 first." : "Locked. Finish Day 40 of Chapter 3 first.");
                 else {
                     g.mode = M_DAYSEL; g.dsCh = c; g.sel = std::max(0, std::min(CH_LEN[c] - 1, g.st.maxD[c] - 1));
                     if (g.slot < 1) g.slot = g.st.lastSlot > 0 ? g.st.lastSlot : 1;
@@ -85,23 +88,90 @@ static void updateMenus(const Input& in) {
         } break;
         case M_CUSTOM: case M_PCUSTOM: {
             g.custSpin++;
-            int* f[] = {&APP.skin, &APP.hairStyle, &APP.hairCol, &APP.height, &APP.top, &APP.topCol, &APP.pants, &APP.acc, &APP.tag14};
-            int mod[] = {8, 7, 8, 5, 4, 12, 8, 5, 2};
-            if (in.hit(B_UP)) g.custSel = (g.custSel + 10) % 11;
-            if (in.hit(B_DOWN)) g.custSel = (g.custSel + 1) % 11;
+            int* f[] = {&APP.skin, &APP.hairStyle, &APP.hairCol, &APP.height, &APP.top, &APP.topCol, &APP.pants, &APP.shoes, &APP.eyes, &APP.acc, &APP.tag14};
+            int mod[] = {8, 12, 12, 5, 9, 12, 8, 6, 4, 12, 2};
+            if (in.hit(B_UP)) g.custSel = (g.custSel + 12) % 13;
+            if (in.hit(B_DOWN)) g.custSel = (g.custSel + 1) % 13;
             bool back = in.hit(B_B);
             if (in.hit(B_Y)) { APP = Appear(); applyLook(); }
-            if (in.hit(B_X)) { APP.skin = rand() % 8; APP.hairStyle = rand() % 7; APP.hairCol = rand() % 8; APP.height = rand() % 5; APP.top = rand() % 4; APP.topCol = rand() % 12; APP.pants = rand() % 8; APP.acc = rand() % 5; applyLook(); }
-            if (g.custSel < 9) {
+            if (in.hit(B_X)) { APP.skin = rand() % 8; APP.hairStyle = rand() % 12; APP.hairCol = rand() % 12; APP.height = rand() % 5; APP.top = rand() % 9; APP.topCol = rand() % 12; APP.pants = rand() % 8; APP.acc = rand() % 12; APP.shoes = rand() % 6; APP.eyes = rand() % 4; applyLook(); awardBadge("fashion"); }
+            if (g.custSel < 11) {
                 int d = (in.hit(B_RIGHT) || in.hit(B_A) ? 1 : 0) - (in.hit(B_LEFT) ? 1 : 0);
-                if (d) { *f[g.custSel] = (*f[g.custSel] + d + mod[g.custSel]) % mod[g.custSel]; applyLook(); }
+                if (d) { *f[g.custSel] = (*f[g.custSel] + d + mod[g.custSel]) % mod[g.custSel]; applyLook(); awardBadge("fashion"); }
             } else if (in.hit(B_A)) {
-                if (g.custSel == 9) { APP = Appear(); applyLook(); } else back = true;
+                if (g.custSel == 11) { APP = Appear(); applyLook(); } else back = true;
             }
             if (back) {
                 saveSettings();
-                if (g.mode == M_CUSTOM) { g.mode = M_TITLE; g.sel = 5; } else { g.mode = M_PAUSE; g.sel = 3; }
+                if (g.mode == M_CUSTOM) { g.mode = M_TITLE; g.sel = 6; } else { g.mode = M_PAUSE; g.sel = 3; }
             }
+        } break;
+        case M_EXTRAS: {
+            if (in.hit(B_UP)) g.extSel = (g.extSel + 2) % 3;
+            if (in.hit(B_DOWN)) g.extSel = (g.extSel + 1) % 3;
+            if (in.hit(B_B)) { g.mode = M_TITLE; g.sel = 7; }
+            if (in.hit(B_A)) {
+                if (g.extSel == 0) { g.mode = M_REDEEM; g.kb = Kb(); g.redeemT = 0; }
+                else if (g.extSel == 1) { g.mode = M_BADGES; g.badgeSel = 0; }
+                else { g.mode = M_LORE; g.loreSel = 0; }
+            }
+        } break;
+        case M_REDEEM: {
+            if (g.redeemT > 0) g.redeemT--;
+            g.kb.update(in);
+            if (in.hit(B_B) && g.kb.text.empty()) { g.mode = M_EXTRAS; g.extSel = 0; break; }
+            if (g.kb.done) {
+                g.kb.done = false;
+                std::string t = g.kb.text; for (auto& ch : t) ch = toupper(ch);
+                while (!t.empty() && t.back() == ' ') t.pop_back();
+                const CodeDef* hit = nullptr; for (int i = 0; i < NCODES; i++) if (t == CODE_LIST[i].code) hit = &CODE_LIST[i];
+                if (!hit) g.redeemMsg = "That code doesn't work.";
+                else if (U_LORE.count(hit->loreId)) g.redeemMsg = "Already redeemed.";
+                else { unlockLore(hit->loreId); U_CODES.insert(hit->code); awardBadge("coder"); saveSettings(); g.redeemMsg = std::string("Unlocked: ") + LORE_LIST[loreIndex(hit->loreId)].title + "  (see Lore & Endings)"; }
+                g.redeemT = 240; g.kb.text.clear();
+            }
+        } break;
+        case M_BADGES: {
+            if (in.hit(B_UP)) g.badgeSel = (g.badgeSel + NBADGES - 1) % NBADGES;
+            if (in.hit(B_DOWN)) g.badgeSel = (g.badgeSel + 1) % NBADGES;
+            if (in.hit(B_B)) { g.mode = M_EXTRAS; g.extSel = 1; }
+        } break;
+        case M_LORE: {
+            int n = (int)loreEntries().size();
+            if (n > 0) { if (in.hit(B_UP)) g.loreSel = (g.loreSel + n - 1) % n; if (in.hit(B_DOWN)) g.loreSel = (g.loreSel + 1) % n; }
+            if (in.hit(B_B)) { g.mode = M_EXTRAS; g.extSel = 2; }
+            if (in.hit(B_A) && n > 0) { g.mode = M_LOREVIEW; g.lorePage = 0; }
+        } break;
+        case M_LOREVIEW: {
+            int pn = 1; { std::vector<std::string> es = loreEntries(); if (g.loreSel < (int)es.size()) pn = (int)pagesOf(LORE_LIST[loreIndex(es[g.loreSel])].pages).size(); }
+            if (in.hit(B_A) || in.hit(B_RIGHT)) { if (g.lorePage + 1 < pn) g.lorePage++; else g.mode = M_LORE; }
+            if (in.hit(B_LEFT) && g.lorePage > 0) g.lorePage--;
+            if (in.hit(B_B)) g.mode = M_LORE;
+        } break;
+        case M_COOP: {
+            std::vector<std::string> ls = coopList(); int N = (int)ls.size();
+            if (in.hit(B_LEFT)) g.sel = (g.sel + 3) % 4;
+            if (in.hit(B_RIGHT)) g.sel = (g.sel + 1) % 4;
+            if (in.hit(B_B)) { g.mode = M_TITLE; g.sel = 5; }
+            if (g.sel < 3) {
+                if (in.hit(B_UP)) { g.coSel[g.sel] = (g.coSel[g.sel] + 1) % N; }
+                if (in.hit(B_DOWN)) { g.coSel[g.sel] = (g.coSel[g.sel] + N - 1) % N; }
+                if (in.hit(B_A)) { g.co[g.sel].on = !g.co[g.sel].on; if (g.co[g.sel].on) { g.co[g.sel].key = ls[g.coSel[g.sel] % N]; g.co[g.sel].floor.clear(); } }
+            } else if (in.hit(B_A)) {
+                bool any = false; for (int k = 0; k < 3; k++) if (g.co[k].on) any = true;
+                if (!any) { setMsg("Nobody joined yet. Press A on another controller."); }
+                else {
+                    g.coopOn = true; G.coop = true; awardBadge("coop");
+                    if (g.st.lastSlot > 0 && slotInfo(g.st.lastSlot).exists) enterPlayFromSlot(g.st.lastSlot); else newGame(1);
+                }
+            }
+            // each other controller picks its own character
+            for (int k = 0; k < 3; k++) {
+                Input& ci = G.coIn[k];
+                if (ci.hit(B_A)) { g.co[k].on = !g.co[k].on; if (g.co[k].on) { g.co[k].key = ls[g.coSel[k] % N]; g.co[k].floor.clear(); } }
+                if (ci.hit(B_RIGHT) || ci.hit(B_LEFT)) { g.coSel[k] = (g.coSel[k] + (ci.hit(B_RIGHT) ? 1 : N - 1)) % N; if (g.co[k].on) g.co[k].key = ls[g.coSel[k] % N]; }
+            }
+            for (int k = 0; k < 3; k++) if (g.co[k].on) g.co[k].key = ls[g.coSel[k] % N];
         } break;
         case M_REG: {
             if (in.hit(B_UP)) g.regScroll--;
@@ -159,12 +229,12 @@ static void updateMenus(const Input& in) {
                 else if (g.sel == 2) { g.mode = M_REG; g.regScroll = 0; }
                 else if (g.sel == 3) { g.mode = M_PCUSTOM; g.custSel = 0; }
                 else if (g.sel == 4) { g.mode = M_PSET; g.sel = 0; }
-                else { g.mode = M_TITLE; g.sel = 0; if (g.mini) { delete g.mini; g.mini = nullptr; } g.stack.clear(); g.vs = V_NONE; }
+                else { g.coopOn = false; G.coop = false; g.mode = M_TITLE; g.sel = 0; if (g.mini) { delete g.mini; g.mini = nullptr; } g.stack.clear(); g.vs = V_NONE; }
             }
         } break;
         case M_ENDING: {
             g.cT++;
-            if (g.cT > 120 && in.hit(B_A)) { g.mode = M_TITLE; g.sel = 0; if (g.endCh < 3) setMsg("Next chapter unlocked! Press Continue."); }
+            if (g.cT > 120 && in.hit(B_A)) { g.mode = M_TITLE; g.sel = 0; if (g.endCh < 4) setMsg("Next chapter unlocked! Press Continue."); }
         } break;
         default: break;
     }
@@ -176,6 +246,7 @@ static void updatePlay(const Input& in) {
     updateFades();
     updateNpcs();
     updateActors();
+    if (!g.sceneOn && g.vs != V_MINI && !g.elevOpen) updateCoop();
     if (g.vs == V_RUN) vmRun();
     if (g.vs == V_AWAIT || g.vs == V_NONE) { if (g.fadePhase == 0) updateWorld(in); }
     else updateVM(in);
@@ -184,7 +255,11 @@ static void updatePlay(const Input& in) {
 static u32 tapInject = 0;
 static void handleTaps(const Input& in) {
     for (auto& t : in.taps) {
-        if (g.mode == M_PLAY) { g.touchWarn = 170; continue; }
+        if (g.mode == M_PLAY) {
+            bool okTouch = (g.vs == V_MINI && g.mini && g.mini->touch) || g.vs == V_ASK;
+            if (!okTouch) { g.touchWarn = 170; continue; }
+            if (g.vs != V_ASK) continue;   // minis read taps themselves
+        }
         if (g.mode == M_ENDING) { tapInject |= B_A; continue; }
         const Hit* hit = nullptr;
         for (auto& h : HITS) if (t.first >= h.x && t.first <= h.x + h.w && t.second >= h.y && t.second <= h.y + h.h) hit = &h;
@@ -196,6 +271,7 @@ static void handleTaps(const Input& in) {
             case 2: tapInject |= B_B; break;
             case 3: sel = hit->idx; tapInject |= B_LEFT; break;
             case 4: sel = hit->idx; tapInject |= B_RIGHT; break;
+            case 6: if (g.mode == M_REDEEM || (g.mode == M_PLAY && g.vs == V_ASK)) { g.kb.r = hit->idx / 16; g.kb.c = hit->idx % 16; tapInject |= B_A; } break;
             case 5: if (g.mode == M_DAYSEL && g.st.unl[hit->idx]) { g.dsCh = hit->idx; g.sel = std::min(g.sel, CH_LEN[g.dsCh] - 1); } break;
         }
     }
@@ -206,6 +282,7 @@ static void update(const Input& in) {
     if (g.touchWarn > 0) g.touchWarn--;
     handleTaps(in);
     if (g.msgT > 0) g.msgT--;
+    if (g.badgeToastT > 0) g.badgeToastT--;
     if (g.mode == M_PLAY) updatePlay(in);
     else updateMenus(in);
 }
@@ -224,6 +301,8 @@ static void drawPlay() {
             drawDialog();
         }
     }
+    if (g.vs == V_ASK) drawAskOverlay();
+    if (g.vs == V_SCARE) drawScare(g.scareT);
     if (g.fade > 0) rect(0, 0, SCR_W, SCR_H, C(0, 0, 0, (int)(255 * std::min(1.0f, g.fade))));
     if (g.flash > 0) rect(0, 0, SCR_W, SCR_H, C(255, 255, 255, std::min(255, g.flash * 10)));
 }
@@ -239,6 +318,12 @@ static void draw() {
         case M_CUSTOM: case M_PCUSTOM: g_hint = "Left/Right Change    X Random    Y Reset    B Done"; break;
         case M_SETTINGS: case M_PSET: g_hint = "Left/Right Change    B Back"; break;
         case M_REG: g_hint = "Up/Down Scroll    L/R Page    B Back"; break;
+        case M_EXTRAS: g_hint = "A Open    B Back"; break;
+        case M_REDEEM: g_hint = "D-pad + A or tap keys    B Delete    + Send"; break;
+        case M_BADGES: g_hint = "Up/Down Browse    B Back"; break;
+        case M_LORE: g_hint = "Up/Down Browse    A Read    B Back"; break;
+        case M_LOREVIEW: g_hint = "A Next page    B Back"; break;
+        case M_COOP: g_hint = "Left/Right Move    A Join / Start    Up/Down Character    B Back"; break;
         case M_PAUSE: g_hint = "A Select    B Resume"; break;
         default: g_hint = "A Select    B Back"; break;
     }
@@ -254,8 +339,15 @@ static void draw() {
         case M_CHAPTERS: drawChapters(); break;
         case M_CUSTOM: case M_PCUSTOM: drawCustomize(); break;
         case M_REG: drawRegistry(); break;
+        case M_EXTRAS: drawExtras(); break;
+        case M_REDEEM: drawRedeem(); break;
+        case M_BADGES: drawBadges(); break;
+        case M_LORE: drawLore(); break;
+        case M_LOREVIEW: drawLoreView(); break;
+        case M_COOP: drawCoop(); if (g.msgT > 0) text(g.msg, 640, 626, 1.4f, C(255, 220, 120), 1); break;
     }
     scanlineOverlay();
+    drawBadgeToast();
     drawTouchWarn();
 }
 
@@ -294,6 +386,8 @@ static void botThink() {
     auto press = [&](u32 b) { if (tick % 6 < 3) G.inject |= b; };
     if (g.mode == M_ENDING) { press(B_A); if (g.cT > 130 && tick % 6 == 0) botDone = true; return; }
     if (g.mode != M_PLAY) { botDone = true; return; }
+    if (g.vs == V_ASK) { g.kb.done = true; return; }
+    if (g.vs == V_SCARE) { g.scareT = 999; return; }
     if (g.day != lastBotDay) {
         lastBotDay = g.day;
         fprintf(stderr, "[bot] day %d start (frame %ld)\n", g.day, g.playFrames);
