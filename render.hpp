@@ -697,7 +697,7 @@ static void drawTitleMenu() {
     for (int i = 0; i < 10; i++) bpButton(130, 212 + i * 42, 560, 36, names[i], g.sel == i, i != 0 || last.exists, i);
     if (g.msgT > 0) text(g.msg, 130, 642, 1.4f, C(255, 220, 120));
     if (g.sel == 0 && last.exists) text("Slot " + std::to_string(g.st.lastSlot) + " - Ch." + std::to_string(last.chapter) + " Day " + std::to_string(last.day), 710, 224, 1.3f, C(255, 255, 255, 180));
-    if (g.sel == 4) text(g.st.unl[2] ? "Next chapters unlocked!" : "3 chapters + a Chapter 4 preview", 710, 392, 1.3f, C(120, 255, 190));
+    if (g.sel == 4) text(g.st.unl[2] ? "Next chapters unlocked!" : "3 chapters + a Chapter 4 BETA", 710, 392, 1.3f, C(120, 255, 190));
     if (g.sel == 5) text("Local multiplayer: up to 4 players", 710, 434, 1.3f, C(120, 255, 190));
     if (g.sel == 7) text("Badges, redeem codes, lore, endings", 710, 518, 1.3f, C(120, 255, 190));
     text(std::to_string(U_BADGES.size()) + "/" + std::to_string(NBADGES) + " badges", 1210, 668, 1.2f, C(255, 255, 255, 150), 2);
@@ -803,7 +803,7 @@ static void drawChapters() {
     Ch chs[4] = {{"CHAPTER 1  -  31 DAYS", "LOST THE ASH", "The Dalia quest, the hornets, the Backrooms, Prime, Îlot14 Day.", true},
                  {"CHAPTER 2  -  35 DAYS", "FURTHER INN", g.st.unl[2] ? "Reopen the Inn. The ledger, the knocking, Room 000." : "Finish Day 31 of Chapter 1 to unlock.", g.st.unl[2]},
                  {"CHAPTER 3  -  40 DAYS", "LOWEST POINT", g.st.unl[3] ? "Level 18. Doors with names. The shape behind the glass." : "Finish Day 35 of Chapter 2 to unlock.", g.st.unl[3]},
-                 {"CHAPTER 4  -  NEVER", "??? (PREVIEW)", g.st.unl[4] ? "A short look at what comes next." : "Finish Day 40 of Chapter 3 to peek.", g.st.unl[4]}};
+                 {"CHAPTER 4  -  NEVER", "??? (BETA)", g.st.unl[4] ? "Chapter 4 BETA: the first six days." : "Finish Day 40 of Chapter 3 to peek.", g.st.unl[4]}};
     for (int i = 0; i < 4; i++) {
         float y = 150 + i * 118; bool sel = g.sel == i;
         HITS.push_back({110, y, 1060, 104, 0, i});

@@ -78,3 +78,4 @@ v0.5.0
 - Canon update: Haydar (S-002), all NST/Tansaouti residents live on Special floor, Adam surnames, chapter 4 = "Never".
 - Kids (Alicia 5, Abdullah 6, Jalil 4) talk like kids. Amir is tsundere toward Amyas and Adam B. Gabriel x Dalia dynamic.
 - Logo intro (tap/A to skip). Extra deep floors removed; Chapter 3 now uses only the canon underground floors.
+- Chapter 3 rebuilt (40 days, plain goals, no hidden elevator button). Chapter 4 'Never' is a 6-day BETA. All on canon floors.

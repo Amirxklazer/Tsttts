@@ -617,69 +617,263 @@ ending e_knock
 
 # ---------------------------------------------------------------- CHAPTER 4 PREVIEW (TBD)
 script c4_1
-title Preview: Never
-card CHAPTER 4|NEVER
+title Never Rule One
+card CHAPTER 4|NEVER (BETA)
 bars on
-scene roof amir dalia gabriel bolt
-cast amir 320
-cast dalia 1500
-cast gabriel 1600
-cast bolt 1700
-walk dalia 640 5
-walk gabriel 820 5
-walk bolt 980 7 wait
-say |A new morning on the Roof. The banner still says WELCOME BACK. Something under it is different.
-emote bolt !
-say Bolt|BEEP! There's a NEW DOOR on the Roof! It wasn't here yesterday!
-say Dalia|There's no door on the Roof. There's never been a door on the Roof.
-fx shake
-say Gabriel|...There is now.
-anim amir shake
-say |A grey door has grown out of the water tank. A nameplate. Brass. It reads: "C-4".
+scene hall amir dalia gabriel
+cast amir 400
+cast dalia 800
+cast gabriel 1000
+emote dalia !
+anim gabriel hop
+say |A new sign hangs in the Lobby, in neat letters: NEVER 1 - NEVER LEAVE A LAMP OFF. Nobody put it there.
 bars off
 scene off
-warp roof 700
-npc dalia roof 900
-npc gabriel roof 1100
-goal Talk to Dalia on the Roof.
-await talk dalia
-say Dalia|I counted. It's the fifteenth floor. The building has a fifteenth floor now.
-say Amir|The 14... has fifteen?
-set c4_door 1
+goal Take the elevator to the Lobby.
+await floor lobby
+npc prime lobby 900
+goal Talk to Prime.
+await talk prime
+say Prime@prime|I DID NOT HANG THIS. I HAVE ONLY ONE ARM FOR HANGING. THIS SIGN WAS HUNG BY A TALLER ARM.
+say Gabriel@gabriel|The sign says 'never' fourteen times. Someone numbered them. We should find the other thirteen.
+choose
+> Let's find the next sign. => a
+> I'm not so sure about this. => b
+label a
+say Amir|Okay. Let's do it. Together.
+goto m
+label b
+say Dalia@dalia|Scared is fine! Scared people watch where they walk!
+label m
+mini whack 10
+ifnot skipped k
+say |(The sign flutters and settles. Another one down.)
+label k
+bars on
+scene hall amir dalia gabriel
+cast amir 500
+cast dalia 800
+cast gabriel 1000
+anim dalia hop
+say |Another sign, another step. The building hums, pleased.
+bars off
+scene off
 endday
 
 script c4_2
-title Preview: The Fifteenth
+title Never Rule Two
 bars on
-scene roof amir gabriel
+scene hall amir dalia gabriel
 cast amir 400
-cast gabriel 1500
-walk gabriel 760 4 wait
-say Gabriel|I tried the door. It's locked. The lock is shaped like a handprint. Yours.
-say |It's the second time a door has wanted my hand.
+cast dalia 800
+cast gabriel 1000
+emote dalia !
+anim gabriel hop
+say |The second sign is on the Main floor, taped to Dalia's door: NEVER 2 - NEVER SLAM A DOOR.
 bars off
 scene off
-warp roof 900
-npc gabriel roof 1050
-goal Talk to Gabriel.
-await talk gabriel
-say Gabriel|If you open it... it might be the end. Or the middle. I don't know which.
-mini quiz 5 ilot14
-say |The handprint glows. Behind the door, a hum. Not the building's. Something older.
-set c4_hand 1
+goal Take the elevator to the Main floor.
+await floor main
+npc dalia main 900
+goal Talk to Dalia.
+await talk dalia
+say Dalia@dalia|Somebody taped something to MY door! I'm not mad! I'm... extremely mad! Who does that?
+say Gabriel@gabriel|It's a game. A game where the building talks. Dalia hates it and wants to win.
+choose
+> Let's find the next sign. => a
+> I'm not so sure about this. => b
+label a
+say Amir|Okay. Let's do it. Together.
+goto m
+label b
+say Dalia@dalia|Scared is fine! Scared people watch where they walk!
+label m
+mini pairs 4 5
+ifnot skipped k
+say |(The sign flutters and settles. Another one down.)
+label k
+bars on
+scene hall amir dalia gabriel
+cast amir 500
+cast dalia 800
+cast gabriel 1000
+anim dalia hop
+say |Another sign, another step. The building hums, pleased.
+bars off
+scene off
 endday
 
 script c4_3
-title Preview: Coming Soon
+title Never Rule Three
 bars on
-scene night amir dalia gabriel bolt prime
-say |Night on the Roof. Everyone gathers. Bolt falls asleep on Amir's shoe. Prime stands guard, very proud.
-say Dalia|Whatever's up there, we do it together.
-say Prime|TOGETHER. AND WITH A KETTLE.
-say Amir|Together.
-fx flash
+scene hall amir dalia gabriel
+cast amir 400
+cast dalia 800
+cast gabriel 1000
+emote dalia !
+anim gabriel hop
+say |Sign three is on the Rare floor, inside a clock case: NEVER 3 - NEVER STOP THE CLOCK.
 bars off
 scene off
-card TO BE CONTINUED|Chapter 4 is a preview. More soon.
+goal Take the elevator to the Rare floor.
+await floor rare
+npc jilali rare 900
+goal Talk to Jilali.
+await talk jilali
+say Jilali@jilali|My clock stopped at 14:14 this morning. Then it started again. By itself. I did not touch it.
+say Gabriel@gabriel|The signs all say Never. But they are not threats. They ask us to keep things going.
+choose
+> Let's find the next sign. => a
+> I'm not so sure about this. => b
+label a
+say Amir|Okay. Let's do it. Together.
+goto m
+label b
+say Dalia@dalia|Scared is fine! Scared people watch where they walk!
+label m
+mini lights 3
+ifnot skipped k
+say |(The sign flutters and settles. Another one down.)
+label k
+bars on
+scene hall amir dalia gabriel
+cast amir 500
+cast dalia 800
+cast gabriel 1000
+anim dalia hop
+say |Another sign, another step. The building hums, pleased.
+bars off
+scene off
 endday
+
+script c4_4
+title Never Rule Four
+bars on
+scene hall amir dalia gabriel
+cast amir 400
+cast dalia 800
+cast gabriel 1000
+emote dalia !
+anim gabriel hop
+say |Sign four is in the Underlobby, stuck to a pillar with a smiley sticker: NEVER 4 - NEVER GO ALONE.
+bars off
+scene off
+goal Take the elevator to the Underlobby.
+await floor ulobby
+npc bolt ulobby 900
+goal Talk to Bolt.
+await talk bolt
+say Bolt@bolt|BEEP! I FOUND IT! IT'S A STICKER! IT HAS A SMILEY! IT SAYS NEVER GO ALONE!
+say Gabriel@gabriel|We are not alone. We have Dalia, Prime and a rope. That is plenty.
+choose
+> Let's find the next sign. => a
+> I'm not so sure about this. => b
+label a
+say Amir|Okay. Let's do it. Together.
+goto m
+label b
+say Dalia@dalia|Scared is fine! Scared people watch where they walk!
+label m
+mini quiz 4 ilot14
+ifnot skipped k
+say |(The sign flutters and settles. Another one down.)
+label k
+bars on
+scene hall amir dalia gabriel
+cast amir 500
+cast dalia 800
+cast gabriel 1000
+anim dalia hop
+say |Another sign, another step. The building hums, pleased.
+bars off
+scene off
+endday
+
+script c4_5
+title Never Rule Five
+bars on
+scene hall amir dalia gabriel
+cast amir 400
+cast dalia 800
+cast gabriel 1000
+emote dalia !
+anim gabriel hop
+say |Sign five is on the Lethal floor, outside Amir's own door: NEVER 5 - NEVER FORGET WHO CAME FIRST.
+bars off
+scene off
+goal Take the elevator to the Lethal floor.
+await floor lethal
+npc gabriel lethal 900
+goal Talk to Gabriel.
+await talk gabriel
+say Gabriel@gabriel|This one is for you. Whoever wrote the list knows your door. They know your name.
+say Gabriel@gabriel|Dalia thinks it's Amyas. I think it's something older. Nine signs are left.
+choose
+> Let's find the next sign. => a
+> I'm not so sure about this. => b
+label a
+say Amir|Okay. Let's do it. Together.
+goto m
+label b
+say Dalia@dalia|Scared is fine! Scared people watch where they walk!
+label m
+mini popcorn 10 2 1
+ifnot skipped k
+say |(The sign flutters and settles. Another one down.)
+label k
+bars on
+scene hall amir dalia gabriel
+cast amir 500
+cast dalia 800
+cast gabriel 1000
+anim dalia hop
+say |Another sign, another step. The building hums, pleased.
+bars off
+scene off
+endday
+
+script c4_6
+title Never Is a Beta
+bars on
+scene roof amir dalia gabriel
+cast amir 400
+cast dalia 800
+cast gabriel 1000
+emote dalia !
+anim gabriel hop
+say |The Roof at dusk. All the signs lie in a neat pile, tied with Gabriel's rope. A note on top reads: THE LIST IS NOT FINISHED. THIS IS A BETA.
+bars off
+scene off
+goal Take the elevator to the Roof.
+await floor roof
+npc prime roof 900
+goal Talk to Prime.
+await talk prime
+say Prime@prime|THIS IS ONLY THE BEGINNING OF THE LIST. THE REST OF THE NEVERS ARE STILL BEING WRITTEN. I WILL SWEEP THEM UP WHEN THEY ARRIVE.
+say Gabriel@gabriel|Thank you for playing the first part of Chapter 4. More is coming.
+choose
+> Let's find the next sign. => a
+> I'm not so sure about this. => b
+label a
+say Amir|Okay. Let's do it. Together.
+goto m
+label b
+say Dalia@dalia|Scared is fine! Scared people watch where they walk!
+label m
+mini lights 4
+ifnot skipped k
+say |(The sign flutters and settles. Another one down.)
+label k
+bars on
+scene roof amir dalia gabriel
+cast amir 500
+cast dalia 800
+cast gabriel 1000
+anim dalia hop
+say |Another sign, another step. The building hums, pleased.
+bars off
+scene off
+card TO BE CONTINUED|Chapter 4 is a BETA. More soon.
+endday
+
 )IL";

@@ -15,3 +15,4 @@
 #include "story_ch3c.hpp"
 #include "story_ch3d.hpp"
 #include "story_v5.hpp"
+#include "story_c3new.hpp"

@@ -22,6 +22,7 @@ static void loadStory() {
     parseStory(STORY_CH3C, "story_ch3c");
     parseStory(STORY_CH3D, "story_ch3d");
     parseStory(STORY_V5, "story_v5");
+    parseStory(STORY_C3NEW, "story_c3new");
     validateStory();
 }
 

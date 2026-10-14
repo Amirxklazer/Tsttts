@@ -23,8 +23,8 @@ struct Block {
 };
 
 static std::map<std::string, Block> BLOCKS;
-static const int CH_LEN[5] = {0, 31, 35, 40, 3};
-static const char* CH_NAME[5] = {"", "Lost the Ash", "Further Inn", "Lowest Point", "Never"};
+static const int CH_LEN[5] = {0, 31, 35, 40, 6};
+static const char* CH_NAME[5] = {"", "Lost the Ash", "Further Inn", "Lowest Point", "Never (BETA)"};
 static std::map<int, std::string> DAY_T[5];
 static std::string dayTitleOf(int ch, int d) { auto it = DAY_T[ch].find(d); return it == DAY_T[ch].end() ? "" : it->second; }
 static int pkKey(int ch, int d) { return ch == 1 ? d : ch * 100 + d; }
