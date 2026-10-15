@@ -16,3 +16,5 @@
 #include "story_ch3d.hpp"
 #include "story_v5.hpp"
 #include "story_c3new.hpp"
+#include "story_c5new.hpp"
+#include "story_c4new.hpp"

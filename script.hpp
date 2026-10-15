@@ -6,7 +6,7 @@ enum Op {
     O_SAY, O_CHOOSE, O_GOTO, O_SET, O_ADD, O_IF, O_IFNOT, O_IFGE, O_IFDAY, O_MINI, O_CARD, O_SCENE, O_GOAL,
     O_AWAIT, O_SPAWN, O_CLEARITEMS, O_WARP, O_ENDDAY, O_RUN, O_END, O_NPC, O_OBJ, O_DELOBJ, O_FX, O_WAIT,
     O_TITLE, O_TOAST, O_LOCK, O_UNLOCK,
-    O_CAST, O_WALK, O_EMOTE, O_ANIM, O_BARS, O_NPCGO, O_PGO, O_FOCUS, O_ASK, O_IFSAY, O_BADGE, O_ENDING, O_SCARE, O_STAY
+    O_CAST, O_WALK, O_EMOTE, O_ANIM, O_BARS, O_NPCGO, O_PGO, O_FOCUS, O_ASK, O_IFSAY, O_BADGE, O_ENDING, O_SCARE, O_STAY, O_ZOOM
 };
 
 struct Cmd {
@@ -22,10 +22,11 @@ struct Block {
     std::map<std::string, int> labels;
 };
 
+static bool isAnimName(const std::string& n) { static const char* k[] = {"dance","nod","point","laugh","shiver","sit","look","stomp","float","jump","cheer","tilt","shrug"}; for (auto x : k) if (n == x) return true; return false; }
 static std::map<std::string, Block> BLOCKS;
-static const int CH_LEN[5] = {0, 31, 35, 40, 6};
-static const char* CH_NAME[5] = {"", "Lost the Ash", "Further Inn", "Lowest Point", "Never (BETA)"};
-static std::map<int, std::string> DAY_T[5];
+static const int CH_LEN[6] = {0, 31, 35, 40, 45, 6};
+static const char* CH_NAME[6] = {"", "Lost the Ash", "Further Inn", "Lowest Point", "Never", "Safe Ascent"};
+static std::map<int, std::string> DAY_T[6];
 static std::string dayTitleOf(int ch, int d) { auto it = DAY_T[ch].find(d); return it == DAY_T[ch].end() ? "" : it->second; }
 static int pkKey(int ch, int d) { return ch == 1 ? d : ch * 100 + d; }
 static int pkFinal(int ch) { return ch == 1 ? 32 : ch * 100 + 99; }
@@ -54,7 +55,7 @@ static void parseStory(const std::string& text, const std::string& srcName) {
         {"warp", O_WARP}, {"endday", O_ENDDAY}, {"run", O_RUN}, {"end", O_END}, {"return", O_END}, {"npc", O_NPC},
         {"obj", O_OBJ}, {"delobj", O_DELOBJ}, {"fx", O_FX}, {"wait", O_WAIT}, {"title", O_TITLE}, {"toast", O_TOAST},
         {"lock", O_LOCK}, {"unlock", O_UNLOCK}, {"cast", O_CAST}, {"walk", O_WALK}, {"emote", O_EMOTE}, {"anim", O_ANIM},
-        {"bars", O_BARS}, {"npcgo", O_NPCGO}, {"pgo", O_PGO}, {"focus", O_FOCUS},
+        {"bars", O_BARS}, {"npcgo", O_NPCGO}, {"pgo", O_PGO}, {"focus", O_FOCUS}, {"zoom", O_ZOOM},
         {"ask", O_ASK}, {"ifsay", O_IFSAY}, {"badge", O_BADGE}, {"ending", O_ENDING}, {"scare", O_SCARE}, {"stay", O_STAY}};
     std::vector<std::string> lines = splitStr(text, '\n');
     Block* cur = nullptr;
@@ -131,11 +132,13 @@ static void parseStory(const std::string& text, const std::string& srcName) {
             case O_ANIM: if (w.size() < 2) storyErr(srcName, ln, "anim key kind"); else { c.a = w[0]; c.b = w[1]; } break;
             case O_BARS: c.a = rest; break;
             case O_FOCUS: c.a = rest; break;
+            case O_ZOOM: c.a = rest; break;
             case O_TITLE: c.a = rest;
                 if (cur->name.rfind("day_", 0) == 0) DAY_T[1][atoi(cur->name.c_str() + 4)] = rest;
                 if (cur->name.rfind("c2_", 0) == 0) DAY_T[2][atoi(cur->name.c_str() + 3)] = rest;
                 if (cur->name.rfind("c3_", 0) == 0) DAY_T[3][atoi(cur->name.c_str() + 3)] = rest;
                 if (cur->name.rfind("c4_", 0) == 0) DAY_T[4][atoi(cur->name.c_str() + 3)] = rest;
+                if (cur->name.rfind("c5_", 0) == 0) DAY_T[5][atoi(cur->name.c_str() + 3)] = rest;
                 break;
             case O_TOAST: c.a = rest; break;
             case O_LOCK: case O_UNLOCK: c.a = rest; break;
@@ -171,7 +174,7 @@ static void validateStory() {
                 case O_LOCK: case O_UNLOCK: if (!floorBy(c.a)) storyErr(b.name, c.line, "unknown floor " + c.a); break;
                 case O_CAST: case O_WALK: case O_EMOTE: case O_ANIM:
                     if (!charBy(c.a)) storyErr(b.name, c.line, "unknown character " + c.a);
-                    if (c.op == O_ANIM && c.b != "hop" && c.b != "spin" && c.b != "fall" && c.b != "shake" && c.b != "wave" && c.b != "bow" && c.b != "rise")
+                    if (c.op == O_ANIM && !isAnimName(c.b) && c.b != "hop" && c.b != "spin" && c.b != "fall" && c.b != "shake" && c.b != "wave" && c.b != "bow" && c.b != "rise")
                         storyErr(b.name, c.line, "bad anim " + c.b);
                     break;
                 case O_NPCGO: if (!charBy(c.a)) storyErr(b.name, c.line, "unknown character " + c.a); break;
@@ -191,7 +194,7 @@ static void validateStory() {
                     break;
                 case O_MINI: {
                     std::vector<std::string> w = words(c.a);
-                    static const char* kinds[] = {"roundup", "timing", "fight", "catch", "maze", "roof", "simon", "sneak", "rhythm", "dodge", "defend", "whack", "pairs", "lights", "popcorn", "quiz", "tapcatch", "slide", "memo"};
+                    static const char* kinds[] = {"roundup", "timing", "fight", "catch", "maze", "roof", "simon", "sneak", "rhythm", "dodge", "defend", "whack", "pairs", "lights", "popcorn", "quiz", "tapcatch", "slide", "memo", "stack", "sort", "dash", "balance"};
                     bool ok = false; for (auto k : kinds) if (!w.empty() && w[0] == k) ok = true;
                     if (!ok) storyErr(b.name, c.line, "unknown minigame '" + c.a + "'");
                 } break;

@@ -4,10 +4,11 @@
 #include "extras.hpp"
 #include <list>
 
-#define VERSION "v0.5.0"
+#define VERSION "v0.6.1 (M5 prep)"
 
-struct Settings { int textSpeed = 1; int autoAdv = 2; bool scanlines = true; int lastSlot = 0; int maxD[5] = {0, 1, 0, 0, 0}; bool unl[5] = {true, true, false, false, false}; };
+struct Settings { int textSpeed = 1; int autoAdv = 2; bool scanlines = true; int lastSlot = 0; int maxD[6] = {0, 1, 0, 0, 0, 0}; bool unl[6] = {true, true, false, false, false, false}; };
 struct Npc { std::string floor; float baseX = 0, x = 0; bool visible = true; float phase = 0; int dir = 1; bool still = false; float goal = -1, spd = 4; };
+static int animLen(const std::string& n) { return n == "fall" ? 70 : (n == "dance" || n == "laugh" || n == "cheer") ? 90 : (n == "jump" || n == "float") ? 60 : (n == "nod" || n == "look" || n == "point") ? 56 : (n == "shiver" || n == "stomp") ? 48 : (n == "sit") ? 120 : 50; }
 struct Actor { std::string key; float x = 640, tx = 640, spd = 4; int dir = 1, anim = 0, animT = 0, emoteT = 0; std::string animName, emote; bool walking = false; };
 struct Particle { float x, y, vx, vy; int life, maxlife; Col c; int type; };
 struct ItemSp { std::string key, floor; float x; };
@@ -15,8 +16,13 @@ struct ObjSp { std::string id, floor, label; float x; };
 struct Toast { std::string t; int life; };
 
 enum VS { V_NONE, V_RUN, V_SAY, V_CHOOSE, V_AWAIT, V_MINI, V_CARD, V_WAIT, V_ENDDAY, V_ASK, V_SCARE };
-enum Mode { M_TITLE, M_NEWSLOT, M_SLOTS, M_DAYSEL, M_SETTINGS, M_PLAY, M_PAUSE, M_PSET, M_ENDING, M_CHAPTERS, M_CHSLOT, M_CUSTOM, M_PCUSTOM, M_REG, M_EXTRAS, M_REDEEM, M_BADGES, M_LORE, M_LOREVIEW, M_COOP };
+enum Mode { M_TITLE, M_NEWSLOT, M_SLOTS, M_DAYSEL, M_SETTINGS, M_PLAY, M_PAUSE, M_PSET, M_ENDING, M_CHAPTERS, M_CHSLOT, M_CUSTOM, M_PCUSTOM, M_REG, M_EXTRAS, M_REDEEM, M_BADGES, M_LORE, M_LOREVIEW, M_COOP, M_PHOTO };
 struct Frame { Block* b; int pc; };
+struct ChatLine { std::string who, txt; int t; };
+static std::vector<ChatLine> CHATLOG; static std::string P1EM; static int P1EMT = 0; static int P1PH = 0;
+static const char* QCHAT[] = {"Hi!", "Wait for me!", "Follow me!", "Nice!", "Help!", "LOL", "GG", "Thanks!"};
+static const int QCHAT_N = 8;
+static void chatPush(const std::string& who, const std::string& txt) { CHATLOG.push_back({who, txt, 420}); if (CHATLOG.size() > 4) CHATLOG.erase(CHATLOG.begin()); }
 struct CoPlayer { bool on = false; std::string key, em; float x = 400; int dir = 1, walk = 0, pad = 1, emoteT = 0; bool moving = false; std::string floor; };
 
 struct Game {
@@ -53,6 +59,8 @@ struct Game {
     bool sceneOn = false; std::string sceneBg; std::vector<std::string> sceneChars;
     std::vector<Actor> actors; std::vector<Particle> parts;
     float bars = 0; bool barsOn = false; bool rain = false; int fwT = 0, flickerT = 0, beesT = 0; float dark = 0;
+    int photoSave = 0, photoN = 0, photoMsgT = 0;
+    float zoom = 1, zoomTo = 1, zoomSpd = 0.02f, zoomCx = 0.5f, zoomCy = 0.45f;
     std::string focusKey; float pgoal = -1, pspd = 4;
     int regScroll = 0, custSel = 0, custSpin = 0, dsCh = 1, endCh = 1;
     // fx
@@ -132,9 +140,19 @@ static SlotInfo slotInfo(int s) {
     return si;
 }
 static std::string appearStr() {
-    char b[96];
-    snprintf(b, sizeof b, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", APP.skin, APP.hairStyle, APP.hairCol, APP.height, APP.top, APP.topCol, APP.pants, APP.acc, APP.tag14, APP.shoes, APP.eyes);
+    char b[128];
+    snprintf(b, sizeof b, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", APP.skin, APP.hairStyle, APP.hairCol, APP.height, APP.top, APP.topCol, APP.pants, APP.acc, APP.tag14, APP.shoes, APP.eyes, APP.back, APP.face, APP.theme);
     return b;
+}
+static int* appFields(int i) { int* f[] = {&APP.skin, &APP.hairStyle, &APP.hairCol, &APP.height, &APP.top, &APP.topCol, &APP.pants, &APP.acc, &APP.tag14, &APP.shoes, &APP.eyes, &APP.back, &APP.face, &APP.theme}; return f[i]; }
+static std::string outfitCode() { std::string s = "OUT"; for (int i = 0; i < 14; i++) { int v = *appFields(i); s += (char)(v < 10 ? '0' + v : 'A' + v - 10); } return s; }
+static bool loadOutfitCode(const std::string& t) {
+    if (t.size() != 17 || t.compare(0, 3, "OUT") != 0) return false;
+    static const int mod[] = {8, 12, 12, 5, 9, 12, 8, 20, 2, 6, 4, 5, 5, 6};
+    int v[14];
+    for (int i = 0; i < 14; i++) { char c = t[3 + i]; v[i] = c >= '0' && c <= '9' ? c - '0' : (c >= 'A' && c <= 'K') ? c - 'A' + 10 : -1; if (v[i] < 0 || v[i] >= mod[i]) return false; }
+    for (int i = 0; i < 14; i++) *appFields(i) = v[i];
+    return true;
 }
 static void applyLook() { CharDef* c = charBy("amir"); if (c) c->look = lookFromAppear(APP); }
 static void saveSettings() {
@@ -143,7 +161,7 @@ static void saveSettings() {
                     "\nlastslot=" + std::to_string(g.st.lastSlot) + "\nmaxday=" + std::to_string(g.st.maxD[1]) +
                     "\nmax2=" + std::to_string(g.st.maxD[2]) + "\nmax3=" + std::to_string(g.st.maxD[3]) +
                     "\nunl2=" + std::to_string(g.st.unl[2] ? 1 : 0) + "\nunl3=" + std::to_string(g.st.unl[3] ? 1 : 0) +
-                    "\nmax4=" + std::to_string(g.st.maxD[4]) + "\nunl4=" + std::to_string(g.st.unl[4] ? 1 : 0) +
+                    "\nmax4=" + std::to_string(g.st.maxD[4]) + "\nunl4=" + std::to_string(g.st.unl[4] ? 1 : 0) + "\nmax5=" + std::to_string(g.st.maxD[5]) + "\nunl5=" + std::to_string(g.st.unl[5] ? 1 : 0) +
                     "\nbadges=" + joinSet(U_BADGES) + "\nlore=" + joinSet(U_LORE) + "\ncodes=" + joinSet(U_CODES) +
                     "\nauto=" + std::to_string(g.st.autoAdv) + "\nlook=" + appearStr() + "\n";
     writeFile(std::string(SAVE_DIR) + "settings.cfg", s);
@@ -167,18 +185,21 @@ static void loadSettings() {
     if (kv.count("unl3")) g.st.unl[3] = atoi(kv["unl3"].c_str()) != 0;
     if (kv.count("max4")) g.st.maxD[4] = std::max(0, std::min(CH_LEN[4], atoi(kv["max4"].c_str())));
     if (kv.count("unl4")) g.st.unl[4] = atoi(kv["unl4"].c_str()) != 0;
+    if (kv.count("max5")) g.st.maxD[5] = std::max(0, std::min(CH_LEN[5], atoi(kv["max5"].c_str())));
+    if (kv.count("unl5")) g.st.unl[5] = atoi(kv["unl5"].c_str()) != 0;
     if (kv.count("badges")) splitInto(kv["badges"], U_BADGES);
     if (kv.count("lore")) splitInto(kv["lore"], U_LORE);
     if (kv.count("codes")) splitInto(kv["codes"], U_CODES);
     if (g.st.unl[4] && g.st.maxD[4] < 1) g.st.maxD[4] = 1;
+    if (g.st.unl[5] && g.st.maxD[5] < 1) g.st.maxD[5] = 1;
     if (g.st.unl[2] && g.st.maxD[2] < 1) g.st.maxD[2] = 1;
     if (g.st.unl[3] && g.st.maxD[3] < 1) g.st.maxD[3] = 1;
     if (kv.count("auto")) g.st.autoAdv = std::max(0, std::min(3, atoi(kv["auto"].c_str())));
     if (kv.count("look")) {
         std::vector<std::string> p = splitStr(kv["look"], ',');
-        int* f[] = {&APP.skin, &APP.hairStyle, &APP.hairCol, &APP.height, &APP.top, &APP.topCol, &APP.pants, &APP.acc, &APP.tag14, &APP.shoes, &APP.eyes};
-        for (size_t i = 0; i < p.size() && i < 11; i++) *f[i] = std::max(0, atoi(p[i].c_str()));
-        APP.skin %= 8; APP.hairStyle %= 12; APP.hairCol %= 12; APP.height %= 5; APP.top %= 9; APP.topCol %= 12; APP.pants %= 8; APP.acc %= 12; APP.tag14 %= 2; APP.shoes %= 6; APP.eyes %= 4;
+        int* f[] = {&APP.skin, &APP.hairStyle, &APP.hairCol, &APP.height, &APP.top, &APP.topCol, &APP.pants, &APP.acc, &APP.tag14, &APP.shoes, &APP.eyes, &APP.back, &APP.face, &APP.theme};
+        for (size_t i = 0; i < p.size() && i < 14; i++) *f[i] = std::max(0, atoi(p[i].c_str()));
+        APP.skin %= 8; APP.hairStyle %= 12; APP.hairCol %= 12; APP.height %= 5; APP.top %= 9; APP.topCol %= 12; APP.pants %= 8; APP.acc %= 20; APP.back %= 5; APP.face %= 5; APP.theme %= 6; APP.tag14 %= 2; APP.shoes %= 6; APP.eyes %= 4;
     }
     applyLook();
     G.scanlines = g.st.scanlines;
@@ -245,7 +266,7 @@ static void resetWorld() {
     g.items.clear(); g.objs.clear(); g.inv.clear(); g.toasts.clear(); g.goal.clear();
     g.sceneOn = false; g.elevOpen = false; g.flash = g.shake = 0; g.fade = 0; g.fadeTarget = 0; g.fadePhase = 0;
     g.actors.clear(); g.parts.clear(); g.bars = 0; g.barsOn = false; g.rain = false; g.fwT = 0; g.flickerT = 0; g.beesT = 0; g.dark = 0;
-    g.focusKey.clear(); g.pgoal = -1;
+    g.focusKey.clear(); g.pgoal = -1; g.zoom = g.zoomTo = 1;
     g.floorKey = "lethal";
     FloorDef* f = floorBy("lethal");
     g.px = doorX(*f, 0) + 120;
@@ -321,7 +342,7 @@ static bool anyWalking() {
     for (auto& kv : g.npcs) if (kv.second.goal >= 0) return true;
     return g.pgoal >= 0;
 }
-static std::string blockName(int d) { return (g.chapter == 1 ? "day_" : g.chapter == 2 ? "c2_" : g.chapter == 3 ? "c3_" : "c4_") + std::to_string(d); }
+static std::string blockName(int d) { return (g.chapter == 1 ? "day_" : g.chapter == 2 ? "c2_" : g.chapter == 3 ? "c3_" : g.chapter == 4 ? "c4_" : "c5_") + std::to_string(d); }
 static int lastDay() { return CH_LEN[g.chapter]; }
 static std::string dayTitle(int d) { return dayTitleOf(g.chapter, d); }
 
@@ -453,7 +474,7 @@ static void vmRun() {
                 if (c.c == "wait") { g.waitT = -1; g.vs = V_WAIT; return; }
             } break;
             case O_EMOTE: { f.pc++; Actor* a = actorBy(c.a); if (a) { a->emote = c.b; a->emoteT = 110; } } break;
-            case O_ANIM: { f.pc++; Actor* a = actorBy(c.a); if (a) { a->animName = c.b; a->animT = c.b == "fall" ? 70 : 50; } } break;
+            case O_ANIM: { f.pc++; Actor* a = actorBy(c.a); if (a) { a->animName = c.b; a->animT = animLen(c.b); } } break;
             case O_BARS: f.pc++; g.barsOn = c.a == "on"; break;
             case O_NPCGO: {
                 f.pc++;
@@ -465,6 +486,7 @@ static void vmRun() {
                 f.pc++; g.pgoal = (float)c.n; g.pspd = (float)atof(c.b.c_str());
                 if (c.c == "wait") { g.waitT = -1; g.vs = V_WAIT; return; }
             } break;
+            case O_ZOOM: { f.pc++; float z = 1, fr = 40, cx = 0.5f, cy = 0.45f; sscanf(c.a.c_str(), "%f %f %f %f", &z, &fr, &cx, &cy); g.zoomTo = std::max(1.0f, std::min(2.2f, z)); g.zoomSpd = fabsf(g.zoomTo - g.zoom) / std::max(1.0f, fr); g.zoomCx = cx; g.zoomCy = cy; } break;
             case O_FOCUS: f.pc++; g.focusKey = (c.a == "off" || c.a == "player") ? "" : c.a; break;
             case O_TOAST: f.pc++; toast(c.a); break;
             case O_LOCK: setF("lock_" + c.a, 1); f.pc++; break;
@@ -730,9 +752,9 @@ static void updateVM(const Input& in) {
             if ((g.cT > 60 && in.hit(B_A)) || g.cT > 260) {
                 if (g.day >= lastDay()) {
                     g.mode = M_ENDING; g.vs = V_NONE; g.stack.clear(); g.cT = 0;
-                    g.endCh = g.chapter; awardBadge("ch" + std::to_string(g.chapter)); if (g.chapter == 3) { g.st.unl[4] = true; if (g.st.maxD[4] < 1) g.st.maxD[4] = 1; }
+                    g.endCh = g.chapter; awardBadge("ch" + std::to_string(g.chapter));
                     g.progressFlags[pkFinal(g.chapter)] = flagsStr(g.flags); saveProgress();   // final state of this chapter
-                    if (g.chapter < 4) {
+                    if (g.chapter < 5) {
                         // same save slot continues straight into the next chapter
                         int nx = g.chapter + 1;
                         g.st.unl[nx] = true; if (g.st.maxD[nx] < 1) g.st.maxD[nx] = 1;
@@ -818,8 +840,13 @@ static void updateElevator(const Input& in) {
         case 7: g.elevDoor = std::min(1.0f, g.elevT / 28.0f); if (g.elevDoor >= 1 && g.elevT > 34) elevFinish(false); break;
     }
 }
-static void updateCoop() {
+static void updateCoop(const Input& in) {
     if (!g.coopOn) return;
+    for (auto& l : CHATLOG) l.t--;
+    while (!CHATLOG.empty() && CHATLOG.front().t <= 0) CHATLOG.erase(CHATLOG.begin());
+    if (P1EMT > 0) P1EMT--;
+    if (in.hit(B_R)) P1PH = (P1PH + 1) % QCHAT_N;
+    if (in.hit(B_L)) { P1EM = QCHAT[P1PH]; P1EMT = 180; chatPush("Amir", P1EM); }
     FloorDef* f = floorBy(g.floorKey); if (!f) return;
     float camX = std::max(0.0f, std::min(f->width - SCR_W, g.px - 640));
     for (int k = 0; k < 3; k++) {
@@ -831,7 +858,16 @@ static void updateCoop() {
         c.x = std::max(std::max(70.0f, camX + 50), std::min(std::min(f->width - 70, camX + SCR_W - 50), c.x));
         if (c.emoteT > 0) c.emoteT--;
         static const char* em[] = {"!", "...", "<3", "haha", "?", "hi!"};
-        if (ci.hit(B_A)) { c.em = em[rnd() % 6]; c.emoteT = 90; }
+        if (ci.hit(B_R)) g.coSel[k] = (g.coSel[k] + 1) % QCHAT_N;
+        if (ci.hit(B_L)) { c.em = QCHAT[g.coSel[k] % QCHAT_N]; c.emoteT = 180; CharDef* cd = charBy(c.key); chatPush(cd ? cd->name : "P" + std::to_string(k + 2), c.em); }
+        // separation from P1 and other players
+        if (fabsf(c.x - g.px) < 36) c.x += (c.x >= g.px ? 1 : -1) * 2.0f;
+        for (int j = 0; j < k; j++) if (g.co[j].on && fabsf(c.x - g.co[j].x) < 30) c.x += (c.x >= g.co[j].x ? 1 : -1) * 1.5f;
+        // shared pickup
+        for (size_t i = 0; i < g.items.size();) {
+            if (g.items[i].floor == g.floorKey && fabsf(g.items[i].x - c.x) < 40) { g.inv.push_back(g.items[i].key); toast("Picked up: " + prettyItem(g.items[i].key)); g.items.erase(g.items.begin() + i); } else i++;
+        }
+        (void)em;
         if (ci.hit(B_B)) { c.em = "wave"; c.emoteT = 70; }
     }
 }

@@ -1,4 +1,4 @@
-ILOT14 WORLD  v0.5.0  (Nintendo Switch homebrew, C++ / SDL2 / libnx)
+ILOT14 WORLD  v0.6.0 M2  (Nintendo Switch homebrew, C++ / SDL2 / libnx)
 
 CONTROLS
   Left stick / D-pad   walk (menus: move)
@@ -65,7 +65,7 @@ v0.4.0
 - More cutscenes. Touch warning is small, top-right.
 - Saves from v0.2/v0.3 carry over (.bak copy kept).
 
-v0.5.0
+v0.5.0 -> v0.6.0 M2 (Milestone 2)
 - Chapter 4 preview, longer days (ch2 and ch3 much longer), Reghaia outside area:
   cable car -> El Madania cinema ("Do you love cinema ?"), Etusa bus -> school ("Teachers got yo back").
 - Amir / Dalia / Gabriel rooms open. Tansaouti lives on the Special floor (S-003).
@@ -79,3 +79,14 @@ v0.5.0
 - Kids (Alicia 5, Abdullah 6, Jalil 4) talk like kids. Amir is tsundere toward Amyas and Adam B. Gabriel x Dalia dynamic.
 - Logo intro (tap/A to skip). Extra deep floors removed; Chapter 3 now uses only the canon underground floors.
 - Chapter 3 rebuilt (40 days, plain goals, no hidden elevator button). Chapter 4 'Never' is a 6-day BETA. All on canon floors.
+
+v0.6.0 M2 (Milestone 2)
+- Chapter 4 "Never" full (45 days), Chapter 5 "Safe Ascent" preview
+- More customization (back items, face, accessories, UI themes), more lore, 4 new minigames
+- Co-op: quick chat (L send, R next phrase), shared item pickup, no overlap
+- More animated cutscenes, 14 logo intro
+
+v0.6.1 (M5 prep)
+- Cutscene camera: "zoom <scale> <frames> [cx cy]" script op
+- Photo mode: Pause menu, press L, A saves a BMP to save/photos
+- Outfit codes: Redeem screen shows your code; type another OUT code to load it

@@ -46,7 +46,7 @@ npc dalia ulobby 1400
 await talk dalia
 say Dalia@dalia|That was fun. Hold on, I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini pairs 4 5
+mini stack 7
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -109,7 +109,7 @@ goal Collect the 3 glowing lamps on the Underlobby.
 await items 3
 say Dalia@dalia|Three lamps! I counted! I'm the best counter!
 clearitems
-mini popcorn 10 2 1
+mini sort 10
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -169,7 +169,7 @@ npc dalia park1 1400
 await talk dalia
 say Dalia@dalia|That was fun. Hold on, I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini tapcatch 12 3 dust
+mini dash 12
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -232,7 +232,7 @@ goal Collect the 3 glowing lamps on Parking 1.
 await items 3
 say Dalia@dalia|Three lamps! I counted! I'm the best counter!
 clearitems
-mini whack 12
+mini balance 10
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -283,7 +283,7 @@ label b
 say Dalia|Good. I did not want to see a ghost car anyway.
 set c3_d5_b 1
 label m1
-mini lights 4
+mini popcorn 10 2 1
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -292,7 +292,7 @@ npc gabriel park1 1400
 await talk gabriel
 say Gabriel@gabriel|That was fun. Hold on, I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini memo 4 5
+mini stack 8
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -355,7 +355,7 @@ goal Collect the 3 glowing lamps on Parking 2.
 await items 3
 say Dalia@dalia|Three lamps! I counted! I'm the best counter!
 clearitems
-mini popcorn 10 3 1
+mini sort 12
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -406,7 +406,7 @@ label b
 say Zed|Aw. Okay. I'll show you the stairs. They're boring.
 set c3_d7_b 1
 label m1
-mini quiz 5 school
+mini memo 4 5
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -415,7 +415,7 @@ npc dalia park2 1400
 await talk dalia
 say Dalia@dalia|That was fun. Hold on, I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini lights 3
+mini dash 14
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -466,7 +466,7 @@ label b
 say Gabriel|Good thinking. Two more hands help.
 set c3_d8_b 1
 label m1
-mini whack 10
+mini tapcatch 12 3 dust
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -478,7 +478,7 @@ goal Collect the 3 glowing lamps on Parking 2.
 await items 3
 say Dalia@dalia|Three lamps! I counted! I'm the best counter!
 clearitems
-mini pairs 4 5
+mini balance 12
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -529,7 +529,7 @@ label b
 say Sparkle|Wise. Or boring. I can't tell. Both are fine.
 set c3_d9_b 1
 label m1
-mini lights 3
+mini quiz 5 school
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -538,7 +538,7 @@ npc dalia park2 1400
 await talk dalia
 say Dalia@dalia|That was fun. Hold on, I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini popcorn 10 2 1
+mini whack 12
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -589,7 +589,7 @@ label b
 say Amine|Anytime. That's what besties are for.
 set c3_d10_b 1
 label m1
-mini quiz 4 ilot14
+mini lights 4
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -601,7 +601,7 @@ goal Collect the 3 glowing lamps on Parking 2.
 await items 3
 say Dalia@dalia|Three lamps! I counted! I'm the best counter!
 clearitems
-mini tapcatch 12 3 dust
+mini popcorn 10 3 1
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -652,7 +652,7 @@ label b
 say Prime|NO. BUT WE ARE TOGETHER. THAT IS THE SAME THING, MOSTLY.
 set c3_d11_b 1
 label m1
-mini pairs 4 6
+mini whack 10
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -661,7 +661,7 @@ npc dalia park2 1400
 await talk dalia
 say Dalia@dalia|That was fun. Hold on, I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini whack 12
+mini stack 7
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -712,7 +712,7 @@ label b
 say Sweepy|Nobody is! That's why we bring a snack!
 set c3_d12_b 1
 label m1
-mini lights 4
+mini lights 3
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -724,7 +724,7 @@ goal Collect the 3 glowing lamps on the Elevator shaft fix.
 await items 3
 say Dalia@dalia|Three lamps! I counted! I'm the best counter!
 clearitems
-mini memo 4 5
+mini sort 10
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -775,7 +775,7 @@ label b
 say Dustin|Right? It's the best cable. Everyone says I'm weird.
 set c3_d13_b 1
 label m1
-mini slide 3
+mini quiz 4 ilot14
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -784,7 +784,7 @@ npc dalia shaft 1400
 await talk dalia
 say Dalia@dalia|That was fun. Hold on, I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini popcorn 10 3 1
+mini dash 12
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -835,7 +835,7 @@ label b
 say Bolt|I'm ALWAYS careful! ...mostly! ...a little!
 set c3_d14_b 1
 label m1
-mini quiz 5 school
+mini pairs 4 6
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -847,7 +847,7 @@ goal Collect the 3 glowing lamps on the Elevator shaft fix.
 await items 3
 say Dalia@dalia|Three lamps! I counted! I'm the best counter!
 clearitems
-mini lights 3
+mini balance 10
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -898,7 +898,7 @@ label b
 say Dalia|WHAT? No! Ew! Stop it! Why would you say that? I hate him!
 set c3_d15_b 1
 label m1
-mini whack 10
+mini popcorn 10 2 1
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -907,7 +907,7 @@ npc gabriel shaft 1400
 await talk gabriel
 say Gabriel@gabriel|That was fun. Hold on, I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini pairs 4 5
+mini stack 8
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -958,7 +958,7 @@ label b
 say Dalia|Fine! I'm fearless! ...hold the rope tighter, Gabriel!
 set c3_d16_b 1
 label m1
-mini lights 3
+mini slide 3
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -970,7 +970,7 @@ goal Collect the 3 glowing lamps on the Elevator shaft fix.
 await items 3
 say Dalia@dalia|Three lamps! I counted! I'm the best counter!
 clearitems
-mini popcorn 10 2 1
+mini sort 12
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -1021,7 +1021,7 @@ label b
 say Adam Tansaouti|Aya and Sofia are holding it down. They are better at it than I am.
 set c3_d17_b 1
 label m1
-mini quiz 4 ilot14
+mini memo 4 5
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -1030,7 +1030,7 @@ npc dalia shaft 1400
 await talk dalia
 say Dalia@dalia|That was fun. Hold on, I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini tapcatch 12 3 dust
+mini dash 14
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -1081,7 +1081,7 @@ label b
 say Mopsy|Thank you. Now hand me the next gear.
 set c3_d18_b 1
 label m1
-mini pairs 4 6
+mini tapcatch 12 3 dust
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -1093,7 +1093,7 @@ goal Collect the 3 glowing lamps on the Elevator shaft fix.
 await items 3
 say Dalia@dalia|Three lamps! I counted! I'm the best counter!
 clearitems
-mini whack 12
+mini balance 12
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -1144,7 +1144,7 @@ label b
 say Amyas|Good. Eat. You're too skinny for a hero.
 set c3_d19_b 1
 label m1
-mini lights 4
+mini quiz 5 school
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -1153,7 +1153,7 @@ npc dalia shaft 1400
 await talk dalia
 say Dalia@dalia|That was fun. Hold on, I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini memo 4 5
+mini whack 12
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -1204,7 +1204,7 @@ label b
 say Adam|WOW. A thank you! I'm framing this moment.
 set c3_d20_b 1
 label m1
-mini slide 3
+mini lights 4
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -1267,7 +1267,7 @@ label b
 say Prime|I DO NOT KNOW. THAT IS WHAT WE ARE HERE TO FIND OUT.
 set c3_d21_b 1
 label m1
-mini quiz 5 school
+mini whack 10
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -1276,7 +1276,7 @@ npc dalia ctrl 1400
 await talk dalia
 say Dalia@dalia|That was fun. Hold on, I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini lights 3
+mini stack 7
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -1327,7 +1327,7 @@ label b
 say Adam Tansaouti|Right. Some things are better read slowly.
 set c3_d22_b 1
 label m1
-mini whack 10
+mini lights 3
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -1339,7 +1339,7 @@ goal Collect the 3 glowing lamps on the Elevator control room.
 await items 3
 say Dalia@dalia|Three lamps! I counted! I'm the best counter!
 clearitems
-mini pairs 4 5
+mini sort 10
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -1390,7 +1390,7 @@ label b
 say Bolt|IT'S FUNNY! IT'S FUNNY UNTIL THE LIGHTS GO OFF!
 set c3_d23_b 1
 label m1
-mini lights 3
+mini quiz 4 ilot14
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -1399,7 +1399,7 @@ npc dalia ctrl 1400
 await talk dalia
 say Dalia@dalia|That was fun. Hold on, I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini popcorn 10 2 1
+mini dash 12
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -1450,7 +1450,7 @@ label b
 say Gabriel|It has no switch. It's been on for forty years.
 set c3_d24_b 1
 label m1
-mini quiz 4 ilot14
+mini pairs 4 6
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -1462,7 +1462,7 @@ goal Collect the 3 glowing lamps on the Elevator control room.
 await items 3
 say Dalia@dalia|Three lamps! I counted! I'm the best counter!
 clearitems
-mini tapcatch 12 3 dust
+mini balance 10
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -1513,7 +1513,7 @@ label b
 say Gabriel|...I can hear you smiling, Dalia.
 set c3_d25_b 1
 label m1
-mini pairs 4 6
+mini popcorn 10 2 1
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -1522,7 +1522,7 @@ npc gabriel ctrl 1400
 await talk gabriel
 say Gabriel@gabriel|That was fun. Hold on, I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini whack 12
+mini stack 8
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -1573,7 +1573,7 @@ label b
 say Jilali|It belongs to the building. It was waiting for someone brave enough to wind it.
 set c3_d26_b 1
 label m1
-mini lights 4
+mini slide 3
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -1585,7 +1585,7 @@ goal Collect the 3 glowing lamps on the Elevator control room.
 await items 3
 say Dalia@dalia|Three lamps! I counted! I'm the best counter!
 clearitems
-mini memo 4 5
+mini sort 12
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -1636,7 +1636,7 @@ label b
 say Prime|THAT IS THE BEST WAY. THANK YOU.
 set c3_d27_b 1
 label m1
-mini slide 3
+mini memo 4 5
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -1645,7 +1645,7 @@ npc dalia ctrl 1400
 await talk dalia
 say Dalia@dalia|That was fun. Hold on, I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini popcorn 10 3 1
+mini dash 14
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -1696,7 +1696,7 @@ label b
 say Vacca|Smart! I'll sweep and you watch!
 set c3_d28_b 1
 label m1
-mini quiz 5 school
+mini tapcatch 12 3 dust
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -1708,7 +1708,7 @@ goal Collect the 3 glowing lamps on the Air ventilation systems.
 await items 3
 say Dalia@dalia|Three lamps! I counted! I'm the best counter!
 clearitems
-mini lights 3
+mini balance 12
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -1759,7 +1759,7 @@ label b
 say Sparkle|Oh. They're so pretty when they fly.
 set c3_d29_b 1
 label m1
-mini whack 10
+mini quiz 5 school
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -1768,7 +1768,7 @@ npc dalia vent 1400
 await talk dalia
 say Dalia@dalia|That was fun. Hold on, I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini pairs 4 5
+mini whack 12
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -1819,7 +1819,7 @@ label b
 say Dalia|DON'T TEASE HIM! Ugh! ...I mean, do. Whatever!
 set c3_d30_b 1
 label m1
-mini lights 3
+mini lights 4
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -1831,7 +1831,7 @@ goal Collect the 3 glowing lamps on the Air ventilation systems.
 await items 3
 say Dalia@dalia|Three lamps! I counted! I'm the best counter!
 clearitems
-mini popcorn 10 2 1
+mini popcorn 10 3 1
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -1882,7 +1882,7 @@ label b
 say Mopsy|Fine. Hold the dustpan. Don't spill.
 set c3_d31_b 1
 label m1
-mini quiz 4 ilot14
+mini whack 10
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -1891,7 +1891,7 @@ npc dalia vent 1400
 await talk dalia
 say Dalia@dalia|That was fun. Hold on, I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini tapcatch 12 3 dust
+mini stack 7
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -1942,7 +1942,7 @@ label b
 say Bolt|YES! WE ARE THE MUSIC BOX PATROL!
 set c3_d32_b 1
 label m1
-mini pairs 4 6
+mini lights 3
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -1954,7 +1954,7 @@ goal Collect the 3 glowing lamps on the Air ventilation systems.
 await items 3
 say Dalia@dalia|Three lamps! I counted! I'm the best counter!
 clearitems
-mini whack 12
+mini sort 10
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -2005,7 +2005,7 @@ label b
 say Bolt|LOOK ALL YOU WANT! BUT DON'T TOUCH PRIME'S BED! IT'S SPECIAL!
 set c3_d33_b 1
 label m1
-mini lights 4
+mini quiz 4 ilot14
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -2014,7 +2014,7 @@ npc dalia bots 1400
 await talk dalia
 say Dalia@dalia|That was fun. Hold on, I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini memo 4 5
+mini dash 12
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -2065,7 +2065,7 @@ label b
 say Mopsy|It's for whoever comes next. It's been empty since the beginning.
 set c3_d34_b 1
 label m1
-mini slide 3
+mini pairs 4 6
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -2077,7 +2077,7 @@ goal Collect the 3 glowing lamps on the 14 Cleaning bots parking.
 await items 3
 say Dalia@dalia|Three lamps! I counted! I'm the best counter!
 clearitems
-mini popcorn 10 3 1
+mini balance 10
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -2128,7 +2128,7 @@ label b
 say Prime|THIS IS THE BEST DAY OF MY LONG LIFE.
 set c3_d35_b 1
 label m1
-mini quiz 5 school
+mini popcorn 10 2 1
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -2137,7 +2137,7 @@ npc dalia bots 1400
 await talk dalia
 say Dalia@dalia|That was fun. Hold on, I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini lights 3
+mini stack 8
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -2188,7 +2188,7 @@ label b
 say Gabriel|Smart. Never get between Dalia and Mopsy.
 set c3_d36_b 1
 label m1
-mini whack 10
+mini slide 3
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -2200,7 +2200,7 @@ goal Collect the 3 glowing lamps on the 14 Cleaning bots parking.
 await items 3
 say Dalia@dalia|Three lamps! I counted! I'm the best counter!
 clearitems
-mini pairs 4 5
+mini sort 12
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -2251,7 +2251,7 @@ label b
 say Aya|It's secret. It has pennies. It also has love. Mostly pennies.
 set c3_d37_b 1
 label m1
-mini lights 3
+mini memo 4 5
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -2260,7 +2260,7 @@ npc dalia inn 1400
 await talk dalia
 say Dalia@dalia|That was fun. Hold on, I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini popcorn 10 2 1
+mini dash 14
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -2311,7 +2311,7 @@ label b
 say Sofia|The sky. The lake. The cable car wires. And everyone who stayed.
 set c3_d38_b 1
 label m1
-mini quiz 4 ilot14
+mini tapcatch 12 3 dust
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -2323,7 +2323,7 @@ goal Collect the 3 glowing lamps on the Further inn.
 await items 3
 say Dalia@dalia|Three lamps! I counted! I'm the best counter!
 clearitems
-mini tapcatch 12 3 dust
+mini balance 12
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2
@@ -2374,7 +2374,7 @@ label b
 say Adam Tansaouti|Good. Tell the sky I said hello.
 set c3_d39_b 1
 label m1
-mini pairs 4 6
+mini quiz 5 school
 ifnot skipped s1
 say |(Great job! The little win makes the hallway feel brighter.)
 label s1
@@ -2446,7 +2446,7 @@ goal Collect the 3 glowing lamps on the Roof.
 await items 3
 say Dalia@dalia|Three lamps! I counted! I'm the best counter!
 clearitems
-mini memo 4 5
+mini popcorn 10 3 1
 ifnot skipped s2
 say |(Nice. Everyone cheers.)
 label s2

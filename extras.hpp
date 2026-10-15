@@ -20,7 +20,8 @@ static const BadgeDef BADGE_LIST[] = {
     {"ch1", "Lost the Ash", "Finish Chapter 1."},
     {"ch2", "Further Than Far", "Finish Chapter 2."},
     {"ch3", "Lowest Point", "Finish Chapter 3."},
-    {"ch4", "Sneak Peek", "Open the Chapter 4 preview."},
+    {"ch4", "Never Again", "Finish Chapter 4."},
+    {"ch5", "Sneak Peek", "Finish the Chapter 5 preview."},
     {"collector", "Lore Hound", "Unlock 5 lore or ending entries."},
 };
 static const int NBADGES = (int)(sizeof(BADGE_LIST) / sizeof(BADGE_LIST[0]));
@@ -39,6 +40,22 @@ static const LoreDef LORE_LIST[] = {
     {"e_stay", "ENDING", "The One Who Stays (Alt)", "In another version, Amir leaves the Echo Room and takes the elevator up. Alone.|The building is quiet. The bots wait by the doors. Dalia still texts six times.|He comes back on Day 2. Of course he does.|ENDING: THE COMMUTE"},
     {"e_credits", "ENDING", "Credits Roll", "A cinema, a cable car and a very tired popcorn machine.|The credits are longer than the movie. Bolt reads every name.|ENDING: STAY FOR THE POST-CREDITS"},
     {"e_school", "ENDING", "Teachers Got Yo Back", "The Etusa bus is late. The teachers are not.|Mrs. Zerrouki writes 'Amir tried' on the board and underlines it twice.|Whatever happens next, someone in that building is on your side.|ENDING: BACK TO SCHOOL"},
+    {"l_amyas", "LORE", "Amyas", "Amyas is nineteen, the oldest in the whole series. He works at the ice cream shop on the main road.|He is the brother of Dalia and Adam Bachouche. He says he is only 'partially nice' after his shift.|Amir has beef with him. Nobody knows why. Amyas pretends he doesn't either."},
+    {"l_adamb", "LORE", "Adam Bachouche", "Adam Bachouche is seventeen. Brother of Amyas and Dalia. He runs everywhere and he is always 'about to stop'.|Amir is tsundere to him: it's not like he cares. He cares.|If you ask Adam, the beef is a misunderstanding. If you ask Amir, the beef is a misunderstanding too."},
+    {"l_alicia", "LORE", "Alicia", "Alicia is five. She is Amir's little sister and the most powerful person on the Uncommon floor.|She believes cards, cake and big brothers should all be shared.|Her favorite word is 'again'."},
+    {"l_jalil", "LORE", "Jalil", "Jalil is four. He is Arwa's little brother and an excellent artist of buses with legs.|His crayon collection has one color: green.|He says the green is for bots."},
+    {"l_abdullah", "LORE", "Abdullah", "Abdullah is six. He is Anes's little brother, owner of a clipboard and a gold star.|He gives himself gold stars. Nobody has ever argued with this."},
+    {"l_amine", "LORE", "Amine", "Amine is thirteen and lives on the Special floor. He is Amir's bestie.|He brings sandwiches to any adventure. He believes in Amir more than Amir believes in himself."},
+    {"l_jilali", "LORE", "Jilali", "Jilali is twenty, the grown-up of the Rare floor. He repairs watches, even the ones that run backward.|The clock in the Rare hall strikes fourteen once. He swears it was the clock's idea."},
+    {"l_nst", "LORE", "The Tansaoutis", "Aya, Adam and Sofia Tansaouti live on the Special floor. Their doors are NST-001, NST-002 and NST-003.|They work the night shift at the Further inn, where their shift never really ended.|The Inn's soup tastes like pennies. Nobody knows why they all love it."},
+    {"l_nevers", "LORE", "The Nevers", "Fourteen signs appeared in the building, each starting with NEVER.|They were not threats. They were promises written by the building itself.|The fifteenth sign was blank on purpose. Amir wrote it."},
+    {"l_teachers", "LORE", "The School", "Mrs. Zerrouki teaches Amir's class. Mr. Benali teaches the loud one. Principal Hadj has a very tidy office.|Nobody is ever late for school in Reghaia. Everybody is a little late for school in Reghaia."},
+    {"l_etusa", "LORE", "Etusa", "The Etusa bus stops outside the 14 every day. It never arrives on time. It always arrives.|The driver knows every resident by their umbrella."},
+    {"l_cable", "LORE", "The Cable Car", "The cable car climbs over Reghaia toward El Madania. From the cabin you can see the lake, the road and the 14.|The wires hum a different note in the wind."},
+    {"l_rope", "LORE", "Gabriel's Rope", "Gabriel's rope has been used in many rescues and one very awkward elevator.|Nobody has ever seen him buy a new one."},
+    {"e_never", "ENDING", "Never Stop Coming Home", "Fourteen signs, one blank. Amir wrote the last one.|NEVER STOP COMING HOME.|The whole building hummed, and every lamp lit.|ENDING: THE FIFTEENTH SIGN"},
+    {"e_ascent", "ENDING", "The Safe Ascent", "A long rope. A long climb. Everyone together.|At the top, sunrise. At the bottom, a bus. In between, snacks.|ENDING: THE LONG WAY UP"},
+    {"e_sunrise", "ENDING", "Sunrise Over Reghaia", "The lake turns gold. The cable car wires sing. The 14 hums, pleased.|Amir finally says it out loud: 'Welcome home.'|ENDING: SUNRISE"},
     {"e_scare", "ENDING", "Do Not Tell Gabriel Numbers", "A number was said. The game forgot how to be a game.|It's just a prank. A Halloween decoration. Amir is hanging by the ankle with a pumpkin mask on, not hurt, just dramatic.|Gabriel will never admit he laughed.|ENDING: JUMP SCARE"},
 };
 static const int NLORE = (int)(sizeof(LORE_LIST) / sizeof(LORE_LIST[0]));
@@ -46,6 +63,9 @@ static const int NLORE = (int)(sizeof(LORE_LIST) / sizeof(LORE_LIST[0]));
 struct CodeDef { const char* code; const char* loreId; };
 static const CodeDef CODE_LIST[] = {
     {"ILOT14", "l_building"}, {"REGHAIA", "l_reghaia"}, {"BOLT", "l_bolt"}, {"PRIME", "l_prime"}, {"GABRIEL", "l_gabriel"}, {"DALIA", "l_dalia"},
+    {"AMYAS", "l_amyas"}, {"ADAMB", "l_adamb"}, {"ALICIA", "l_alicia"}, {"JALIL", "l_jalil"}, {"ABDULLAH", "l_abdullah"}, {"AMINE", "l_amine"}, {"JILALI", "l_jilali"},
+    {"TANSAOUTI", "l_nst"}, {"NEVER", "l_nevers"}, {"SCHOOL", "l_teachers"}, {"ETUSA", "l_etusa"}, {"CABLE", "l_cable"}, {"ROPE", "l_rope"},
+    {"FIFTEEN", "e_never"}, {"ASCENT", "e_ascent"}, {"SUNRISE", "e_sunrise"},
     {"KNOCK", "e_knock"}, {"ASHES", "e_ashes"}, {"OCTOBER", "e_october"}, {"STAY", "e_stay"}, {"CINEMA", "e_credits"},
 };
 static const int NCODES = (int)(sizeof(CODE_LIST) / sizeof(CODE_LIST[0]));

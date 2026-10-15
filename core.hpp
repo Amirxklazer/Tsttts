@@ -49,7 +49,7 @@ struct Input {
 
 struct Gfx {
     SDL_Window* win = nullptr;
-    SDL_Renderer* ren = nullptr;
+    SDL_Renderer* ren = nullptr; SDL_Texture* zoomTex = nullptr;
     SDL_Texture* fontTex = nullptr;
     std::vector<SDL_Joystick*> pads;
     u32 keyHeld = 0, padHeld = 0, inject = 0;
@@ -133,6 +133,8 @@ static bool gfxInit(bool headless) {
     if (!G.ren) { fprintf(stderr, "renderer: %s\n", SDL_GetError()); return false; }
     SDL_RenderSetLogicalSize(G.ren, SCR_W, SCR_H);
     SDL_SetRenderDrawBlendMode(G.ren, SDL_BLENDMODE_BLEND);
+    G.zoomTex = SDL_CreateTexture(G.ren, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, SCR_W, SCR_H);
+    if (G.zoomTex) SDL_SetTextureBlendMode(G.zoomTex, SDL_BLENDMODE_BLEND);
     // font texture
     SDL_Surface* s = SDL_CreateRGBSurfaceWithFormat(0, 256, 448, 32, SDL_PIXELFORMAT_RGBA32);
     Uint8* px = (Uint8*)s->pixels;
@@ -374,7 +376,7 @@ static void scanlineOverlay() {
 }
 
 // ---------- pixel people / bots ----------
-struct Look { Col shirt, hair, skin, pants; int hairStyle; float h; bool tag14; int topStyle = 0, acc = 0, eyes = 0; Col shoes = {30, 30, 30, 255}; Col trim = {255, 255, 255, 255}; };
+struct Look { Col shirt, hair, skin, pants; int hairStyle; float h; bool tag14; int topStyle = 0, acc = 0, eyes = 0, back = 0, face = 0; Col shoes = {30, 30, 30, 255}; Col trim = {255, 255, 255, 255}; };
 
 // feet at (x, gy). dir -1 left / 1 right. walk = frame counter for legs
 static void drawPerson(float x, float gy, int dir, const Look& L, int walk, bool moving) {
@@ -383,6 +385,13 @@ static void drawPerson(float x, float gy, int dir, const Look& L, int walk, bool
     float swing = moving ? sinf(walk * 0.3f) * 8 * s : 0;
     // shadow
     rect(x - bw * 0.7f, gy - 3, bw * 1.4f, 5, C(0, 0, 0, 70));
+    // back items (behind the body)
+    {
+        float bt = gy - legH - bodyH;
+        if (L.back == 1) { rect(x - dir * 16 * s - 9 * s, bt + 4 * s, 18 * s, 28 * s, C(70, 70, 90)); rect(x - dir * 16 * s - 9 * s, bt + 4 * s, 18 * s, 5 * s, C(249, 115, 22)); }
+        else if (L.back == 2) { float sw = sinf(walk * 0.2f) * 3; rect(x - 17 * s - 2 + sw, bt + 2 * s, 34 * s + 4, bodyH + legH * 0.8f, C(200, 40, 50)); rect(x - 17 * s - 2 + sw, bt + 2 * s, 34 * s + 4, 4, C(250, 210, 60)); }
+        else if (L.back == 3 || L.back == 4) { Col wc = L.back == 3 ? C(250, 250, 255, 235) : C(50, 30, 70, 235); float fl = sinf(walk * 0.12f) * 6; for (int k = -1; k <= 1; k += 2) { float wx = x + k * 18 * s; rect(wx - (k > 0 ? 0 : 22 * s), bt - 4 * s + fl * k, 22 * s, 8 * s, wc); rect(wx - (k > 0 ? 0 : 16 * s), bt + 4 * s + fl * k, 16 * s, 8 * s, dim(wc, 0.85f)); rect(wx - (k > 0 ? 0 : 10 * s), bt + 12 * s + fl * k, 10 * s, 8 * s, dim(wc, 0.7f)); } }
+    }
     // legs
     rect(x - 12 * s, gy - legH + (swing > 0 ? -swing * 0.3f : 0), 10 * s, legH + (swing > 0 ? swing * 0.3f : 0), L.pants);
     rect(x + 2 * s, gy - legH + (swing < 0 ? swing * 0.3f : 0), 10 * s, legH - (swing < 0 ? swing * 0.3f : 0), dim(L.pants, 0.85f));
@@ -495,7 +504,28 @@ static void drawPerson(float x, float gy, int dir, const Look& L, int walk, bool
         rect(x - headS / 2 - 1, hy - 2, headS + 2, 7, C(200, 50, 50)); rect(x + (dir > 0 ? -headS / 2 - 8 : headS / 2), hy + 2, 8, 6, C(200, 50, 50));
     } else if (L.acc == 11) { // goggles on forehead
         rect(x - headS / 2, hy, headS, 4, C(50, 50, 60)); fillCircle(x - 7, hy + 2, 5, C(120, 220, 255)); fillCircle(x + 7, hy + 2, 5, C(120, 220, 255));
+    } else if (L.acc == 12) { // wizard hat
+        rect(x - headS / 2 - 8, hy - 2, headS + 16, 5, C(70, 50, 140)); rect(x - 10, hy - 18, 20, 17, C(80, 60, 160)); rect(x - 6, hy - 30, 12, 13, C(80, 60, 160)); rect(x - 2, hy - 38, 6, 9, C(80, 60, 160)); rect(x - 10, hy - 4, 20, 3, C(250, 210, 60));
+    } else if (L.acc == 13) { // cat ears
+        for (int k = -1; k <= 1; k += 2) { rect(x + k * 11 - 5, hy - 12, 10, 12, L.hair); rect(x + k * 11 - 2, hy - 8, 4, 8, C(255, 170, 190)); }
+    } else if (L.acc == 14) { // halo
+        float hb = sinf(walk * 0.08f) * 2; frameR(x - 14, hy - 17 + hb, 28, 8, C(255, 235, 120), 3);
+    } else if (L.acc == 15) { // antenna
+        rect(x - 1, hy - 16, 3, 16, C(120, 120, 130)); fillCircle(x, hy - 18, 4, C(255, 80, 80));
+    } else if (L.acc == 16) { // flower
+        fillCircle(x + 10, hy + 1, 5, C(255, 140, 190)); fillCircle(x + 10, hy + 1, 2, C(255, 230, 90));
+    } else if (L.acc == 17) { // party hat
+        rect(x - 9, hy - 8, 18, 8, C(255, 90, 160)); rect(x - 6, hy - 18, 12, 10, C(90, 200, 255)); rect(x - 2, hy - 26, 5, 9, C(255, 230, 90)); fillCircle(x, hy - 27, 3, C(255, 255, 255));
+    } else if (L.acc == 18) { // pumpkin hat
+        fillCircle(x, hy - 6, 11, C(240, 120, 20)); rect(x - 2, hy - 20, 4, 6, C(70, 120, 40)); rect(x - 5, hy - 8, 3, 3, C(30, 20, 10)); rect(x + 3, hy - 8, 3, 3, C(30, 20, 10));
+    } else if (L.acc == 19) { // sunglasses
+        rect(x + ex - 11 * s, hy + 10 * s, 11 * s, 8 * s, C(15, 15, 20)); rect(x + ex + 2 * s, hy + 10 * s, 11 * s, 8 * s, C(15, 15, 20)); rect(x + ex - 1, hy + 12 * s, 4, 2, C(15, 15, 20));
     }
+    // face extras
+    if (L.face == 1) { for (int k = 0; k < 3; k++) { rect(x + ex - 9 * s + k * 4, hy + 20 * s, 2, 2, dim(L.skin, 0.6f)); rect(x + ex + 3 * s + k * 4, hy + 20 * s, 2, 2, dim(L.skin, 0.6f)); } }
+    else if (L.face == 2) { rect(x + ex - 11 * s, hy + 19 * s, 6 * s, 4 * s, C(255, 130, 140, 160)); rect(x + ex + 6 * s, hy + 19 * s, 6 * s, 4 * s, C(255, 130, 140, 160)); }
+    else if (L.face == 3) { rect(x + ex * 1.5f - 8 * s, hy + 21 * s, 16 * s, 4 * s, C(40, 25, 20)); }
+    else if (L.face == 4) { for (int k = 0; k < 3; k++) { rect(x + ex - 18 * s, hy + 18 * s + k * 3, 10 * s, 1, C(40, 40, 40)); rect(x + ex + 10 * s, hy + 18 * s + k * 3, 10 * s, 1, C(40, 40, 40)); } }
 }
 
 static void drawBot(float x, float gy, Col body, int t, int dir, bool happy = true) {

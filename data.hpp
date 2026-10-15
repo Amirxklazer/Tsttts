@@ -30,7 +30,7 @@ static std::vector<FloorDef> FLOORS;
 static std::vector<CharDef> CHARS;
 
 // ---------------- player appearance (customizer) ----------------
-struct Appear { int skin = 2, hairStyle = 0, hairCol = 0, height = 2, top = 0, topCol = 0, pants = 0, acc = 0, tag14 = 1, shoes = 0, eyes = 0; };
+struct Appear { int skin = 2, hairStyle = 0, hairCol = 0, height = 2, top = 0, topCol = 0, pants = 0, acc = 0, tag14 = 1, shoes = 0, eyes = 0, back = 0, face = 0, theme = 0; };
 static Appear APP;
 static const Col SKIN_C[8] = {{255, 224, 196, 255}, {240, 200, 160, 255}, {222, 170, 125, 255}, {200, 150, 105, 255}, {170, 120, 82, 255}, {135, 90, 60, 255}, {100, 66, 44, 255}, {80, 52, 36, 255}};
 static const Col HAIR_C[12] = {{25, 18, 14, 255}, {60, 38, 25, 255}, {110, 70, 35, 255}, {190, 150, 70, 255}, {210, 210, 210, 255}, {170, 50, 40, 255}, {60, 90, 200, 255}, {249, 115, 22, 255}, {90, 200, 170, 255}, {200, 90, 200, 255}, {240, 120, 150, 255}, {255, 255, 255, 255}};
@@ -40,7 +40,10 @@ static const float HEIGHT_V[5] = {0.84f, 0.92f, 1.0f, 1.08f, 1.16f};
 static const char* HEIGHT_N[5] = {"SHORT", "SMALL", "AVERAGE", "TALL", "TALLER"};
 static const char* HAIR_N[12] = {"SHORT", "LONG", "BUZZ", "CURLY", "SPIKY", "PONYTAIL", "BUN", "SIDE SWEPT", "TWIN TAILS", "MOHAWK", "MESSY", "STRAIGHT"};
 static const char* TOP_N[9] = {"T-SHIRT", "HOODIE", "JACKET", "STRIPED", "VEST", "OVERALLS", "LONG COAT", "TRACKSUIT", "LOGO TEE"};
-static const char* ACC_N[12] = {"NONE", "GLASSES", "CAP", "HEADPHONES", "SCARF", "BEANIE", "HEADBAND", "BOW TIE", "EYEPATCH", "CROWN", "BANDANA", "GOGGLES"};
+static const char* ACC_N[20] = {"NONE", "GLASSES", "CAP", "HEADPHONES", "SCARF", "BEANIE", "HEADBAND", "BOW TIE", "EYEPATCH", "CROWN", "BANDANA", "GOGGLES", "WIZARD HAT", "CAT EARS", "HALO", "ANTENNA", "FLOWER", "PARTY HAT", "PUMPKIN HAT", "SUNGLASSES"};
+static const char* BACK_N[5] = {"NONE", "BACKPACK", "CAPE", "ANGEL WINGS", "BAT WINGS"};
+static const char* FACE_N[5] = {"NONE", "FRECKLES", "BLUSH", "MUSTACHE", "WHISKERS"};
+static const char* THEME_N[6] = {"BLUEPRINT", "MIDNIGHT", "FOREST", "SUNSET", "ROSE", "GRAPHITE"};
 static const char* EYES_N[4] = {"NORMAL", "CALM", "SLEEPY", "WIDE"};
 static const Col SHOE_C[6] = {{30, 30, 30, 255}, {235, 235, 235, 255}, {200, 50, 50, 255}, {60, 120, 210, 255}, {249, 115, 22, 255}, {90, 60, 40, 255}};
 static const char* SKIN_N[8] = {"PALE", "LIGHT", "SAND", "TAN", "BROWN", "DEEP", "DARK", "DARKER"};
@@ -48,7 +51,7 @@ static const char* SKIN_N[8] = {"PALE", "LIGHT", "SAND", "TAN", "BROWN", "DEEP",
 static Look lookFromAppear(const Appear& a) {
     Look l;
     l.skin = SKIN_C[a.skin % 8]; l.hair = HAIR_C[a.hairCol % 12]; l.shirt = TOP_C[a.topCol % 12]; l.pants = PANT_C[a.pants % 8];
-    l.hairStyle = a.hairStyle % 12; l.h = HEIGHT_V[a.height % 5]; l.tag14 = a.tag14 != 0; l.topStyle = a.top % 9; l.acc = a.acc % 12; l.shoes = SHOE_C[a.shoes % 6]; l.eyes = a.eyes % 4; l.trim = a.acc == 5 || a.acc == 6 ? mix(l.shirt, WHITE, 0.4f) : WHITE;
+    l.hairStyle = a.hairStyle % 12; l.h = HEIGHT_V[a.height % 5]; l.tag14 = a.tag14 != 0; l.topStyle = a.top % 9; l.acc = a.acc % 20; l.back = a.back % 5; l.face = a.face % 5; l.shoes = SHOE_C[a.shoes % 6]; l.eyes = a.eyes % 4; l.trim = a.acc == 5 || a.acc == 6 ? mix(l.shirt, WHITE, 0.4f) : WHITE;
     return l;
 }
 

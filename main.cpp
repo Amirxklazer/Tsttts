@@ -23,6 +23,8 @@ static void loadStory() {
     parseStory(STORY_CH3D, "story_ch3d");
     parseStory(STORY_V5, "story_v5");
     parseStory(STORY_C3NEW, "story_c3new");
+    parseStory(STORY_C5NEW, "story_c5new");
+    parseStory(STORY_C4NEW, "story_c4new");
     validateStory();
 }
 
@@ -75,12 +77,12 @@ static void updateMenus(const Input& in) {
             }
         } break;
         case M_CHAPTERS: {
-            if (in.hit(B_UP)) g.sel = (g.sel + 3) % 4;
-            if (in.hit(B_DOWN)) g.sel = (g.sel + 1) % 4;
+            if (in.hit(B_UP)) g.sel = (g.sel + 4) % 5;
+            if (in.hit(B_DOWN)) g.sel = (g.sel + 1) % 5;
             if (in.hit(B_B)) { g.mode = M_TITLE; g.sel = 4; }
             if (in.hit(B_A)) {
                 int c = g.sel + 1;
-                if (!g.st.unl[c]) setMsg(c == 2 ? "Locked. Finish Day 31 of Chapter 1 first." : c == 3 ? "Locked. Finish Day 35 of Chapter 2 first." : "Locked. Finish Day 40 of Chapter 3 first.");
+                if (!g.st.unl[c]) setMsg(c == 2 ? "Locked. Finish Day 31 of Chapter 1 first." : c == 3 ? "Locked. Finish Day 35 of Chapter 2 first." : c == 4 ? "Locked. Finish Day 40 of Chapter 3 first." : "Locked. Finish Day 45 of Chapter 4 first.");
                 else {
                     g.mode = M_DAYSEL; g.dsCh = c; g.sel = std::max(0, std::min(CH_LEN[c] - 1, g.st.maxD[c] - 1));
                     if (g.slot < 1) g.slot = g.st.lastSlot > 0 ? g.st.lastSlot : 1;
@@ -89,18 +91,18 @@ static void updateMenus(const Input& in) {
         } break;
         case M_CUSTOM: case M_PCUSTOM: {
             g.custSpin++;
-            int* f[] = {&APP.skin, &APP.hairStyle, &APP.hairCol, &APP.height, &APP.top, &APP.topCol, &APP.pants, &APP.shoes, &APP.eyes, &APP.acc, &APP.tag14};
-            int mod[] = {8, 12, 12, 5, 9, 12, 8, 6, 4, 12, 2};
-            if (in.hit(B_UP)) g.custSel = (g.custSel + 12) % 13;
-            if (in.hit(B_DOWN)) g.custSel = (g.custSel + 1) % 13;
+            int* f[] = {&APP.skin, &APP.hairStyle, &APP.hairCol, &APP.height, &APP.top, &APP.topCol, &APP.pants, &APP.shoes, &APP.eyes, &APP.acc, &APP.back, &APP.face, &APP.theme, &APP.tag14};
+            int mod[] = {8, 12, 12, 5, 9, 12, 8, 6, 4, 20, 5, 5, 6, 2};
+            if (in.hit(B_UP)) g.custSel = (g.custSel + 15) % 16;
+            if (in.hit(B_DOWN)) g.custSel = (g.custSel + 1) % 16;
             bool back = in.hit(B_B);
             if (in.hit(B_Y)) { APP = Appear(); applyLook(); }
-            if (in.hit(B_X)) { APP.skin = rand() % 8; APP.hairStyle = rand() % 12; APP.hairCol = rand() % 12; APP.height = rand() % 5; APP.top = rand() % 9; APP.topCol = rand() % 12; APP.pants = rand() % 8; APP.acc = rand() % 12; APP.shoes = rand() % 6; APP.eyes = rand() % 4; applyLook(); awardBadge("fashion"); }
-            if (g.custSel < 11) {
+            if (in.hit(B_X)) { APP.skin = rand() % 8; APP.hairStyle = rand() % 12; APP.hairCol = rand() % 12; APP.height = rand() % 5; APP.top = rand() % 9; APP.topCol = rand() % 12; APP.pants = rand() % 8; APP.acc = rand() % 20; APP.shoes = rand() % 6; APP.eyes = rand() % 4; APP.back = rand() % 5; APP.face = rand() % 5; applyLook(); awardBadge("fashion"); }
+            if (g.custSel < 14) {
                 int d = (in.hit(B_RIGHT) || in.hit(B_A) ? 1 : 0) - (in.hit(B_LEFT) ? 1 : 0);
                 if (d) { *f[g.custSel] = (*f[g.custSel] + d + mod[g.custSel]) % mod[g.custSel]; applyLook(); awardBadge("fashion"); }
             } else if (in.hit(B_A)) {
-                if (g.custSel == 11) { APP = Appear(); applyLook(); } else back = true;
+                if (g.custSel == 14) { APP = Appear(); applyLook(); } else back = true;
             }
             if (back) {
                 saveSettings();
@@ -125,6 +127,7 @@ static void updateMenus(const Input& in) {
                 g.kb.done = false;
                 std::string t = g.kb.text; for (auto& ch : t) ch = toupper(ch);
                 while (!t.empty() && t.back() == ' ') t.pop_back();
+                if (loadOutfitCode(t)) { applyLook(); saveSettings(); g.redeemMsg = "Outfit loaded!"; g.redeemT = 240; g.kb.text.clear(); break; }
                 const CodeDef* hit = nullptr; for (int i = 0; i < NCODES; i++) if (t == CODE_LIST[i].code) hit = &CODE_LIST[i];
                 if (!hit) g.redeemMsg = "That code doesn't work.";
                 else if (U_LORE.count(hit->loreId)) g.redeemMsg = "Already redeemed.";
@@ -211,7 +214,7 @@ static void updateMenus(const Input& in) {
             if (in.hit(B_UP)) g.sel = std::max(0, g.sel - 8);
             if (in.hit(B_DOWN)) g.sel = std::min(len - 1, g.sel + 8);
             if (in.hit(B_L) && g.dsCh > 1) { g.dsCh--; g.sel = std::min(g.sel, CH_LEN[g.dsCh] - 1); }
-            if (in.hit(B_R) && g.dsCh < 3 && g.st.unl[g.dsCh + 1]) { g.dsCh++; g.sel = std::min(g.sel, CH_LEN[g.dsCh] - 1); }
+            if (in.hit(B_R) && g.dsCh < 5 && g.st.unl[g.dsCh + 1]) { g.dsCh++; g.sel = std::min(g.sel, CH_LEN[g.dsCh] - 1); }
             if (in.hit(B_B)) { g.mode = M_TITLE; g.sel = 3; }
             if (in.hit(B_A)) {
                 if (g.sel + 1 <= g.st.maxD[g.dsCh]) startDayFromSelect(g.dsCh, g.sel + 1);
@@ -224,6 +227,7 @@ static void updateMenus(const Input& in) {
             if (in.hit(B_UP)) g.sel = (g.sel + 5) % 6;
             if (in.hit(B_DOWN)) g.sel = (g.sel + 1) % 6;
             if (in.hit(B_B) || in.hit(B_PLUS)) { g.mode = M_PLAY; break; }
+            if (in.hit(B_L)) { g.mode = M_PHOTO; g.photoSave = 0; break; }
             if (in.hit(B_A)) {
                 if (g.sel == 0) g.mode = M_PLAY;
                 else if (g.sel == 1) { writeSlot(g.slot); setMsg("Saved to slot " + std::to_string(g.slot)); }
@@ -233,9 +237,15 @@ static void updateMenus(const Input& in) {
                 else { g.coopOn = false; G.coop = false; g.mode = M_TITLE; g.sel = 0; if (g.mini) { delete g.mini; g.mini = nullptr; } g.stack.clear(); g.vs = V_NONE; }
             }
         } break;
+        case M_PHOTO: {
+            g.frame += 0;
+            if (g.photoMsgT > 0) g.photoMsgT--;
+            if (in.hit(B_A) && g.photoSave == 0) g.photoSave = 1;
+            if (in.hit(B_B) || in.hit(B_PLUS)) g.mode = M_PAUSE;
+        } break;
         case M_ENDING: {
             g.cT++;
-            if (g.cT > 120 && in.hit(B_A)) { g.mode = M_TITLE; g.sel = 0; if (g.endCh < 4) setMsg("Next chapter unlocked! Press Continue."); }
+            if (g.cT > 120 && in.hit(B_A)) { g.mode = M_TITLE; g.sel = 0; if (g.endCh < 5) setMsg("Next chapter unlocked! Press Continue."); }
         } break;
         default: break;
     }
@@ -247,7 +257,7 @@ static void updatePlay(const Input& in) {
     updateFades();
     updateNpcs();
     updateActors();
-    if (!g.sceneOn && g.vs != V_MINI && !g.elevOpen) updateCoop();
+    if (!g.sceneOn && g.vs != V_MINI && !g.elevOpen) updateCoop(in);
     if (g.vs == V_RUN) vmRun();
     if (g.vs == V_AWAIT || g.vs == V_NONE) { if (g.fadePhase == 0) updateWorld(in); }
     else updateVM(in);
@@ -292,6 +302,7 @@ static void update(const Input& in) {
     handleTaps(in);
     if (g.msgT > 0) g.msgT--;
     if (g.badgeToastT > 0) g.badgeToastT--;
+    if (g.zoom != g.zoomTo) { g.zoom += (g.zoomTo > g.zoom ? 1 : -1) * g.zoomSpd; if (fabsf(g.zoom - g.zoomTo) < g.zoomSpd) g.zoom = g.zoomTo; }
     if (g.mode == M_PLAY) updatePlay(in);
     else updateMenus(in);
 }
@@ -304,10 +315,20 @@ static void drawPlay() {
     else {
         if (g.elevOpen) drawElevatorScene();
         else {
-            if (g.sceneOn) drawScene(); else drawWorld();
-            drawFX();
-            if (!g.barsOn || g.bars < 0.5f) drawHUD();
-            drawDialog();
+            if (g.zoom > 1.001f && g.sceneOn && G.zoomTex) {
+                SDL_SetRenderTarget(G.ren, G.zoomTex);
+                SDL_SetRenderDrawColor(G.ren, 0, 0, 0, 255); SDL_RenderClear(G.ren);
+                drawScene(); drawFX();
+                SDL_SetRenderTarget(G.ren, nullptr);
+                float w = SCR_W / g.zoom, h = SCR_H / g.zoom;
+                float x = std::max(0.0f, std::min(SCR_W - w, g.zoomCx * SCR_W - w / 2)), y = std::max(0.0f, std::min(SCR_H - h, g.zoomCy * SCR_H - h / 2));
+                SDL_Rect src = {(int)x, (int)y, (int)w, (int)h};
+                SDL_RenderCopy(G.ren, G.zoomTex, &src, nullptr);
+            } else {
+                if (g.sceneOn) drawScene(); else drawWorld();
+                drawFX();
+            }
+            if (g.mode != M_PHOTO) { if (!g.barsOn || g.bars < 0.5f) drawHUD(); drawDialog(); }
         }
     }
     if (g.vs == V_ASK) drawAskOverlay();
@@ -334,7 +355,8 @@ static void draw() {
         case M_LORE: g_hint = "Up/Down Browse    A Read    B Back"; break;
         case M_LOREVIEW: g_hint = "A Next page    B Back"; break;
         case M_COOP: g_hint = "Left/Right Move    A Join / Start    Up/Down Character    B Back"; break;
-        case M_PAUSE: g_hint = "A Select    B Resume"; break;
+        case M_PAUSE: g_hint = "A Select    B Resume    L Photo mode"; break;
+        case M_PHOTO: g_hint = "A Take photo    B Back"; break;
         default: g_hint = "A Select    B Back"; break;
     }
     switch (g.mode) {
@@ -345,6 +367,7 @@ static void draw() {
         case M_SETTINGS: case M_PSET: drawSettings(); break;
         case M_PLAY: drawPlay(); break;
         case M_PAUSE: drawPlay(); drawPause(); break;
+        case M_PHOTO: drawPlay(); if (g.photoMsgT > 0 && !g.photoSave) text("Photo saved!", 640, 40, 1.6f, C(255, 230, 120), 1, 2); else if (!g.photoSave) text("PHOTO MODE   A: take photo   B: back", 640, 690, 1.2f, C(255, 255, 255, 200), 1, 2); break;
         case M_ENDING: drawEnding(); break;
         case M_CHAPTERS: drawChapters(); break;
         case M_CUSTOM: case M_PCUSTOM: drawCustomize(); break;
@@ -519,7 +542,7 @@ int main(int argc, char** argv) {
         if (startCh > 1 || botFromDay > 1 || startDay0) {
             int d = startDay0 ? startDay0 : botFromDay;
             if (startCh == 1) g.progressFlags.clear();
-            for (int c = 1; c <= 3; c++) { g.st.unl[c] = true; g.st.maxD[c] = CH_LEN[c]; }
+            for (int c = 1; c <= 5; c++) { g.st.unl[c] = true; g.st.maxD[c] = CH_LEN[c]; }
             startDayFromSelect(startCh, d);
         } else newGame(1);
     }
@@ -549,6 +572,13 @@ int main(int argc, char** argv) {
             SDL_RenderClear(G.ren);
             draw();
             if (wantShot) shot("f" + std::to_string(botFrames));
+            if (g.photoSave == 1) {
+                ensureDir(); std::string pd = std::string(SAVE_DIR) + "photos"; mkdir(pd.c_str(), 0777);
+                SDL_Surface* ps = SDL_CreateRGBSurfaceWithFormat(0, SCR_W, SCR_H, 32, SDL_PIXELFORMAT_ARGB8888);
+                SDL_RenderReadPixels(G.ren, nullptr, SDL_PIXELFORMAT_ARGB8888, ps->pixels, ps->pitch);
+                SDL_SaveBMP(ps, (pd + "/photo" + std::to_string(++g.photoN) + ".bmp").c_str()); SDL_FreeSurface(ps);
+                g.photoSave = 0; g.photoMsgT = 90;
+            }
             SDL_RenderPresent(G.ren);
         }
         if (BOT && botDone) break;

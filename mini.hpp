@@ -585,6 +585,7 @@ struct Roof : Mini {
 // ---------------------------------------------------------------- factory
 #include "mini2.hpp"
 #include "mini3.hpp"
+#include "mini4.hpp"
 
 static Mini* makeMini(const std::vector<std::string>& a) {
     auto ai = [&](size_t i, int d) { return a.size() > i ? atoi(a[i].c_str()) : d; };
@@ -592,6 +593,10 @@ static Mini* makeMini(const std::vector<std::string>& a) {
     if (a.empty()) return nullptr;
     const std::string& k = a[0];
     if (k == "whack") return new Whack(ai(1, 10), ai(2, 30), ai(3, 1));
+    if (k == "stack") return new Stack(ai(1, 8), ai(2, 1));
+    if (k == "sort") return new Sort(ai(1, 10), ai(2, 1));
+    if (k == "dash") return new Dash(ai(1, 14), ai(2, 1));
+    if (k == "balance") return new Balance(ai(1, 12), ai(2, 1));
     if (k == "pairs") return new Pairs(ai(1, 6), ai(2, 6));
     if (k == "lights") return new Lights(ai(1, 3), ai(2, 0));
     if (k == "slide") return new Slide(ai(1, 90));
