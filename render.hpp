@@ -167,8 +167,16 @@ static void drawScene() {
         else if (an == "cheer") { oy = -fabsf(sinf(prog * 6.2832f * 2)) * 60; }
         else if (an == "tilt") ox += sinf(prog * 3.1416f) * 14;
         else if (an == "shrug") oy += sinf(prog * 3.1416f) * 12;
+        else if (an == "sway") ox += sinf(fr * 0.12f) * 22;
+        else if (an == "bounce") oy = -fabsf(sinf(fr * 0.4f)) * 36;
+        else if (an == "clap") { oy = -fabsf(sinf(fr * 0.8f)) * 10; ox += sinf(fr * 1.6f) * 2; }
+        else if (an == "zoomies") ox += sinf(prog * 6.2832f * 3) * 200;
+        else if (an == "twirl") oy = -sinf(prog * 3.1416f) * 50;
+        else if (an == "sneak") { oy += 14; ox += sinf(prog * 6.2832f) * 30; }
+        else if (an == "dizzy") { ox += sinf(fr * 0.2f) * 18; oy += sinf(fr * 0.4f) * 5; }
+        else if (an == "salute") oy -= sinf(prog * 3.1416f) * 14;
         int dirv = a.dir;
-        if (a.animName == "spin" || a.animName == "cheer") dirv = ((g.frame / 4) % 2) ? 1 : -1;
+        if (a.animName == "spin" || a.animName == "cheer" || a.animName == "twirl" || a.animName == "dizzy") dirv = ((g.frame / 4) % 2) ? 1 : -1;
         if (a.animName == "look") dirv = ((g.frame / 14) % 2) ? 1 : -1;
         if (a.animName == "dance") dirv = ((g.frame / 18) % 2) ? 1 : -1;
         if (c->isBot) drawBot(a.x + ox, 612 + bob + oy, c->look.shirt, g.frame, dirv, a.animName != "shake");
@@ -467,7 +475,7 @@ static void drawHUD() {
     int chn = g.chapter;
     text("CH" + std::to_string(chn) + "  DAY " + std::to_string(g.day), 20, 10, 1.8f, ORANGE);
     if (f) text(f->name, 640, 10, 1.8f, WHITE, 1);
-    text("ITEMS " + std::to_string(g.inv.size()), SCR_W - 20, 10, 1.8f, WHITE, 2);
+    text("ITEMS " + std::to_string(g.inv.size()) + "   Y PHONE", SCR_W - 20, 10, 1.8f, WHITE, 2);
     if (!g.goal.empty() && !g.sceneOn) {
         auto ls = wrapText("GOAL: " + g.goal, 62);
         float h = 14 + ls.size() * 26;
@@ -492,7 +500,7 @@ static void drawHUD() {
 static void drawDialog() {
     if (g.vs != V_SAY && g.vs != V_CHOOSE) return;
     float bx = 50, by = 505, bw = 1180, bh = 185;
-    rect(bx, by, bw, bh, C(14, 22, 52, 238)); frameR(bx, by, bw, bh, WHITE, 3);
+    rect(bx, by, bw, bh, g.st.hiCon ? C(0, 0, 0, 255) : C(14, 22, 52, 238)); frameR(bx, by, bw, bh, g.st.hiCon ? C(255, 255, 0) : WHITE, 3);
     dashH(bx + 10, by + bh - 12, bw - 20, C(255, 255, 255, 60), 10, 8, 1);
     if (!g.dWho.empty()) {
         Col sc = speakerCol(g.dWho);
@@ -506,7 +514,7 @@ static void drawDialog() {
         int shown = g.vs == V_CHOOSE ? 99999 : (int)g.dShown;
         std::string sub = utf8sub(page, shown);
         auto ls = splitStr(sub, '\n');
-        for (size_t i = 0; i < ls.size(); i++) text(ls[i], bx + 28, by + 22 + i * 42, 1.9f, g.dWho.empty() ? C(215, 220, 235) : WHITE);
+        for (size_t i = 0; i < ls.size(); i++) text(ls[i], bx + 28, by + 20 + i * (g.st.bigText ? 50 : 42), g.st.bigText ? 2.4f : 1.9f, g.dWho.empty() ? C(215, 220, 235) : WHITE);
         if (g.vs == V_SAY && g.dShown >= utf8len(page)) {
             bool more = g.dPage + 1 < (int)g.dPages.size();
             int a = 150 + (int)(100 * sinf(g.frame * 0.15f));
@@ -727,7 +735,7 @@ static void drawTitleMenu() {
     for (int i = 0; i < 10; i++) bpButton(130, 212 + i * 42, 560, 36, names[i], g.sel == i, i != 0 || last.exists, i);
     if (g.msgT > 0) text(g.msg, 130, 642, 1.4f, C(255, 220, 120));
     if (g.sel == 0 && last.exists) text("Slot " + std::to_string(g.st.lastSlot) + " - Ch." + std::to_string(last.chapter) + " Day " + std::to_string(last.day), 710, 224, 1.3f, C(255, 255, 255, 180));
-    if (g.sel == 4) text(g.st.unl[2] ? "Next chapters unlocked!" : "4 chapters + a Chapter 5 preview", 710, 392, 1.3f, C(120, 255, 190));
+    if (g.sel == 4) text(g.st.unl[2] ? "Next chapters unlocked!" : "5 chapters, 191 days", 710, 392, 1.3f, C(120, 255, 190));
     if (g.sel == 5) text("Local multiplayer: up to 4 players", 710, 434, 1.3f, C(120, 255, 190));
     if (g.sel == 7) text("Badges, redeem codes, lore, endings", 710, 518, 1.3f, C(120, 255, 190));
     text(std::to_string(U_BADGES.size()) + "/" + std::to_string(NBADGES) + " badges", 1210, 668, 1.2f, C(255, 255, 255, 150), 2);
@@ -786,11 +794,13 @@ static void drawSettings() {
     text("SETTINGS", 110, 100, 3.4f, WHITE, 0, 6);
     const char* ts[] = {"SLOW", "NORMAL", "FAST", "INSTANT"};
     const char* au[] = {"OFF (press A)", "LONG", "NORMAL", "SHORT"};
-    bpButton(130, 210, 760, 60, std::string("TEXT SPEED:   ") + ts[g.st.textSpeed], g.sel == 0, true, 0);
-    bpButton(130, 290, 760, 60, std::string("AUTO-ADVANCE:   ") + au[g.st.autoAdv], g.sel == 1, true, 1);
-    bpButton(130, 370, 760, 60, std::string("SCANLINES:   ") + (g.st.scanlines ? "ON" : "OFF"), g.sel == 2, true, 2);
-    bpButton(130, 450, 760, 60, "BACK", g.sel == 3, true, 3);
-    text("Dialogue moves on by itself when finished. A still skips ahead.", 134, 540, 1.3f, C(255, 255, 255, 190));
+    bpButton(130, 190, 760, 60, std::string("TEXT SPEED:   ") + ts[g.st.textSpeed], g.sel == 0, true, 0);
+    bpButton(130, 270, 760, 60, std::string("AUTO-ADVANCE:   ") + au[g.st.autoAdv], g.sel == 1, true, 1);
+    bpButton(130, 350, 760, 60, std::string("SCANLINES:   ") + (g.st.scanlines ? "ON" : "OFF"), g.sel == 2, true, 2);
+    bpButton(130, 430, 760, 60, std::string("BIG TEXT:   ") + (g.st.bigText ? "ON" : "OFF"), g.sel == 3, true, 3);
+    bpButton(130, 510, 760, 60, std::string("HIGH CONTRAST:   ") + (g.st.hiCon ? "ON" : "OFF"), g.sel == 4, true, 4);
+    bpButton(130, 590, 760, 60, "BACK", g.sel == 5, true, 5);
+    text("Hold Y during dialogue to fast-forward it.", 134, 680, 1.3f, C(255, 255, 255, 190));
 }
 
 static void drawPause() {
@@ -834,7 +844,7 @@ static void drawChapters() {
                  {"CHAPTER 2  -  35 DAYS", "FURTHER INN", g.st.unl[2] ? "Reopen the Inn. The ledger, the knocking, Room 000." : "Finish Day 31 of Chapter 1 to unlock.", g.st.unl[2]},
                  {"CHAPTER 3  -  40 DAYS", "LOWEST POINT", g.st.unl[3] ? "Level 18. Doors with names. The shape behind the glass." : "Finish Day 35 of Chapter 2 to unlock.", g.st.unl[3]},
                  {"CHAPTER 4  -  45 DAYS", "NEVER", g.st.unl[4] ? "The list of Nevers. Signs, rules and the building's oldest promise." : "Finish Day 40 of Chapter 3 to unlock.", g.st.unl[4]},
-                 {"CHAPTER 5  -  PREVIEW", "SAFE ASCENT", g.st.unl[5] ? "A first look at the climb back up. Preview only." : "Finish Day 45 of Chapter 4 to peek.", g.st.unl[5]}};
+                 {"CHAPTER 5", "SAFE ASCENT", g.st.unl[5] ? "The long safe climb back up." : "Finish Day 45 of Chapter 4.", g.st.unl[5]}};
     for (int i = 0; i < 5; i++) {
         float y = 140 + i * 100; bool sel = g.sel == i;
         HITS.push_back({110, y, 1060, 92, 0, i});
@@ -912,7 +922,7 @@ static void drawEnding() {
     float a = std::min(1.0f, g.cT / 90.0f);
     text("CHAPTER " + std::to_string(g.endCh) + " COMPLETE", 640, 200, 4, C(255, 255, 255, (int)(255 * a)), 1, 8);
     text(g.endCh < 5 ? std::string(CH_NAME[g.endCh]) + " - done" : "TO BE CONTINUED...", 640, 300, 3, C(249, 115, 22, (int)(255 * a)), 1, 6);
-    if (g.endCh < 5 && g.cT > 100) text("CHAPTER " + std::to_string(g.endCh + 1) + ": " + std::string(CH_NAME[g.endCh + 1]) + (g.endCh == 4 ? " (PREVIEW)" : "") + " - UNLOCKED. Press Continue!", 640, 520, 2, C(120, 255, 190, 220), 1, 3);
+    if (g.endCh < 5 && g.cT > 100) text("CHAPTER " + std::to_string(g.endCh + 1) + ": " + std::string(CH_NAME[g.endCh + 1]) + " - UNLOCKED. Press Continue!", 640, 520, 2, C(120, 255, 190, 220), 1, 3);
     text("LOST OF ASHES  -  the story goes on", 640, 400, 1.8f, C(255, 255, 255, (int)(200 * a)), 1);
     text("Thanks for playing  " VERSION, 640, 460, 1.6f, C(255, 255, 255, (int)(160 * a)), 1);
     if (g.cT > 120) text("A", 640, 580, 2, C(255, 255, 255, 120 + (int)(100 * sinf(g.cT * 0.12f))), 1);

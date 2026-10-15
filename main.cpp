@@ -1,6 +1,7 @@
 // Ilot14 World - Nintendo Switch homebrew (SDL2 + libnx). Also builds on PC for testing.
 #include "story.hpp"
 #include "render.hpp"
+#include "phone.hpp"
 #ifdef __SWITCH__
 #include <switch.h>
 #endif
@@ -32,14 +33,16 @@ static void loadStory() {
 static void setMsg(const std::string& m) { g.msg = m; g.msgT = 180; }
 
 static void settingsInput(const Input& in, int back) {
-    if (in.hit(B_UP)) g.sel = (g.sel + 3) % 4;
-    if (in.hit(B_DOWN)) g.sel = (g.sel + 1) % 4;
+    if (in.hit(B_UP)) g.sel = (g.sel + 5) % 6;
+    if (in.hit(B_DOWN)) g.sel = (g.sel + 1) % 6;
     bool ch = false;
     int d = (in.hit(B_A) || in.hit(B_RIGHT) ? 1 : 0) - (in.hit(B_LEFT) ? 1 : 0);
     if (g.sel == 0 && d) { g.st.textSpeed = (g.st.textSpeed + d + 4) % 4; ch = true; }
     else if (g.sel == 1 && d) { g.st.autoAdv = (g.st.autoAdv + d + 4) % 4; ch = true; }
     else if (g.sel == 2 && d) { g.st.scanlines = !g.st.scanlines; G.scanlines = g.st.scanlines; ch = true; }
-    else if (g.sel == 3 && in.hit(B_A)) { saveSettings(); g.mode = (Mode)back; g.sel = back == M_TITLE ? 8 : 4; return; }
+    else if (g.sel == 3 && d) { g.st.bigText = !g.st.bigText; ch = true; }
+    else if (g.sel == 4 && d) { g.st.hiCon = !g.st.hiCon; ch = true; }
+    else if (g.sel == 5 && in.hit(B_A)) { saveSettings(); g.mode = (Mode)back; g.sel = back == M_TITLE ? 8 : 4; return; }
     if (ch) saveSettings();
     if (in.hit(B_B)) { saveSettings(); g.mode = (Mode)back; g.sel = back == M_TITLE ? 8 : 4; }
 }
@@ -237,6 +240,7 @@ static void updateMenus(const Input& in) {
                 else { g.coopOn = false; G.coop = false; g.mode = M_TITLE; g.sel = 0; if (g.mini) { delete g.mini; g.mini = nullptr; } g.stack.clear(); g.vs = V_NONE; }
             }
         } break;
+        case M_PHONE: phUpdate(in); break;
         case M_PHOTO: {
             g.frame += 0;
             if (g.photoMsgT > 0) g.photoMsgT--;
@@ -254,6 +258,9 @@ static void updateMenus(const Input& in) {
 static void updatePlay(const Input& in) {
     if (in.hit(B_PLUS) && !g.elevOpen) { g.mode = M_PAUSE; g.sel = 0; return; }
     g.playFrames++;
+    if (g.playFrames == 600 && !g.sceneOn) phPushIncoming();
+    if (phPendT > 0 && phPendT-- == 1) { PH_MSG[phPendKey].push_back({false, phReply(phPendKey, phPendOpt)}); PH_UNREAD.insert(phPendKey); phSave(); toast("New text from " + std::string(charBy(phPendKey) ? charBy(phPendKey)->name : "?")); phPendKey.clear(); }
+    if (in.hit(B_Y) && !g.sceneOn && !g.elevOpen && g.fadePhase == 0 && (g.vs == V_AWAIT || g.vs == V_NONE)) { phOpen(); return; }
     updateFades();
     updateNpcs();
     updateActors();
@@ -356,6 +363,7 @@ static void draw() {
         case M_LOREVIEW: g_hint = "A Next page    B Back"; break;
         case M_COOP: g_hint = "Left/Right Move    A Join / Start    Up/Down Character    B Back"; break;
         case M_PAUSE: g_hint = "A Select    B Resume    L Photo mode"; break;
+        case M_PHONE: g_hint = "A Select    Up/Down    B Back"; break;
         case M_PHOTO: g_hint = "A Take photo    B Back"; break;
         default: g_hint = "A Select    B Back"; break;
     }
@@ -367,6 +375,7 @@ static void draw() {
         case M_SETTINGS: case M_PSET: drawSettings(); break;
         case M_PLAY: drawPlay(); break;
         case M_PAUSE: drawPlay(); drawPause(); break;
+        case M_PHONE: drawPhone(); break;
         case M_PHOTO: drawPlay(); if (g.photoMsgT > 0 && !g.photoSave) text("Photo saved!", 640, 40, 1.6f, C(255, 230, 120), 1, 2); else if (!g.photoSave) text("PHOTO MODE   A: take photo   B: back", 640, 690, 1.2f, C(255, 255, 255, 200), 1, 2); break;
         case M_ENDING: drawEnding(); break;
         case M_CHAPTERS: drawChapters(); break;
@@ -532,7 +541,7 @@ int main(int argc, char** argv) {
     bool headless = BOT || getenv("SDL_VIDEODRIVER") != nullptr;
     if (!gfxInit(headless)) return 1;
     ensureDir();
-    loadSettings();
+    loadSettings(); phLoad();
     if (ai) TEST_AI = true;
     if (BOT && !ai) AUTOWIN = true;
     if (BOT || startDay0) {

@@ -13,7 +13,7 @@ INCLUDES    := .
 
 APP_TITLE   := Ilot14 World
 APP_AUTHOR  := Amir
-APP_VERSION := 0.6.1
+APP_VERSION := 0.7.1
 
 ARCH   := -march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 CFLAGS := -g -Wall -O2 -ffunction-sections $(ARCH) $(DEFINES) -D__SWITCH__ \

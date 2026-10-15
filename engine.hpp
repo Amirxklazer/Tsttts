@@ -4,11 +4,11 @@
 #include "extras.hpp"
 #include <list>
 
-#define VERSION "v0.6.1 (M5 prep)"
+#define VERSION "v0.7.1"
 
-struct Settings { int textSpeed = 1; int autoAdv = 2; bool scanlines = true; int lastSlot = 0; int maxD[6] = {0, 1, 0, 0, 0, 0}; bool unl[6] = {true, true, false, false, false, false}; };
+struct Settings { bool bigText = false, hiCon = false; int textSpeed = 1; int autoAdv = 2; bool scanlines = true; int lastSlot = 0; int maxD[6] = {0, 1, 0, 0, 0, 0}; bool unl[6] = {true, true, false, false, false, false}; };
 struct Npc { std::string floor; float baseX = 0, x = 0; bool visible = true; float phase = 0; int dir = 1; bool still = false; float goal = -1, spd = 4; };
-static int animLen(const std::string& n) { return n == "fall" ? 70 : (n == "dance" || n == "laugh" || n == "cheer") ? 90 : (n == "jump" || n == "float") ? 60 : (n == "nod" || n == "look" || n == "point") ? 56 : (n == "shiver" || n == "stomp") ? 48 : (n == "sit") ? 120 : 50; }
+static int animLen(const std::string& n) { return n == "fall" ? 70 : (n == "zoomies" || n == "twirl" || n == "clap" || n == "dizzy") ? 80 : (n == "dance" || n == "laugh" || n == "cheer") ? 90 : (n == "jump" || n == "float") ? 60 : (n == "nod" || n == "look" || n == "point") ? 56 : (n == "shiver" || n == "stomp") ? 48 : (n == "sit") ? 120 : 50; }
 struct Actor { std::string key; float x = 640, tx = 640, spd = 4; int dir = 1, anim = 0, animT = 0, emoteT = 0; std::string animName, emote; bool walking = false; };
 struct Particle { float x, y, vx, vy; int life, maxlife; Col c; int type; };
 struct ItemSp { std::string key, floor; float x; };
@@ -16,7 +16,7 @@ struct ObjSp { std::string id, floor, label; float x; };
 struct Toast { std::string t; int life; };
 
 enum VS { V_NONE, V_RUN, V_SAY, V_CHOOSE, V_AWAIT, V_MINI, V_CARD, V_WAIT, V_ENDDAY, V_ASK, V_SCARE };
-enum Mode { M_TITLE, M_NEWSLOT, M_SLOTS, M_DAYSEL, M_SETTINGS, M_PLAY, M_PAUSE, M_PSET, M_ENDING, M_CHAPTERS, M_CHSLOT, M_CUSTOM, M_PCUSTOM, M_REG, M_EXTRAS, M_REDEEM, M_BADGES, M_LORE, M_LOREVIEW, M_COOP, M_PHOTO };
+enum Mode { M_TITLE, M_NEWSLOT, M_SLOTS, M_DAYSEL, M_SETTINGS, M_PLAY, M_PAUSE, M_PSET, M_ENDING, M_CHAPTERS, M_CHSLOT, M_CUSTOM, M_PCUSTOM, M_REG, M_EXTRAS, M_REDEEM, M_BADGES, M_LORE, M_LOREVIEW, M_COOP, M_PHOTO, M_PHONE };
 struct Frame { Block* b; int pc; };
 struct ChatLine { std::string who, txt; int t; };
 static std::vector<ChatLine> CHATLOG; static std::string P1EM; static int P1EMT = 0; static int P1PH = 0;
@@ -163,7 +163,7 @@ static void saveSettings() {
                     "\nunl2=" + std::to_string(g.st.unl[2] ? 1 : 0) + "\nunl3=" + std::to_string(g.st.unl[3] ? 1 : 0) +
                     "\nmax4=" + std::to_string(g.st.maxD[4]) + "\nunl4=" + std::to_string(g.st.unl[4] ? 1 : 0) + "\nmax5=" + std::to_string(g.st.maxD[5]) + "\nunl5=" + std::to_string(g.st.unl[5] ? 1 : 0) +
                     "\nbadges=" + joinSet(U_BADGES) + "\nlore=" + joinSet(U_LORE) + "\ncodes=" + joinSet(U_CODES) +
-                    "\nauto=" + std::to_string(g.st.autoAdv) + "\nlook=" + appearStr() + "\n";
+                    "\nbigtext=" + std::to_string(g.st.bigText ? 1 : 0) + "\nhicon=" + std::to_string(g.st.hiCon ? 1 : 0) + "\nauto=" + std::to_string(g.st.autoAdv) + "\nlook=" + appearStr() + "\n";
     writeFile(std::string(SAVE_DIR) + "settings.cfg", s);
 }
 static void saveProgress() {
@@ -194,6 +194,8 @@ static void loadSettings() {
     if (g.st.unl[5] && g.st.maxD[5] < 1) g.st.maxD[5] = 1;
     if (g.st.unl[2] && g.st.maxD[2] < 1) g.st.maxD[2] = 1;
     if (g.st.unl[3] && g.st.maxD[3] < 1) g.st.maxD[3] = 1;
+    if (kv.count("bigtext")) g.st.bigText = atoi(kv["bigtext"].c_str()) != 0;
+    if (kv.count("hicon")) g.st.hiCon = atoi(kv["hicon"].c_str()) != 0;
     if (kv.count("auto")) g.st.autoAdv = std::max(0, std::min(3, atoi(kv["auto"].c_str())));
     if (kv.count("look")) {
         std::vector<std::string> p = splitStr(kv["look"], ',');
@@ -296,7 +298,7 @@ static void startSay(const std::string& who, const std::string& text) {
     size_t at = who.find('@');
     if (at != std::string::npos) { g.dWho = who.substr(0, at); g.dKey = who.substr(at + 1); }
     else { g.dWho = who; g.dKey.clear(); }
-    std::vector<std::string> lines = wrapText(text, 68);
+    std::vector<std::string> lines = wrapText(text, g.st.bigText ? 54 : 68);
     g.dPages.clear();
     for (size_t i = 0; i < lines.size(); i += 3) {
         std::string p;
@@ -716,7 +718,7 @@ static void updateVM(const Input& in) {
             int len = pageLen(page);
             if (g.dShown < len) {
                 g.dShown += typeSpeed();
-                if (in.hit(B_A)) g.dShown = (float)len;
+                if (in.hit(B_A) || in.down(B_Y)) g.dShown = (float)len;
             } else {
                 bool last = g.dPage + 1 >= (int)g.dPages.size();
                 bool nextChoose = false;
@@ -727,7 +729,7 @@ static void updateVM(const Input& in) {
                 g.dWait++;
                 static const float mult[4] = {0, 1.7f, 1.0f, 0.55f};
                 bool autoGo = g.st.autoAdv > 0 && g.dWait >= (int)((55 + len * 1.4f) * mult[g.st.autoAdv]);
-                if (nextChoose || autoGo || in.hit(B_A)) {
+                if (nextChoose || autoGo || in.hit(B_A) || (in.down(B_Y) && g.dWait > 4)) {
                     if (!last) { g.dPage++; g.dShown = 0; g.dWait = 0; }
                     else { g.vs = V_RUN; vmRun(); }
                 }

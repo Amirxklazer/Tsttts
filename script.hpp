@@ -22,9 +22,9 @@ struct Block {
     std::map<std::string, int> labels;
 };
 
-static bool isAnimName(const std::string& n) { static const char* k[] = {"dance","nod","point","laugh","shiver","sit","look","stomp","float","jump","cheer","tilt","shrug"}; for (auto x : k) if (n == x) return true; return false; }
+static bool isAnimName(const std::string& n) { static const char* k[] = {"dance","nod","point","laugh","shiver","sit","look","stomp","float","jump","cheer","tilt","shrug","sway","bounce","clap","zoomies","twirl","sneak","dizzy","salute"}; for (auto x : k) if (n == x) return true; return false; }
 static std::map<std::string, Block> BLOCKS;
-static const int CH_LEN[6] = {0, 31, 35, 40, 45, 6};
+static const int CH_LEN[6] = {0, 31, 35, 40, 45, 40};
 static const char* CH_NAME[6] = {"", "Lost the Ash", "Further Inn", "Lowest Point", "Never", "Safe Ascent"};
 static std::map<int, std::string> DAY_T[6];
 static std::string dayTitleOf(int ch, int d) { auto it = DAY_T[ch].find(d); return it == DAY_T[ch].end() ? "" : it->second; }

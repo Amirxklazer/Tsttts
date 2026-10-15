@@ -277,6 +277,10 @@ walk dalia 760 5
 walk amine 930 5 wait
 emote dalia !
 anim amine laugh
+zoom 1.4 40 0.6 0.5
+wait 50
+zoom 1 30
+wait 30
 say |Outside Amir's own door: NEVER 5 - NEVER FORGET WHO CAME FIRST.
 say Dalia@dalia|Ready when you are, Amir.
 anim dalia stomp
@@ -388,7 +392,7 @@ cast alicia 1100
 walk amir 560 6
 walk dalia 760 5
 walk alicia 900 4 wait
-anim alicia dance
+anim alicia sway
 anim amir float
 say |Alicia shares the cake with every bot. Prime saves a crumb for later.
 bars off
@@ -452,7 +456,7 @@ cast anes 1100
 walk amir 560 6
 walk dalia 760 5
 walk anes 900 4 wait
-anim anes cheer
+anim anes bounce
 anim amir tilt
 say |The group says hello to every door. Every door seems pleased.
 bars off
@@ -519,7 +523,7 @@ cast amine 1100
 walk amir 560 6
 walk dalia 760 5
 walk amine 900 4 wait
-anim amine nod
+anim amine clap
 anim amir shrug
 say |Amine promises not to keep any hurting secrets. He mostly keeps his promise.
 bars off
@@ -583,7 +587,7 @@ cast mopsy 1100
 walk amir 560 6
 walk dalia 760 5
 walk mopsy 900 4 wait
-anim mopsy point
+anim mopsy zoomies
 anim amir hop
 say |The pipe shines. Mopsy pretends it was nothing.
 bars off
@@ -603,9 +607,13 @@ walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
 anim gabriel stomp
+zoom 1.4 40 0.6 0.5
+wait 50
+zoom 1 30
+wait 30
 say |Taped to a freezer on the Teen floor: NEVER 10 - NEVER EAT ICE CREAM ALONE.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia dance
+anim dalia sway
 bars off
 scene off
 goal Take the elevator to the Teen floor.
@@ -650,8 +658,8 @@ cast amyas 1100
 walk amir 560 6
 walk dalia 760 5
 walk amyas 900 4 wait
-anim amyas laugh
-anim amir dance
+anim amyas twirl
+anim amir sway
 say |Amyas pretends not to see Amir grin. Adam Bachouche pretends not to see Amyas pretend.
 bars off
 scene off
@@ -672,7 +680,7 @@ emote dalia !
 anim gabriel float
 say |On the Teen floor stairs: NEVER 11 - NEVER WALK WHEN YOU CAN RUN.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia cheer
+anim dalia bounce
 bars off
 scene off
 goal Take the elevator to the Teen floor.
@@ -714,8 +722,8 @@ cast adam_t 1100
 walk amir 560 6
 walk dalia 760 5
 walk adam_t 900 4 wait
-anim adam_t jump
-anim amir cheer
+anim adam_t sneak
+anim amir bounce
 say |Adam sprints down the stairs. Amir pretends he doesn't want to follow. He follows.
 bars off
 scene off
@@ -736,7 +744,7 @@ emote dalia !
 anim gabriel tilt
 say |In Parking 2, on a covered car: NEVER 12 - NEVER LET DUST HAVE THE LAST WORD.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia nod
+anim dalia clap
 bars off
 scene off
 goal Take the elevator to Parking 2.
@@ -781,8 +789,8 @@ cast sweepy 1100
 walk amir 560 6
 walk dalia 760 5
 walk sweepy 900 4 wait
-anim sweepy look
-anim amir nod
+anim sweepy dizzy
+anim amir clap
 say |The car shines. The dust sighs in defeat.
 bars off
 scene off
@@ -803,7 +811,7 @@ emote dalia !
 anim gabriel shrug
 say |On a table at the Further inn: NEVER 13 - NEVER SERVE COLD SOUP.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia point
+anim dalia zoomies
 bars off
 scene off
 goal Take the elevator to the Further inn.
@@ -845,8 +853,8 @@ cast aya_n 1100
 walk amir 560 6
 walk dalia 760 5
 walk aya_n 900 4 wait
-anim aya_n wave
-anim amir point
+anim aya_n salute
+anim amir zoomies
 say |Everyone eats. Even Gabriel smiles. Dalia pretends she didn't see.
 bars off
 scene off
@@ -867,7 +875,7 @@ emote dalia !
 anim gabriel hop
 say |On the Roof, under the banner: NEVER 14 - NEVER LEAVE WITHOUT SAYING GOODBYE.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia laugh
+anim dalia twirl
 bars off
 scene off
 goal Take the elevator up to the Roof.
@@ -912,8 +920,8 @@ cast prime 1100
 walk amir 560 6
 walk dalia 760 5
 walk prime 900 4 wait
-anim prime shiver
-anim amir laugh
+anim prime dance
+anim amir twirl
 say |The wind lifts the banner. It waves goodbye to nobody and everybody.
 bars off
 scene off
@@ -931,10 +939,14 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel dance
+anim gabriel sway
+zoom 1.4 40 0.6 0.5
+wait 50
+zoom 1 30
+wait 30
 say |In the Lobby a sign is blank. Under it, a pen. The pen is warm. The Fifteenth sign is empty on purpose.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia jump
+anim dalia sneak
 bars off
 scene off
 goal Take the elevator to the Lobby.
@@ -976,8 +988,8 @@ cast prime 1100
 walk amir 560 6
 walk dalia 760 5
 walk prime 900 4 wait
-anim prime stomp
-anim amir jump
+anim prime cheer
+anim amir sneak
 say |Prime puts the pen in his tool tray. It rattles proudly.
 bars off
 scene off
@@ -995,10 +1007,10 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel cheer
+anim gabriel bounce
 say |Jalil sits on the Uncommon floor drawing a giant crayon sign.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia look
+anim dalia dizzy
 bars off
 scene off
 goal Take the elevator to the Uncommon floor.
@@ -1043,8 +1055,8 @@ cast jalil 1100
 walk amir 560 6
 walk dalia 760 5
 walk jalil 900 4 wait
-anim jalil float
-anim amir look
+anim jalil nod
+anim amir dizzy
 say |Jalil adds a second bus. The sign now has two buses and a monster.
 bars off
 scene off
@@ -1062,10 +1074,10 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel nod
+anim gabriel clap
 say |Abdullah has a clipboard. He is six and very serious about it.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia wave
+anim dalia salute
 bars off
 scene off
 goal Take the elevator to the Uncommon floor.
@@ -1107,8 +1119,8 @@ cast abdullah 1100
 walk amir 560 6
 walk dalia 760 5
 walk abdullah 900 4 wait
-anim abdullah tilt
-anim amir wave
+anim abdullah point
+anim amir salute
 say |Abdullah puts a gold star next to his own idea. Nobody argues.
 bars off
 scene off
@@ -1126,10 +1138,10 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel point
+anim gabriel zoomies
 say |Iyad winds up a pocket watch and leans on the wall.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia shiver
+anim dalia dance
 bars off
 scene off
 goal Take the elevator to the Common floor.
@@ -1174,8 +1186,8 @@ cast iyad 1100
 walk amir 560 6
 walk dalia 760 5
 walk iyad 900 4 wait
-anim iyad shrug
-anim amir shiver
+anim iyad laugh
+anim amir dance
 say |Iyad runs off, late for a thing that hasn't started.
 bars off
 scene off
@@ -1193,10 +1205,10 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel laugh
+anim gabriel twirl
 say |Maysanne holds a notebook full of tiny drawings.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia stomp
+anim dalia cheer
 bars off
 scene off
 goal Take the elevator to the Rare floor.
@@ -1238,8 +1250,8 @@ cast maysanne 1100
 walk amir 560 6
 walk dalia 760 5
 walk maysanne 900 4 wait
-anim maysanne hop
-anim amir stomp
+anim maysanne jump
+anim amir cheer
 say |Maysanne gives Bolt a drawing. He keeps it forever.
 bars off
 scene off
@@ -1257,10 +1269,14 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel jump
+anim gabriel sneak
+zoom 1.4 40 0.6 0.5
+wait 50
+zoom 1 30
+wait 30
 say |Arwa leans on a wall on the Main floor, arms crossed, thinking.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia float
+anim dalia nod
 bars off
 scene off
 goal Take the elevator to the Main floor.
@@ -1305,8 +1321,8 @@ cast arwa 1100
 walk amir 560 6
 walk dalia 760 5
 walk arwa 900 4 wait
-anim arwa dance
-anim amir float
+anim arwa look
+anim amir nod
 say |Arwa winks at Dalia. Dalia sticks her tongue out.
 bars off
 scene off
@@ -1324,10 +1340,10 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel look
+anim gabriel dizzy
 say |Youcef holds a hammer, a pencil and a very squeaky chair.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia tilt
+anim dalia point
 bars off
 scene off
 goal Take the elevator to the Main floor.
@@ -1369,8 +1385,8 @@ cast youcef 1100
 walk amir 560 6
 walk dalia 760 5
 walk youcef 900 4 wait
-anim youcef cheer
-anim amir tilt
+anim youcef wave
+anim amir point
 say |Youcef finds the hammer in his own pocket. He is unbearably smug.
 bars off
 scene off
@@ -1388,10 +1404,10 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel wave
+anim gabriel salute
 say |Raceem rides a skateboard up the Lethal floor hall, then crashes into the wall. Politely.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia shrug
+anim dalia laugh
 bars off
 scene off
 goal Take the elevator to the Lethal floor.
@@ -1436,8 +1452,8 @@ cast raceem 1100
 walk amir 560 6
 walk dalia 760 5
 walk raceem 900 4 wait
-anim raceem nod
-anim amir shrug
+anim raceem shiver
+anim amir laugh
 say |Raceem rolls away. He drops a sandwich. Bolt picks it up like a prize.
 bars off
 scene off
@@ -1455,10 +1471,10 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel shiver
+anim gabriel dance
 say |Basmala hands Amir a folded note, very formally.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia hop
+anim dalia jump
 bars off
 scene off
 goal Take the elevator to the Lethal floor.
@@ -1500,8 +1516,8 @@ cast basmala 1100
 walk amir 560 6
 walk dalia 760 5
 walk basmala 900 4 wait
-anim basmala point
-anim amir hop
+anim basmala stomp
+anim amir jump
 say |The note says: 'NEVER STOP BEING A GOOD FRIEND.' Amir folds it carefully.
 bars off
 scene off
@@ -1519,10 +1535,10 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel stomp
+anim gabriel cheer
 say |Dania spreads three bags of markers across a table.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia dance
+anim dalia look
 bars off
 scene off
 goal Take the elevator to the Common floor.
@@ -1567,8 +1583,8 @@ cast dania 1100
 walk amir 560 6
 walk dalia 760 5
 walk dania 900 4 wait
-anim dania laugh
-anim amir dance
+anim dania float
+anim amir look
 say |Dania draws a small sun on the sign. It looks great.
 bars off
 scene off
@@ -1586,10 +1602,14 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel float
+anim gabriel nod
+zoom 1.4 40 0.6 0.5
+wait 50
+zoom 1 30
+wait 30
 say |Fares is on the floor with a robot kit and a wrench.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia cheer
+anim dalia wave
 bars off
 scene off
 goal Take the elevator to the Lethal floor.
@@ -1631,8 +1651,8 @@ cast fares 1100
 walk amir 560 6
 walk dalia 760 5
 walk fares 900 4 wait
-anim fares jump
-anim amir cheer
+anim fares tilt
+anim amir wave
 say |Fares fixes a bot in under a minute. Everyone applauds. He blushes.
 bars off
 scene off
@@ -1650,10 +1670,10 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel tilt
+anim gabriel point
 say |Haydar listens to a radio that is also a toaster.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia nod
+anim dalia shiver
 bars off
 scene off
 goal Take the elevator to the Special floor.
@@ -1698,8 +1718,8 @@ cast kenzy 1100
 walk amir 560 6
 walk dalia 760 5
 walk kenzy 900 4 wait
-anim kenzy look
-anim amir nod
+anim kenzy shrug
+anim amir shiver
 say |The radio plays the building's four-note hum. Haydar hums along.
 bars off
 scene off
@@ -1717,10 +1737,10 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel shrug
+anim gabriel laugh
 say |Anais is reading three books at once on the Rare floor.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia point
+anim dalia stomp
 bars off
 scene off
 goal Take the elevator to the Rare floor.
@@ -1762,8 +1782,8 @@ cast anais 1100
 walk amir 560 6
 walk dalia 760 5
 walk anais 900 4 wait
-anim anais wave
-anim amir point
+anim anais hop
+anim amir stomp
 say |Anais writes 'WHY' on a sticky note and sticks it on a sign.
 bars off
 scene off
@@ -1781,10 +1801,10 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel hop
+anim gabriel jump
 say |Vacca sweeps Parking 1 so fast the dust applauds.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia laugh
+anim dalia float
 bars off
 scene off
 goal Take the elevator to Parking 1.
@@ -1829,8 +1849,8 @@ cast vacca 1100
 walk amir 560 6
 walk dalia 760 5
 walk vacca 900 4 wait
-anim vacca shiver
-anim amir laugh
+anim vacca sway
+anim amir float
 say |Vacca sweeps the last corner. A single leaf is saved.
 bars off
 scene off
@@ -1848,10 +1868,10 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel dance
+anim gabriel look
 say |Sofia sets a tiny key on a table at the Further inn.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia jump
+anim dalia tilt
 bars off
 scene off
 goal Take the elevator to the Further inn.
@@ -1893,8 +1913,8 @@ cast sofia 1100
 walk amir 560 6
 walk dalia 760 5
 walk sofia 900 4 wait
-anim sofia stomp
-anim amir jump
+anim sofia bounce
+anim amir tilt
 say |Sofia leaves the Inn door unlocked. She smiles a little.
 bars off
 scene off
@@ -1912,10 +1932,14 @@ walk amir 560 4
 walk gabriel 760 5
 walk amine 930 5 wait
 emote gabriel !
-anim amine cheer
+anim amine wave
+zoom 1.4 40 0.6 0.5
+wait 50
+zoom 1 30
+wait 30
 say |Dalia stands on a crate on the Main floor and announces her rule to nobody.
 say Gabriel@gabriel|Ready when you are, Amir.
-anim gabriel look
+anim gabriel shrug
 bars off
 scene off
 goal Take the elevator to the Main floor.
@@ -1960,8 +1984,8 @@ cast dalia 1100
 walk amir 560 6
 walk gabriel 760 5
 walk dalia 900 4 wait
-anim dalia float
-anim amir look
+anim dalia clap
+anim amir shrug
 say |Gabriel writes it down so carefully it's almost a love letter. Almost.
 bars off
 scene off
@@ -1979,10 +2003,10 @@ walk amir 560 4
 walk dalia 760 5
 walk amine 930 5 wait
 emote dalia !
-anim amine nod
+anim amine shiver
 say |Gabriel leans against the wall, rope over his shoulder.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia wave
+anim dalia hop
 bars off
 scene off
 goal Take the elevator to the Main floor.
@@ -2024,8 +2048,8 @@ cast gabriel 1100
 walk amir 560 6
 walk dalia 760 5
 walk gabriel 900 4 wait
-anim gabriel tilt
-anim amir wave
+anim gabriel zoomies
+anim amir hop
 say |Gabriel ties his rope in a knot that reads 'hold on'. Dalia pretends not to read it.
 bars off
 scene off
@@ -2043,10 +2067,10 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel point
+anim gabriel stomp
 say |Bolt zooms in a figure eight across the Lobby floor and slides into a wall.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia shiver
+anim dalia sway
 bars off
 scene off
 goal Take the elevator to the Lobby.
@@ -2091,8 +2115,8 @@ cast bolt 1100
 walk amir 560 6
 walk dalia 760 5
 walk bolt 900 4 wait
-anim bolt shrug
-anim amir shiver
+anim bolt twirl
+anim amir sway
 say |Bolt zooms in a perfect circle around everyone. Nobody is bored.
 bars off
 scene off
@@ -2110,10 +2134,10 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel laugh
+anim gabriel float
 say |The bots hold a secret vote in the 14 Cleaning bots parking. Mopsy bangs a spoon on a mug.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia stomp
+anim dalia bounce
 bars off
 scene off
 goal Take the elevator to the 14 Cleaning bots parking.
@@ -2155,8 +2179,8 @@ cast mopsy 1100
 walk amir 560 6
 walk dalia 760 5
 walk mopsy 900 4 wait
-anim mopsy hop
-anim amir stomp
+anim mopsy sneak
+anim amir bounce
 say |The vote is a tie. A bot named Dustin breaks it with a sneeze.
 bars off
 scene off
@@ -2174,10 +2198,10 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel jump
+anim gabriel tilt
 say |The night before the last sign. The Roof is quiet. Everyone is here, sitting in a circle.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia float
+anim dalia clap
 bars off
 scene off
 goal Take the elevator up to the Roof.
@@ -2222,8 +2246,8 @@ cast prime 1100
 walk amir 560 6
 walk dalia 760 5
 walk prime 900 4 wait
-anim prime dance
-anim amir float
+anim prime dizzy
+anim amir clap
 say |The banner flaps. The sky is the color of a sleeping orange.
 bars off
 scene off
@@ -2241,10 +2265,14 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel look
+anim gabriel shrug
+zoom 1.4 40 0.6 0.5
+wait 50
+zoom 1 30
+wait 30
 say |Alicia carries a cake with fifteen candles and a plastic bus on top.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia tilt
+anim dalia zoomies
 bars off
 scene off
 goal Take the elevator to the Lobby.
@@ -2286,8 +2314,8 @@ cast alicia 1100
 walk amir 560 6
 walk dalia 760 5
 walk alicia 900 4 wait
-anim alicia cheer
-anim amir tilt
+anim alicia salute
+anim amir zoomies
 say |Alicia blows out the candle. The building cheers.
 bars off
 scene off
@@ -2305,10 +2333,10 @@ walk amir 560 4
 walk gabriel 760 5
 walk amine 930 5 wait
 emote gabriel !
-anim amine wave
+anim amine hop
 say |Dalia and Gabriel argue about the wording while everyone else eats cake.
 say Gabriel@gabriel|Ready when you are, Amir.
-anim gabriel shrug
+anim gabriel twirl
 bars off
 scene off
 goal Take the elevator to the Main floor.
@@ -2353,8 +2381,8 @@ cast dalia 1100
 walk amir 560 6
 walk gabriel 760 5
 walk dalia 900 4 wait
-anim dalia nod
-anim amir shrug
+anim dalia dance
+anim amir twirl
 say |They both nod at the same time. Both pretend they didn't.
 bars off
 scene off
@@ -2372,10 +2400,10 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel shiver
+anim gabriel sway
 say |Amine knocks on Amir's door on the Lethal floor with a bag of snacks.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia hop
+anim dalia sneak
 bars off
 scene off
 goal Take the elevator to the Lethal floor.
@@ -2417,8 +2445,8 @@ cast amine 1100
 walk amir 560 6
 walk dalia 760 5
 walk amine 900 4 wait
-anim amine point
-anim amir hop
+anim amine cheer
+anim amir sneak
 say |Amine sits next to Amir. They don't say much. It's perfect.
 bars off
 scene off
@@ -2436,10 +2464,10 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel stomp
+anim gabriel bounce
 say |Lilian sits on a stair, telling the younger kids a story about the building.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia dance
+anim dalia dizzy
 bars off
 scene off
 goal Take the elevator to the Teen floor.
@@ -2484,8 +2512,8 @@ cast lilian 1100
 walk amir 560 6
 walk dalia 760 5
 walk lilian 900 4 wait
-anim lilian laugh
-anim amir dance
+anim lilian nod
+anim amir dizzy
 say |Lilian finishes and bows. The kids clap so hard the stairs tremble.
 bars off
 scene off
@@ -2503,10 +2531,10 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel float
+anim gabriel clap
 say |Adam Tansaouti opens an old ledger at the Further inn and finds the last page empty.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia cheer
+anim dalia salute
 bars off
 scene off
 goal Take the elevator to the Further inn.
@@ -2548,8 +2576,8 @@ cast tansaouti 1100
 walk amir 560 6
 walk dalia 760 5
 walk tansaouti 900 4 wait
-anim tansaouti jump
-anim amir cheer
+anim tansaouti point
+anim amir salute
 say |Adam Tansaouti closes the ledger gently. He looks lighter.
 bars off
 scene off
@@ -2567,10 +2595,14 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel tilt
+anim gabriel zoomies
+zoom 1.4 40 0.6 0.5
+wait 50
+zoom 1 30
+wait 30
 say |Grim hides behind a pillar in Parking 2 with a tiny sign: BOO (sorry).
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia nod
+anim dalia dance
 bars off
 scene off
 goal Take the elevator to Parking 2.
@@ -2615,8 +2647,8 @@ cast grim 1100
 walk amir 560 6
 walk dalia 760 5
 walk grim 900 4 wait
-anim grim look
-anim amir nod
+anim grim laugh
+anim amir dance
 say |Grim waves a tiny flag with a heart on it. Everyone waves back.
 bars off
 scene off
@@ -2634,10 +2666,10 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel shrug
+anim gabriel twirl
 say |The Rare floor clock strikes fourteen. It has never done that before.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia point
+anim dalia cheer
 bars off
 scene off
 goal Take the elevator to the Rare floor.
@@ -2679,8 +2711,8 @@ cast jilali 1100
 walk amir 560 6
 walk dalia 760 5
 walk jilali 900 4 wait
-anim jilali wave
-anim amir point
+anim jilali jump
+anim amir cheer
 say |The clock strikes the last chime. Fourteen. Everyone holds their breath.
 bars off
 scene off
@@ -2698,10 +2730,10 @@ walk amir 560 4
 walk dalia 760 5
 walk amine 930 5 wait
 emote dalia !
-anim amine hop
+anim amine sneak
 say |Everyone gathers on the Roof. The blank sign waits. Everyone holds a marker. Nobody speaks.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia laugh
+anim dalia nod
 bars off
 scene off
 goal Take the elevator up to the Roof.
@@ -2746,8 +2778,8 @@ cast gabriel 1100
 walk amir 560 6
 walk dalia 760 5
 walk gabriel 900 4 wait
-anim gabriel shiver
-anim amir laugh
+anim gabriel look
+anim amir nod
 say |Amir writes: NEVER STOP COMING HOME. Everyone signs. The sign glows.
 bars off
 scene off
@@ -2765,10 +2797,10 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel dance
+anim gabriel dizzy
 say |In the Lobby every lamp lights at once. The hum becomes a warm, rising chord.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia jump
+anim dalia point
 bars off
 scene off
 goal Take the elevator to the Lobby.
@@ -2810,8 +2842,8 @@ cast prime 1100
 walk amir 560 6
 walk dalia 760 5
 walk prime 900 4 wait
-anim prime stomp
-anim amir jump
+anim prime wave
+anim amir point
 say |Prime cries oil. He insists it's dust. Everyone lets him.
 bars off
 scene off
@@ -2829,10 +2861,10 @@ walk amir 560 4
 walk dalia 760 5
 walk gabriel 930 5 wait
 emote dalia !
-anim gabriel cheer
+anim gabriel salute
 say |A quiet morning on the Lethal floor. For once, no sign. Only the smell of toast.
 say Dalia@dalia|Ready when you are, Amir.
-anim dalia look
+anim dalia laugh
 bars off
 scene off
 goal Take the elevator to the Lethal floor.
@@ -2877,8 +2909,8 @@ cast bolt 1100
 walk amir 560 6
 walk dalia 760 5
 walk bolt 900 4 wait
-anim bolt float
-anim amir look
+anim bolt shiver
+anim amir laugh
 say |Bolt shares his toast with three bots and a doorknob.
 bars off
 scene off
@@ -2896,10 +2928,14 @@ walk amir 560 4
 walk gabriel 760 5
 walk amine 930 5 wait
 emote gabriel !
-anim amine nod
+anim amine dance
+zoom 1.4 40 0.6 0.5
+wait 50
+zoom 1 30
+wait 30
 say |The sun rises over Reghaia. The lake is gold. The cable car wires sing. Everyone is on the Roof.
 say Gabriel@gabriel|Ready when you are, Amir.
-anim gabriel wave
+anim gabriel jump
 bars off
 scene off
 goal Take the elevator up to the Roof.
@@ -2941,8 +2977,8 @@ cast dalia 1100
 walk amir 560 6
 walk gabriel 760 5
 walk dalia 900 4 wait
-anim dalia tilt
-anim amir wave
+anim dalia stomp
+anim amir jump
 say |The whole group watches the sunrise. Nobody says Never. They say Always.
 bars off
 scene off

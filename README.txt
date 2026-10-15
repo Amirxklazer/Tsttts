@@ -90,3 +90,17 @@ v0.6.1 (M5 prep)
 - Cutscene camera: "zoom <scale> <frames> [cx cy]" script op
 - Photo mode: Pause menu, press L, A saves a BMP to save/photos
 - Outfit codes: Redeem screen shows your code; type another OUT code to load it
+
+v0.6.2
+- Amir, Gabriel, Amine redesigned from reference photos (hair, glasses, clothes)
+- v0.6.3: Adam Bachouche redesigned from reference photo
+
+v0.7.0 M1
+- Chapter 5 "Safe Ascent" is now a full 40-day chapter (191 days total)
+- Your phone: press Y in free roam to text the others, they reply (age-appropriate); new texts arrive during the day
+- Accessibility: BIG TEXT, HIGH CONTRAST, hold Y to fast-forward dialogue
+- 8 new cutscene animations (sway, bounce, clap, zoomies, twirl, sneak, dizzy, salute), more camera zooms
+- Redesigned Amir, Gabriel, Amine, Adam Bachouche from reference photos
+
+v0.7.1
+- Phone chats are saved permanently (save/phone.dat) and kept between sessions

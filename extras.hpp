@@ -21,7 +21,7 @@ static const BadgeDef BADGE_LIST[] = {
     {"ch2", "Further Than Far", "Finish Chapter 2."},
     {"ch3", "Lowest Point", "Finish Chapter 3."},
     {"ch4", "Never Again", "Finish Chapter 4."},
-    {"ch5", "Sneak Peek", "Finish the Chapter 5 preview."},
+    {"ch5", "Safe Ascent", "Finish Chapter 5."},
     {"collector", "Lore Hound", "Unlock 5 lore or ending entries."},
 };
 static const int NBADGES = (int)(sizeof(BADGE_LIST) / sizeof(BADGE_LIST[0]));
