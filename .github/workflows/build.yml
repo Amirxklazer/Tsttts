@@ -1,27 +1,46 @@
-name: Build Ilot14
+name: Build NRO
 
 on:
   push:
+    branches: [ main, master ]
+  pull_request:
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Use the same pinned tag as your working repo (e.g. devkitpro/devkita64:20240202); 'latest' is only the fallback.
     container: devkitpro/devkita64:latest
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Install SDL2 for Switch
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install libraries
         run: |
-          dkp-pacman -Syu --noconfirm
-          dkp-pacman -S --noconfirm --needed switch-sdl2
+          if command -v dkp-pacman >/dev/null 2>&1; then PM=dkp-pacman; else PM=pacman; fi
+          $PM -Sy --noconfirm
+          $PM -S --noconfirm --needed switch-sdl2 switch-sdl2_ttf switch-sdl2_image switch-libjpeg-turbo switch-libpng switch-freetype switch-pkg-config
+          # audio (Music) and Wi-Fi (Weather, Mail, News, Roblox). Installed separately so a missing package can't stop the whole build.
+          $PM -S --noconfirm --needed switch-sdl2_mixer || echo "::warning::switch-sdl2_mixer not installed: Music will have no audio"
+          $PM -S --noconfirm --needed switch-curl switch-mbedtls switch-zlib || echo "::warning::switch-curl not installed: Wi-Fi apps will be offline"
+
       - name: Build
         run: |
           export DEVKITPRO=/opt/devkitpro
-          export DEVKITARM=/opt/devkitpro/devkitARM
-          export PATH=$DEVKITPRO/devkitA64/bin:$DEVKITPRO/tools/bin:$PATH
-          make -j2
+          export PATH=$DEVKITPRO/devkitA64/bin:$DEVKITPRO/portlibs/switch/bin:$PATH
+          make -j$(nproc)
+
+      - name: Check icon, hbmenu marker and features
+        run: |
+          ls -l WinNX.nro
+          grep -q "ASET" WinNX.nro || { echo "NRO has no icon asset header"; exit 1; }
+          grep -q "WINNX-SELF-MARKER-9c41e7" WinNX.nro || { echo "hbmenu marker missing"; exit 1; }
+          grep -aq "WNXFEAT\[audio net \]" WinNX.nro && echo "audio + Wi-Fi built in" || echo "::warning::built WITHOUT audio and/or Wi-Fi (see the libraries step)"
+
       - name: Upload NRO
         uses: actions/upload-artifact@v4
         with:
-          name: Ilot14-nro
-          path: Ilot14.nro
+          name: WinNX
+          path: "*.nro"
+          if-no-files-found: error
