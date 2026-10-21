@@ -1,4 +1,4 @@
-// WinNX v0.6.1 - Windows 8.1-style tablet shell for Nintendo Switch (SDL2 + libnx)
+// WinNX v0.7.0 - Windows 8.1-style tablet shell for Nintendo Switch (SDL2 + libnx)
 // Touch-first. Black "bezel" strip at the bottom holds the Windows button (OLED friendly).
 // Everything you write (Notes, Word, Excel) autosaves to sdmc:/switch/WinNX/ and reloads next time.
 #include <switch.h>
@@ -20,6 +20,11 @@
 #include <cctype>
 #include <string>
 #include <vector>
+#include <set>
+#include <functional>
+#include <unistd.h>
+#include <sys/statvfs.h>
+#include <exception>
 #include <map>
 #include <algorithm>
 #include <ctime>
@@ -290,7 +295,7 @@ static std::string dateStr() {
 }
 
 // ---------------------------------------------------------------- files
-static bool readFile(const std::string& p, std::string& out) {
+static bool readRaw(const std::string& p, std::string& out) {
     FILE* f = fopen(p.c_str(), "rb");
     if (!f) return false;
     char buf[4096]; size_t n;
@@ -299,11 +304,19 @@ static bool readFile(const std::string& p, std::string& out) {
     fclose(f);
     return true;
 }
-static bool writeFile(const std::string& p, const std::string& d) {
-    FILE* f = fopen(p.c_str(), "wb");
+static bool readFile(const std::string& p, std::string& out) { // falls back to the .tmp copy if a save was cut off by a crash
+    if (readRaw(p, out)) return true;
+    return readRaw(p + ".tmp", out);
+}
+static bool writeFile(const std::string& p, const std::string& d) { // atomic: write .tmp, then swap it in
+    std::string t = p + ".tmp";
+    FILE* f = fopen(t.c_str(), "wb");
     if (!f) return false;
-    fwrite(d.data(), 1, d.size(), f);
+    size_t n = fwrite(d.data(), 1, d.size(), f);
     fclose(f);
+    if (n != d.size()) { remove(t.c_str()); return false; }
+    remove(p.c_str());
+    if (rename(t.c_str(), p.c_str()) != 0) { FILE* g = fopen(p.c_str(), "wb"); if (!g) return false; fwrite(d.data(), 1, d.size(), g); fclose(g); remove(t.c_str()); }
     return true;
 }
 static void backupFile(const std::string& p) { // keep the old copy as .bak before "New"
@@ -315,7 +328,8 @@ static bool endsWith(const std::string& s, const std::string& e) { return s.size
 
 // ---------------------------------------------------------------- apps / tiles / start layout
 enum { A_MAIL, A_MUSIC, A_PHOTOS, A_DESKTOP, A_CALENDAR, A_STORE, A_CALC, A_NOTES, A_WEATHER, A_CLOCK, A_SETTINGS, A_POWER, A_GAMES, A_WORD, A_EXCEL,
-       A_BROWSER, A_PAINT, A_SOLITAIRE, A_2048, A_MINES, A_SNAKE, A_TODO, A_FILES, A_TASKMGR, A_TIMER, A_NEWS, A_ROBLOX, A_COUNT };
+       A_BROWSER, A_PAINT, A_SOLITAIRE, A_2048, A_MINES, A_SNAKE, A_TODO, A_FILES, A_TASKMGR, A_TIMER, A_NEWS, A_ROBLOX,
+       A_MAPS, A_CAMERA, A_PODCASTS, A_RADIO, A_PDF, A_TERM, A_PS, A_CHESS, A_COUNT };
 
 // key = name used in layout.dat, sys = built in (always there, can only be unpinned), w,h = default tile size in half-cells
 struct AppDef { const char* key; const char* name; Col col; int w, h; bool sys; };
@@ -342,11 +356,19 @@ static const AppDef ADEF[A_COUNT] = {
     /* A_MINES    */ {"mines", "Minesweeper", {90, 100, 125}, 2, 2, false},
     /* A_SNAKE    */ {"snake", "Snake", {60, 150, 80}, 2, 2, false},
     /* A_TODO     */ {"todo", "To-do", {20, 140, 160}, 2, 2, false},
-    /* A_FILES    */ {"files", "Files", {214, 160, 20}, 2, 2, false},
+    /* A_FILES    */ {"files", "Files", {214, 160, 20}, 2, 2, true},
     /* A_TASKMGR  */ {"taskmgr", "Task Manager", {0, 100, 180}, 2, 2, false},
     /* A_TIMER    */ {"timer", "Timer", {160, 60, 70}, 2, 2, false},
     /* A_NEWS     */ {"news", "News", {196, 38, 38}, 4, 2, false},
     /* A_ROBLOX   */ {"roblox", "Roblox", {226, 35, 26}, 2, 2, false},
+    /* A_MAPS     */ {"maps", "Maps", {30, 150, 90}, 2, 2, false},
+    /* A_CAMERA   */ {"camera", "Camera", {70, 74, 86}, 2, 2, false},
+    /* A_PODCASTS */ {"podcasts", "Podcasts", {150, 60, 200}, 2, 2, false},
+    /* A_RADIO    */ {"radio", "Radio", {230, 110, 20}, 2, 2, false},
+    /* A_PDF      */ {"pdf", "Acrobat Reader", {200, 30, 40}, 2, 2, true},
+    /* A_TERM     */ {"term", "Terminal", {34, 34, 38}, 2, 2, false},
+    /* A_PS       */ {"ps", "PowerShell", {1, 36, 86}, 2, 2, false},
+    /* A_CHESS    */ {"chess", "Chess", {120, 84, 50}, 2, 2, false},
 };
 static int appByKey(const std::string& k) {
     for (int i = 0; i < A_COUNT; i++) if (k == ADEF[i].key) return i;
@@ -366,6 +388,13 @@ static const SApp STORE[] = {
     {A_MINES, "Minesweeper", "Games", "Clear the board without hitting a mine.", "Tap to dig, switch to Flag mode to mark mines. The first tap is always safe.", {90, 100, 125}, 1, "M", 4, "8,477"},
     {A_SNAKE, "Snake", "Games", "Swipe to steer, eat, grow.", "Swipe or use the D-pad. Your best score is saved.", {60, 150, 80}, 1, "SN", 4, "6,230"},
     {A_EXCEL, "Excel 2016", "Productivity", "Spreadsheets with formulas.", "SUM, AVERAGE, MIN, MAX, COUNT and cell references like =A1+B2. Autosaves.", {33, 115, 70}, 2, "X", 5, "7,104"},
+    {A_MAPS, "Maps", "Internet", "Streets and places from OpenStreetMap.", "Drag to pan, pinch or double-tap to zoom, search for any place, and see where you are. Needs Wi-Fi; tiles you've seen are kept on the SD card.", {30, 150, 90}, 2, "M", 4, "5,044"},
+    {A_CAMERA, "Camera", "Tools", "Take pictures with the Joy-Con IR camera.", "Uses the infrared sensor in the right Joy-Con as a very low-resolution camera. Snapshots are saved to Pictures. Beta: needs a Joy-Con attached.", {70, 74, 86}, 1, "C", 3, "1,882"},
+    {A_PODCASTS, "Podcasts", "Internet", "Subscribe, download and listen.", "Add any podcast RSS link or pick a starter show. Episodes download to your SD card and play in the Music engine.", {150, 60, 200}, 2, "P", 4, "3,610"},
+    {A_RADIO, "Radio", "Internet", "Internet radio stations.", "Beta: streams station URLs over Wi-Fi. Add your own streams.", {230, 110, 20}, 1, "R", 3, "2,277"},
+    {A_TERM, "Terminal", "Tools", "A command line for your SD card.", "ls, cd, cat, cp, mv, rm, mkdir, ps, launch and more.", {34, 34, 38}, 1, ">_", 4, "2,904"},
+    {A_PS, "PowerShell", "Tools", "Windows-style commands for your SD card.", "Get-ChildItem, Set-Location, Get-Content, Copy-Item and friends, plus the Terminal commands.", {1, 36, 86}, 1, "PS", 4, "2,311"},
+    {A_CHESS, "Chess", "Games", "Play chess against the computer.", "Full rules: castling, en passant, promotion, check and checkmate. Three difficulty levels. Your game is saved.", {120, 84, 50}, 1, "K", 5, "9,431"},
 };
 static const int NSTORE = (int)(sizeof(STORE) / sizeof(STORE[0]));
 static bool gInst[A_COUNT];
@@ -550,8 +579,10 @@ static std::string gQuery, gToastS, gArg0, gHbMsg;
 static int gHbWhich = 0;
 static Uint32 gToastT = 0;
 static void toast(const std::string& m) { gToastS = m; gToastT = SDL_GetTicks(); }
-static bool overlayOpen() { return charmsOpen || switchOpen || searchOpen; }
-static void closeOverlays() { charmsOpen = switchOpen = searchOpen = false; }
+static bool notifOpen = false;
+static void notify(int app, const std::string& title, const std::string& body);
+static bool overlayOpen() { return charmsOpen || switchOpen || searchOpen || notifOpen; }
+static void closeOverlays() { charmsOpen = switchOpen = searchOpen = notifOpen = false; }
 static void searchGo();
 static void hbRefresh();
 
@@ -582,6 +613,10 @@ static Col appBg(int app) {
 static bool gAnim = true, gNotif = true, gOffline = false, gLocOK = true, gTempF = false, gHiCon = false;
 static int gLockPic = 0, gBgPat = 1, gAvatar = 0, gWeekStart = 0, gMailLock = 1, gWeatherLock = 1, gCalLock = 1, gMusicLock = 1;
 static std::string gPin;
+static std::string gUserStatus;
+static bool gAuth = false, gSetup = false;   // gAuth: sign-in on the lock screen; gSetup: changing it in PC settings
+static void authTouch(int phase, int x, int y); static void authUpdate(float dt); static void authKeys(u64 kd); static void authCancel(); static bool gAvInitial = false;
+static int gSnap = -1; static bool gStartPic = false, gSci = false, gSciDeg = true;
 static bool gInstLegacy = false;
 static void saveCfg() {
     std::string b;
@@ -590,7 +625,7 @@ static void saveCfg() {
     kv("lockscreen", gLockScr); kv("bootanim", gBootAnim); kv("anim", gAnim); kv("notif", gNotif); kv("lockpic", gLockPic);
     kv("bgpat", gBgPat); kv("avatar", gAvatar); kv("weekstart", gWeekStart); kv("offline", gOffline); kv("location", gLocOK);
     kv("tempf", gTempF); kv("hicon", gHiCon); kv("lockmail", gMailLock); kv("lockweather", gWeatherLock);
-    kv("lockcal", gCalLock); kv("lockmusic", gMusicLock);
+    kv("lockcal", gCalLock); kv("lockmusic", gMusicLock); kv("startpic", gStartPic); kv("sci", gSci); kv("scideg", gSciDeg);
     b += "pin=" + gPin + "\n";
     b += "installed=";
     for (int a = 0; a < A_COUNT; a++) if (gInst[a] && !ADEF[a].sys) b += std::string(ADEF[a].key) + ",";
@@ -645,7 +680,7 @@ static void loadCfg() {
             else if (k == "offline") gOffline = n != 0; else if (k == "location") gLocOK = n != 0;
             else if (k == "tempf") gTempF = n != 0; else if (k == "hicon") gHiCon = n != 0;
             else if (k == "lockmail") gMailLock = n; else if (k == "lockweather") gWeatherLock = n;
-            else if (k == "lockcal") gCalLock = n; else if (k == "lockmusic") gMusicLock = n;
+            else if (k == "startpic") gStartPic = n != 0; else if (k == "sci") gSci = n != 0; else if (k == "scideg") gSciDeg = n != 0; else if (k == "lockcal") gCalLock = n; else if (k == "lockmusic") gMusicLock = n;
             else if (k == "pin") gPin = v;
             else if (k == "installed") {
                 size_t a = 0;
@@ -1081,6 +1116,36 @@ static void drawKb() {
 static std::vector<std::string> gPhotos;
 static int phIdx = 0, phW = 0, phH = 0;
 static SDL_Texture* phTex = nullptr;
+static float phZ = 1, phOX = 0, phOY = 0, phSlideT = 0, phDelArm = 0;
+static Uint32 phTapT = 0; static int phTapX = 0, phTapY = 0;
+static bool phSlide = false; static std::string phAlbum;
+static SDL_Texture* gStartPicTex = nullptr;
+static void lockRebuild();
+static bool savePicCover(const std::string& src, const std::string& dst, int tw_, int th_) {
+    SDL_Surface* sf = IMG_Load(src.c_str());
+    if (!sf) return false;
+    SDL_Surface* rgb = SDL_ConvertSurfaceFormat(sf, SDL_PIXELFORMAT_RGBA32, 0);
+    SDL_FreeSurface(sf);
+    if (!rgb) return false;
+    SDL_Surface* out = SDL_CreateRGBSurfaceWithFormat(0, tw_, th_, 32, SDL_PIXELFORMAT_RGBA32);
+    if (!out) { SDL_FreeSurface(rgb); return false; }
+    float k = std::max(tw_ / (float)rgb->w, th_ / (float)rgb->h);
+    int dw = (int)(rgb->w * k + 0.5f), dh = (int)(rgb->h * k + 0.5f);
+    SDL_Rect d = {(tw_ - dw) / 2, (th_ - dh) / 2, dw, dh};
+    SDL_SetSurfaceBlendMode(rgb, SDL_BLENDMODE_NONE);
+    SDL_BlitScaled(rgb, nullptr, out, &d);
+    int r = IMG_SavePNG(out, dst.c_str());
+    SDL_FreeSurface(rgb); SDL_FreeSurface(out);
+    return r == 0;
+}
+static void startPicLoad() {
+    if (gStartPicTex) { SDL_DestroyTexture(gStartPicTex); gStartPicTex = nullptr; }
+    if (!gStartPic) return;
+    SDL_Surface* sf = IMG_Load((DIR_ + "startbg.png").c_str());
+    if (!sf) { gStartPic = false; return; }
+    gStartPicTex = SDL_CreateTextureFromSurface(gR, sf);
+    SDL_FreeSurface(sf);
+}
 static bool isImg(const std::string& n) {
     std::string l = lower(n);
     return endsWith(l, ".jpg") || endsWith(l, ".jpeg") || endsWith(l, ".jpe") || endsWith(l, ".png") || endsWith(l, ".bmp") || endsWith(l, ".gif") ||
@@ -1110,6 +1175,7 @@ static void loadPhoto() {
     phW = sf->w; phH = sf->h;
     phTex = SDL_CreateTextureFromSurface(gR, sf);
     SDL_FreeSurface(sf);
+    phZ = 1; phOX = phOY = 0; phSlideT = 0;
 }
 static void photoNav(int d) {
     if (gPhotos.empty()) return;
@@ -1753,6 +1819,7 @@ static void photoFilter() {
         if (phChip == 1 && !shot) continue;
         if (phChip == 2 && !pics) continue;
         if (phChip == 3 && (shot || pics)) continue;
+        if (phChip == 5 && g.path.substr(0, g.path.find_last_of('/')) != phAlbum) continue;
         gPhotos.push_back(g.path);
     }
     phFreeThumbs(); phScroll = 0;
@@ -1764,38 +1831,173 @@ static void photoScanAll() {
     photoFilter();
 }
 
-// ---------------------------------------------------------------- Calendar (state)
-static int calY = 2026, calM = 1, calSel = 1;
-static std::map<std::string, std::vector<std::string>> calEv;
-static std::string calKey(int y, int m, int d) { char b[20]; snprintf(b, sizeof b, "%04d-%02d-%02d", y, m, d); return b; }
-static void calSave() {
-    std::string d;
-    for (auto& kv : calEv) for (auto& e : kv.second) d += kv.first + "|" + e + "\n";
-    writeFile(DIR_ + "calendar.txt", d);
-}
-static void calLoad() {
-    calEv.clear();
-    std::string d, ln;
-    if (readFile(DIR_ + "calendar.txt", d)) {
-        for (size_t i = 0; i <= d.size(); i++) {
-            if (i == d.size() || d[i] == '\n') {
-                size_t bar = ln.find('|');
-                if (bar == 10 && ln.size() > 11) calEv[ln.substr(0, 10)].push_back(ln.substr(11));
-                ln.clear();
-            } else ln += d[i];
+// ================================================================ Scientific calculator
+static bool gSciErr = false;
+static std::string gSciExpr; static double gSciAns = 0; static bool gSciDone = false;
+struct SciP { const char* s; size_t i; bool err; };
+static double sciExpr(SciP& p);
+static void sciWs(SciP& p) { while (p.s[p.i] == ' ') p.i++; }
+static double sciFact(double x) { if (x < 0 || x > 170 || x != floor(x)) return NAN; double r = 1; for (int i = 2; i <= (int)x; i++) r *= i; return r; }
+static double sciPrimary(SciP& p) {
+    sciWs(p);
+    char c = p.s[p.i];
+    if (c == '(') { p.i++; double v = sciExpr(p); sciWs(p); if (p.s[p.i] == ')') p.i++; return v; }
+    if ((c >= '0' && c <= '9') || c == '.') { char* e; double v = strtod(p.s + p.i, &e); p.i = e - p.s; return v; }
+    if (strncmp(p.s + p.i, "pi", 2) == 0) { p.i += 2; return M_PI; }
+    if (strncmp(p.s + p.i, "Ans", 3) == 0) { p.i += 3; return gSciAns; }
+    if (c == 'e' && p.s[p.i + 1] != 'x') { p.i++; return M_E; }
+    static const char* FN[] = {"asin", "acos", "atan", "sin", "cos", "tan", "ln", "log", "sqrt", "abs", "cbrt", nullptr};
+    for (int k = 0; FN[k]; k++) {
+        size_t n = strlen(FN[k]);
+        if (strncmp(p.s + p.i, FN[k], n) == 0 && p.s[p.i + n] == '(') {
+            p.i += n + 1; double v = sciExpr(p); sciWs(p); if (p.s[p.i] == ')') p.i++;
+            double d = gSciDeg ? M_PI / 180.0 : 1.0;
+            switch (k) {
+                case 0: return asin(v) / d; case 1: return acos(v) / d; case 2: return atan(v) / d;
+                case 3: { if (gSciDeg && fmod(v, 180.0) == 0) return 0; return sin(v * d); }
+                case 4: { if (gSciDeg && fmod(v - 90.0, 180.0) == 0) return 0; return cos(v * d); }
+                case 5: return tan(v * d);
+                case 6: return log(v); case 7: return log10(v); case 8: return sqrt(v); case 9: return fabs(v); default: return cbrt(v);
+            }
         }
     }
-    calY = gNow.y; calM = gNow.mo; calSel = gNow.d;
+    p.err = true; return 0;
 }
-static void calAdd() {
-    if (!gCalIn.empty()) { calEv[calKey(calY, calM, calSel)].push_back(gCalIn); gCalIn.clear(); calSave(); }
-    hideKb();
+static double sciPost(SciP& p) {
+    double v = sciPrimary(p);
+    for (;;) {
+        sciWs(p);
+        if (p.s[p.i] == '!') { p.i++; v = sciFact(v); }
+        else if (p.s[p.i] == '%') { p.i++; v /= 100.0; }
+        else break;
+    }
+    return v;
 }
-static void calMonth(int d) {
-    calM += d;
-    if (calM < 1) { calM = 12; calY--; } else if (calM > 12) { calM = 1; calY++; }
-    calSel = std::min(calSel, daysIn(calY, calM));
+static double sciUnary(SciP& p);
+static double sciPow(SciP& p) {
+    double b = sciPost(p);
+    sciWs(p);
+    if (p.s[p.i] == '^') { p.i++; double e = sciUnary(p); return pow(b, e); }
+    return b;
 }
+static double sciUnary(SciP& p) {
+    sciWs(p);
+    if (p.s[p.i] == '-') { p.i++; return -sciUnary(p); }
+    if (p.s[p.i] == '+') { p.i++; return sciUnary(p); }
+    return sciPow(p);
+}
+static double sciTerm(SciP& p) {
+    double v = sciUnary(p);
+    for (;;) {
+        sciWs(p);
+        char c = p.s[p.i];
+        if (c == '*') { p.i++; v *= sciUnary(p); }
+        else if (c == '/') { p.i++; v /= sciUnary(p); }
+        else if (c == '(' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '.') v *= sciPow(p); // 2pi, 3(4)
+        else break;
+    }
+    return v;
+}
+static double sciExpr(SciP& p) {
+    double v = sciTerm(p);
+    for (;;) {
+        sciWs(p);
+        if (p.s[p.i] == '+') { p.i++; v += sciTerm(p); }
+        else if (p.s[p.i] == '-') { p.i++; v -= sciTerm(p); }
+        else break;
+    }
+    return v;
+}
+static bool sciEval(const std::string& e, double& out) {
+    if (e.empty()) return false;
+    SciP p{e.c_str(), 0, false};
+    double v = sciExpr(p);
+    sciWs(p);
+    if (p.err || p.s[p.i] != 0 || std::isnan(v) || std::isinf(v)) return false;
+    out = v; return true;
+}
+static std::string sciFmt(double v) {
+    char b[48]; snprintf(b, sizeof b, "%.12g", v);
+    if (strlen(b) > 16) snprintf(b, sizeof b, "%.8e", v);
+    return b;
+}
+static std::string sciShow(const std::string& e) {
+    std::string o;
+    for (size_t i = 0; i < e.size(); i++) {
+        if (e.compare(i, 1, "*") == 0) o += "\xC3\x97";
+        else if (e[i] == '/') o += "\xC3\xB7";
+        else o += e[i];
+    }
+    return o;
+}
+struct SciB { const char* l; const char* ins; int c, r; };
+static const SciB SCIB[] = {
+    {"sin", "sin(", 0, 0}, {"cos", "cos(", 1, 0}, {"tan", "tan(", 2, 0}, {"pi", "pi", 3, 0}, {"C", "C", 4, 0}, {"DEL", "DEL", 5, 0}, {"(", "(", 6, 0}, {")", ")", 7, 0},
+    {"asin", "asin(", 0, 1}, {"acos", "acos(", 1, 1}, {"atan", "atan(", 2, 1}, {"e", "e", 3, 1}, {"7", "7", 4, 1}, {"8", "8", 5, 1}, {"9", "9", 6, 1}, {"\xC3\xB7", "/", 7, 1},
+    {"ln", "ln(", 0, 2}, {"log", "log(", 1, 2}, {"sqrt", "sqrt(", 2, 2}, {"x\xC2\xB2", "^2", 3, 2}, {"4", "4", 4, 2}, {"5", "5", 5, 2}, {"6", "6", 6, 2}, {"\xC3\x97", "*", 7, 2},
+    {"x^y", "^", 0, 3}, {"n!", "!", 1, 3}, {"1/x", "^(-1)", 2, 3}, {"|x|", "abs(", 3, 3}, {"1", "1", 4, 3}, {"2", "2", 5, 3}, {"3", "3", 6, 3}, {"-", "-", 7, 3},
+    {"DEG", "DEG", 0, 4}, {"10^x", "10^(", 1, 4}, {"Ans", "Ans", 2, 4}, {"%", "%", 3, 4}, {"0", "0", 4, 4}, {".", ".", 5, 4}, {"=", "=", 6, 4}, {"+", "+", 7, 4},
+};
+static const int NSCIB = (int)(sizeof(SCIB) / sizeof(SCIB[0]));
+static SDL_Rect sciRect(const SciB& b) { return SDL_Rect{56 + b.c * 146, 186 + b.r * 94, 140, 88}; }
+static void sciPress(const std::string& ins) {
+    if (ins == "C") { gSciExpr.clear(); gSciErr = false; gSciDone = false; return; }
+    if (ins == "DEL") { if (!gSciExpr.empty()) { // remove a whole token (function name) or one char
+            static const char* TK[] = {"asin(", "acos(", "atan(", "sqrt(", "sin(", "cos(", "tan(", "abs(", "log(", "ln(", "Ans", "pi", "^(-1)", nullptr};
+            bool done = false;
+            for (int i = 0; TK[i] && !done; i++) { size_t n = strlen(TK[i]); if (gSciExpr.size() >= n && gSciExpr.compare(gSciExpr.size() - n, n, TK[i]) == 0) { gSciExpr.erase(gSciExpr.size() - n); done = true; } }
+            if (!done) gSciExpr.pop_back();
+        } gSciErr = false; gSciDone = false; return; }
+    if (ins == "DEG") { gSciDeg = !gSciDeg; return; }
+    if (ins == "=") {
+        double v;
+        if (sciEval(gSciExpr, v)) { gSciAns = v; gSciExpr = sciFmt(v); gSciDone = true; gSciErr = false; }
+        else gSciErr = true;
+        return;
+    }
+    bool op = ins == "/" || ins == "*" || ins == "^" || ins == "!" || ins == "%" || ins == "^2" || ins == "^(-1)" || ins == "+" || ins == "-";
+    if (gSciDone && !op) gSciExpr.clear();   // typing after a result starts fresh; operators continue from it
+    gSciDone = false; gSciErr = false;
+    if (gSciExpr.size() < 120) gSciExpr += ins;
+}
+static void drawSci(const Theme& th) {
+    rect(0, 0, W, UIH, Col{31, 31, 31});
+    rect(56, 70, 1168, 106, Col{42, 42, 42});
+    std::string ex = sciShow(gSciExpr);
+    while (ex.size() > 3 && tw(ex, F30) > 1120) ex.erase(0, 1);
+    text(ex.empty() ? "0" : ex, F30, 1208, 78, WHITE, 2, ex.empty() ? 140 : 255);
+    double v; std::string pre;
+    if (gSciErr) pre = "Error";
+    else if (!gSciDone && sciEval(gSciExpr, v)) pre = "= " + sciFmt(v);
+    text(pre, F44, 1208, 120, gSciErr ? Col{255, 120, 120} : WHITE, 2, 200);
+    for (int i = 0; i < NSCIB; i++) {
+        SDL_Rect r = sciRect(SCIB[i]);
+        std::string l = SCIB[i].l;
+        Col c = Col{58, 58, 58};
+        if (l == "=") c = th.accent;
+        else if (l == "C") c = Col{170, 50, 50};
+        else if (SCIB[i].c < 4) c = Col{44, 52, 72};
+        else if (!(l[0] >= '0' && l[0] <= '9') && l != ".") c = Col{86, 86, 86};
+        rect(r.x, r.y, r.w, r.h, c);
+        if (l == "DEG") l = gSciDeg ? "DEG" : "RAD";
+        text(l, l.size() > 3 ? F30 : F44, r.x + r.w / 2, r.y + r.h / 2 - (l.size() > 3 ? 18 : 28), WHITE, 1);
+    }
+}
+static bool sciTap(int x, int y) {
+    for (int i = 0; i < NSCIB; i++) { SDL_Rect r = sciRect(SCIB[i]); if (inR(x, y, r.x, r.y, r.w, r.h)) { sciPress(SCIB[i].ins); return true; } }
+    return false;
+}
+
+
+static const int SCI_TX = 56, SCI_TY = 16, SCI_TW = 200, SCI_TH = 40;
+// ---------------------------------------------------------------- Calendar (state)
+struct CalEvent { int id = 0, y = 2026, m = 1, d = 1, sh = 9, sm = 0, dur = 60; bool allday = false; int rep = 0, rem = -1, col = 0; std::string title, place; };
+static std::vector<CalEvent> gCal; static bool gCalLoaded = false; static int gCalNextId = 1;
+static int calY = 2026, calM = 1, calSel = 1, calView = 0, calScroll = 0, calAgendaH = 0, calEi = -1;
+static bool calEdit = false; static CalEvent calE;
+static std::set<std::string> gCalFired;
+static std::vector<std::pair<int, int>> calAgendaRows;
+static void calLoad(); static void calMonth(int d); static std::string calTileLine(); static void calTick(); static bool calBack();
 
 // ================================================================ Music (real audio via SDL2_mixer): library scan with tags + cover art, queue, shuffle/repeat, seek, background play
 struct Song { std::string path, title, artist, album; int track = 0; };
@@ -2169,6 +2371,22 @@ static void musPlayList(const std::vector<int>& l, int start, bool shuffle) {
     musPlayIdx(musQueue[musQPos]);
     musSettingsSave();
 }
+static void musPlayFile(const std::string& path) {
+#ifdef WINNX_AUDIO
+    int idx = -1;
+    for (size_t i = 0; i < gSongs.size(); i++) if (gSongs[i].path == path) idx = (int)i;
+    if (idx < 0) {
+        Song sg; sg.path = path; size_t sl = path.find_last_of('/'); sg.title = sl == std::string::npos ? path : path.substr(sl + 1);
+        size_t dt = sg.title.find_last_of('.'); if (dt != std::string::npos) sg.title = sg.title.substr(0, dt);
+        sg.artist = "Unknown artist"; sg.album = "Files";
+        gSongs.push_back(sg); musBuildLib(); idx = (int)gSongs.size() - 1;
+        for (size_t i = 0; i < gSongs.size(); i++) if (gSongs[i].path == path) idx = (int)i;
+    }
+    std::vector<int> l = {idx}; musPlayList(l, 0, false);
+#else
+    (void)path;
+#endif
+}
 static void musNextTrack(int dir, bool auto_) {
     if (musQueue.empty()) return;
     int n = (int)musQueue.size();
@@ -2495,7 +2713,8 @@ static void saveAll() {
     if (solDirty) { writeFile(DIR_ + "solitaire.dat", solSer()); solDirty = false; }
     // @@SAVE@@
 }
-static void weatherInit(); static void mailInit(); static void newsInit(); static void robloxInit();
+static std::string gPhotoOpenPath, gPdfOpenPath;
+static void bsodNow(const std::string& code, const std::string& detail); static void camInit(); static void camStop(); static void pdfInit(); static void chessInit(); static void filesInit(); static void termInit(int which); static void podInit(); static void radioInit(); static void mapsInit(); static void mapsClose(); static void weatherInit(); static void mailInit(); static void newsInit(); static void robloxInit();
 static void appInit(int app) {
     std::string d;
     switch (app) {
@@ -2504,7 +2723,9 @@ static void appInit(int app) {
         case A_EXCEL:
             xLoadAll();
             xr = xc = xScrR = xScrC = 0; xEditing = false; xDirty = false; xTab = 1; break;
-        case A_PHOTOS: photoScanAll(); phView = 0; phChip = 0; phScroll = 0; break;
+        case A_PHOTOS: photoScanAll(); phView = 0; phChip = 0; phScroll = 0;
+            if (!gPhotoOpenPath.empty()) { gPhotos.assign(1, gPhotoOpenPath); gPhotoOpenPath.clear(); phIdx = 0; loadPhoto(); phView = 1; phOverlay = true; phSlide = false; }
+            break;
         case A_GAMES: scanGames(); gamesScroll = 0; break;
         case A_STORE: storeStart = SDL_GetTicks(); storeView = 0; storeCat = -1; storeScroll = 0; storeSearch.clear(); break;
         case A_BROWSER: loadHist(); brMsg.clear(); break;
@@ -2520,6 +2741,15 @@ static void appInit(int app) {
         case A_MAIL: mailInit(); break;
         case A_NEWS: newsInit(); break;
         case A_ROBLOX: robloxInit(); break;
+        case A_FILES: filesInit(); break;
+        case A_MAPS: mapsInit(); break;
+        case A_PODCASTS: podInit(); break;
+        case A_RADIO: radioInit(); break;
+        case A_CAMERA: camInit(); break;
+        case A_PDF: pdfInit(); break;
+        case A_CHESS: chessInit(); break;
+        case A_TERM: termInit(0); break;
+        case A_PS: termInit(1); break;
         // @@INIT@@
         default: break;
     }
@@ -2535,6 +2765,8 @@ static void appReset(int app) {
         case A_STORE: storeView = 0; break;
         case A_PAINT: paintFree(); break;
         case A_MUSIC: musCloseApp(true); break;
+        case A_MAPS: mapsClose(); break;
+        case A_CAMERA: camStop(); break;
         // @@RESET@@
         case A_CALC: cCur = "0"; cAcc = 0; cOp = 0; cFresh = true; cErr = false; break;
         default: break;
@@ -2721,6 +2953,38 @@ static void drawIcon(int app, int cx, int cy, Col bg) {
         case A_ROBLOX:
             for (int i = 0; i < 3; i++) for (int k = 0; k < 3; k++) if ((i + k) % 2 == 0) rect(cx - 27 + i * 19, cy - 27 + k * 19, 17, 17, WHITE);
             break;
+        case A_MAPS:
+            quad(cx - 30, cy - 20, cx - 10, cy - 26, cx - 10, cy + 22, cx - 30, cy + 28, WHITE, 255);
+            quad(cx - 6, cy - 26, cx + 14, cy - 20, cx + 14, cy + 28, cx - 6, cy + 22, WHITE, 255);
+            quad(cx + 18, cy - 20, cx + 32, cy - 26, cx + 32, cy + 22, cx + 18, cy + 28, WHITE, 255);
+            disc(cx, cy - 6, 11, bg); disc(cx, cy - 6, 5, WHITE);
+            break;
+        case A_CAMERA:
+            rect(cx - 30, cy - 16, 60, 40, WHITE); rect(cx - 12, cy - 24, 24, 10, WHITE);
+            disc(cx, cy + 4, 14, bg); disc(cx, cy + 4, 8, WHITE);
+            break;
+        case A_PODCASTS:
+            disc(cx, cy - 8, 8, WHITE); ring(cx, cy - 8, 18, 4, WHITE, bg); ring(cx, cy - 8, 28, 4, WHITE, bg);
+            rect(cx - 5, cy + 6, 10, 22, WHITE);
+            rect(cx - 30, cy - 40, 60, 24, bg); disc(cx, cy - 8, 8, WHITE);
+            break;
+        case A_RADIO:
+            rect(cx - 30, cy - 12, 60, 38, WHITE); line(cx - 20, cy - 12, cx + 18, cy - 32, 3, WHITE);
+            disc(cx - 12, cy + 7, 10, bg); for (int i = 0; i < 3; i++) rect(cx + 6, cy - 2 + i * 8, 18, 3, bg);
+            break;
+        case A_PDF:
+            rect(cx - 22, cy - 30, 44, 58, WHITE); tri(cx + 8, cy - 30, cx + 22, cy - 30, cx + 22, cy - 16, bg);
+            text("PDF", F22, cx, cy - 8, bg, 1);
+            break;
+        case A_TERM: case A_PS:
+            outline(cx - 30, cy - 22, 60, 44, 4, WHITE);
+            line(cx - 20, cy - 10, cx - 8, cy, 4, WHITE); line(cx - 8, cy, cx - 20, cy + 10, 4, WHITE); rect(cx - 2, cy + 8, 18, 4, WHITE);
+            break;
+        case A_CHESS:
+            disc(cx, cy - 16, 11, WHITE); rect(cx - 8, cy - 6, 16, 4, WHITE);
+            quad(cx - 8, cy - 2, cx + 8, cy - 2, cx + 16, cy + 22, cx - 16, cy + 22, WHITE, 255);
+            rect(cx - 22, cy + 22, 44, 8, WHITE);
+            break;
         case A_TODO:
             for (int i = 0; i < 3; i++) {
                 int y = cy - 22 + i * 22;
@@ -2826,6 +3090,13 @@ static void drawPattern(int pat, float par, int h) {
     }
 }
 static void drawStartBg(const Theme& th) {
+    if (gStartPic && gStartPicTex) {
+        float f = maxScroll > 1 ? clampf(scrollX / (float)maxScroll, 0, 1) : 0;
+        SDL_Rect d = {-(int)(f * 240), 0, W + 240, UIH};
+        SDL_RenderCopy(gR, gStartPicTex, nullptr, &d);
+        rect(0, 0, W, UIH, BLACK, 70);
+        return;
+    }
     for (int y = 0; y < UIH; y += 6) rect(0, y, W, 6, mix(th.top, th.bottom, y / (float)UIH));
     drawPattern(gBgPat, -scrollX * 0.35f, UIH);
 }
@@ -2833,8 +3104,10 @@ static void drawStartBg(const Theme& th) {
 // ---- account picture
 static const Col AVCOL[8] = {{70, 70, 90}, {0, 114, 198}, {16, 160, 50}, {222, 89, 26}, {200, 35, 75}, {110, 70, 215}, {0, 150, 160}, {90, 90, 100}};
 static SDL_Texture* gAvatarTex = nullptr;
+static void avatarLoad() { if (gAvatarTex) { SDL_DestroyTexture(gAvatarTex); gAvatarTex = nullptr; } SDL_Surface* sf = IMG_Load((DIR_ + "avatar.png").c_str()); if (sf) { gAvatarTex = SDL_CreateTextureFromSurface(gR, sf); SDL_FreeSurface(sf); } }
 static void drawAvatar(int x, int y, int sz) {
     if (gAvatarTex) { SDL_Rect d = {x, y, sz, sz}; SDL_RenderCopy(gR, gAvatarTex, nullptr, &d); return; }
+    if (gAvInitial) { rect(x, y, sz, sz, AVCOL[gAvatar & 7]); std::string ini = gUser.empty() ? "?" : gUser.substr(0, 1); for (auto& c : ini) c = (char)toupper((unsigned char)c); text(ini, sz >= 120 ? F72 : (sz >= 60 ? F44 : F22), x + sz / 2, y + sz / 2 - (sz >= 120 ? 46 : (sz >= 60 ? 28 : 14)), WHITE, 1); return; }
     rect(x, y, sz, sz, AVCOL[gAvatar & 7]);
     Col f = {215, 215, 228};
     disc(x + sz / 2, y + sz * 2 / 5, sz / 5, f);
@@ -4717,36 +4990,100 @@ static SDL_Texture* phThumbFor(int i) {
     phThumb[i] = tex;
     return tex;
 }
+static std::vector<std::string> phChips() {
+    std::vector<std::string> v = {"All", "Screenshots", "Pictures", "Other", "Albums"};
+    if (phChip == 5) { size_t s = phAlbum.find_last_of('/'); v.push_back(s == std::string::npos ? phAlbum : phAlbum.substr(s + 1)); }
+    return v;
+}
+static std::vector<std::pair<std::string, int>> phAlbums() {
+    std::map<std::string, int> m;
+    for (auto& g : gAllPics) { size_t s = g.path.find_last_of('/'); m[g.path.substr(0, s)]++; }
+    std::vector<std::pair<std::string, int>> v(m.begin(), m.end());
+    std::sort(v.begin(), v.end(), [](const std::pair<std::string, int>& a, const std::pair<std::string, int>& b) { return a.second > b.second; });
+    return v;
+}
+static void phSetPic(bool lock) {
+    if (gPhotos.empty()) return;
+    bool ok;
+    if (lock) { ok = savePicCover(gPhotos[phIdx], DIR_ + "lockscreen.png", W, UIH); if (ok) { remove((DIR_ + "lockscreen.jpg").c_str()); lockRebuild(); } }
+    else { ok = savePicCover(gPhotos[phIdx], DIR_ + "startbg.png", W + 240, UIH); if (ok) { gStartPic = true; startPicLoad(); saveCfg(); } }
+    toast(ok ? (lock ? "Set as your lock screen picture" : "Set as your Start background") : "Couldn't use this picture");
+}
+static void phClamp() {
+    if (!phTex) return;
+    float fit = std::min((float)W / phW, (float)UIH / phH) * phZ;
+    float mx = std::max(0.0f, (phW * fit - W) / 2), my = std::max(0.0f, (phH * fit - UIH) / 2);
+    phOX = std::max(-mx, std::min(mx, phOX)); phOY = std::max(-my, std::min(my, phOY));
+}
+static void photosPinch(float sc, int cx, int cy, bool begin) {
+    (void)cx; (void)cy;
+    if (phView != 1) return;
+    static float z0 = 1;
+    if (begin) { z0 = phZ; return; }
+    phZ = std::max(1.0f, std::min(8.0f, z0 * sc));
+    if (phZ < 1.02f) { phZ = 1; phOX = phOY = 0; }
+    phClamp();
+}
+static void photosUpdate(float dt) {
+    if (curApp != A_PHOTOS || phView != 1 || !phSlide || phZ > 1.02f) return;
+    phSlideT += dt;
+    if (phSlideT > 4.0f) { phSlideT = 0; photoNav(1); }
+}
 static void drawPhotos() {
     rect(0, 0, W, UIH, BLACK);
     if (phView == 1) {
         if (phTex) {
-            float sc = std::min((float)W / phW, (float)UIH / phH);
+            float sc = std::min((float)W / phW, (float)UIH / phH) * phZ;
             int dw = (int)(phW * sc), dh = (int)(phH * sc);
-            SDL_Rect d = {(W - dw) / 2, (UIH - dh) / 2, dw, dh};
+            SDL_Rect d = {(int)(W / 2 + phOX - dw / 2), (int)(UIH / 2 + phOY - dh / 2), dw, dh};
             SDL_RenderCopy(gR, phTex, nullptr, &d);
         } else text("Couldn't open this picture", F30, W / 2, 300, WHITE, 1);
         if (phOverlay) {
-            rect(0, 0, W, 90, BLACK, 140); rect(0, UIH - 46, W, 46, BLACK, 150);
+            rect(0, 0, W, 90, BLACK, 140); rect(0, UIH - 78, W, 78, BLACK, 160);
             ring(60, 56, 24, 3, WHITE, Col{20, 20, 20});
             line(70, 56, 50, 56, 3, WHITE); line(50, 56, 58, 48, 3, WHITE); line(50, 56, 58, 64, 3, WHITE);
             size_t sl = gPhotos[phIdx].find_last_of('/');
             text(gPhotos[phIdx].substr(sl + 1), F22, 110, 44, WHITE);
-            text(std::to_string(phIdx + 1) + " / " + std::to_string(gPhotos.size()), F22, W - 30, UIH - 38, WHITE, 2, 220);
-            text("Swipe or tap the sides to browse", F16, 30, UIH - 34, WHITE, 0, 150);
+            text(std::to_string(phIdx + 1) + " / " + std::to_string(gPhotos.size()) + (phZ > 1.02f ? "   " + std::to_string((int)(phZ * 100)) + "%" : ""), F22, W - 30, 44, WHITE, 2, 220);
+            const char* bl[5] = {phSlide ? "Pause" : "Slideshow", "Lock screen", "Start bg", "Account pic", phDelArm > 0 ? "Tap again" : "Delete"};
+            for (int i = 0; i < 5; i++) {
+                int x = 30 + i * 204;
+                rect(x, UIH - 66, 196, 54, i == 4 && phDelArm > 0 ? Col{190, 40, 60} : Col{255, 255, 255}, i == 4 && phDelArm > 0 ? 255 : 40);
+                text(bl[i], F22, x + 98, UIH - 52, WHITE, 1);
+            }
         }
         return;
     }
     rect(0, 0, W, UIH, Col{28, 28, 32});
     text("Photos", F72, 56, 14, WHITE);
     text(std::to_string(gPhotos.size()) + " pictures", F22, W - 50, 60, WHITE, 2, 170);
-    static const char* CH[4] = {"All", "Screenshots", "Pictures", "Other"};
+    auto ch = phChips();
     int cx = 60;
-    for (int i = 0; i < 4; i++) {
-        int w = tw(CH[i], F22) + 36;
+    for (int i = 0; i < (int)ch.size(); i++) {
+        int w = tw(ch[i], F22) + 36;
         rect(cx, 108, w, 38, i == phChip ? Col{0, 150, 160} : Col{60, 60, 66});
-        text(CH[i], F22, cx + w / 2, 113, WHITE, 1);
+        text(ch[i], F22, cx + w / 2, 113, WHITE, 1);
         cx += w + 8;
+    }
+    if (phChip == 4) {
+        auto al = phAlbums();
+        int rows = ((int)al.size() + 2) / 3;
+        int maxS = std::max(0, rows * 82 - (UIH - PH_Y0) + 10);
+        phScroll = std::max(0, std::min(phScroll, maxS));
+        SDL_Rect clip = {0, PH_Y0, W, UIH - PH_Y0}; SDL_RenderSetClipRect(gR, &clip);
+        for (int i = 0; i < (int)al.size(); i++) {
+            int x = 40 + (i % 3) * 400, y = PH_Y0 + (i / 3) * 82 - phScroll;
+            if (y + 74 < PH_Y0 || y > UIH) continue;
+            rect(x, y, 390, 74, Col{50, 50, 58}); rect(x, y, 8, 74, Col{0, 150, 160});
+            size_t s = al[i].first.find_last_of('/');
+            std::string nm = s == std::string::npos ? al[i].first : al[i].first.substr(s + 1);
+            if (nm.empty() || nm == "sdmc:") nm = "SD card";
+            while (nm.size() > 3 && tw(nm, F22) > 330) nm.pop_back();
+            text(nm, F22, x + 24, y + 10, WHITE);
+            text(std::to_string(al[i].second) + " pictures", F16, x + 24, y + 42, WHITE, 0, 170);
+        }
+        SDL_RenderSetClipRect(gR, nullptr);
+        return;
     }
     int rows = ((int)gPhotos.size() + PH_COLS - 1) / PH_COLS;
     int maxS = std::max(0, rows * (PH_H + PH_GAP) - (UIH - PH_Y0) + 10);
@@ -4773,106 +5110,65 @@ static void drawPhotos() {
 }
 static void photoTap(int x, int y) {
     if (phView == 1) {
-        if ((x - 60) * (x - 60) + (y - 56) * (y - 56) < 40 * 40) { phView = 0; return; }
-        if (x < W / 4) photoNav(-1);
-        else if (x > 3 * W / 4) photoNav(1);
+        Uint32 now = SDL_GetTicks();
+        bool dbl = now - phTapT < 380 && abs(x - phTapX) < 40 && abs(y - phTapY) < 40;
+        phTapT = now; phTapX = x; phTapY = y;
+        if (phOverlay && y >= UIH - 66 && !dbl) {
+            int i = (x - 30) / 204;
+            if (i >= 0 && i < 5 && (x - 30) % 204 < 196) {
+                if (i == 0) { phSlide = !phSlide; phSlideT = 0; if (phSlide) phOverlay = false; }
+                else if (i == 1) phSetPic(true);
+                else if (i == 2) phSetPic(false);
+                else if (i == 3) { bool ok = savePicCover(gPhotos[phIdx], DIR_ + "avatar.png", 256, 256); if (ok) avatarLoad(); toast(ok ? "Account picture changed" : "Couldn't use this picture"); }
+                else {
+                    if (phDelArm > 0) {
+                        std::string p = gPhotos[phIdx];
+                        if (remove(p.c_str()) == 0) {
+                            for (size_t k = 0; k < gAllPics.size(); k++) if (gAllPics[k].path == p) { gAllPics.erase(gAllPics.begin() + k); break; }
+                            phFreeThumbs(); gPhotos.erase(gPhotos.begin() + phIdx);
+                            if (gPhotos.empty()) phView = 0; else { phIdx %= (int)gPhotos.size(); loadPhoto(); }
+                            toast("Picture deleted");
+                        } else toast("Couldn't delete it");
+                        phDelArm = 0;
+                    } else phDelArm = 3.0f;
+                }
+            }
+            return;
+        }
+        if ((x - 60) * (x - 60) + (y - 56) * (y - 56) < 40 * 40 && phOverlay) { phView = 0; phSlide = false; return; }
+        if (dbl) { phOverlay = !phOverlay; if (phZ > 1.02f) { phZ = 1; phOX = phOY = 0; } else { phZ = 2.5f; phOX = (W / 2 - x) * 1.5f; phOY = (UIH / 2 - y) * 1.5f; phClamp(); } return; }
+        if (phZ <= 1.02f && x < W / 4) photoNav(-1);
+        else if (phZ <= 1.02f && x > 3 * W / 4) photoNav(1);
         else phOverlay = !phOverlay;
         return;
     }
     if (y >= 104 && y < 150) {
+        auto ch = phChips();
         int cx = 60;
-        static const char* CH[4] = {"All", "Screenshots", "Pictures", "Other"};
-        for (int i = 0; i < 4; i++) {
-            int w = tw(CH[i], F22) + 36;
-            if (inR(x, y, cx, 108, w, 38)) { phChip = i; photoFilter(); return; }
+        for (int i = 0; i < (int)ch.size(); i++) {
+            int w = tw(ch[i], F22) + 36;
+            if (inR(x, y, cx, 108, w, 38)) { if (i < 5) { phChip = i; photoFilter(); } return; }
             cx += w + 8;
         }
+        return;
+    }
+    if (phChip == 4 && y >= PH_Y0) {
+        auto al = phAlbums();
+        int c = (x - 40) / 400, r = (y - PH_Y0 + phScroll) / 82;
+        int i = r * 3 + c;
+        if (c >= 0 && c < 3 && i >= 0 && i < (int)al.size()) { phAlbum = al[i].first; phChip = 5; photoFilter(); }
         return;
     }
     if (y >= PH_Y0) {
         int c = (x - PH_X0) / (PH_W + PH_GAP), r = (y - PH_Y0 + phScroll) / (PH_H + PH_GAP);
         int i = r * PH_COLS + c;
-        if (c >= 0 && c < PH_COLS && i >= 0 && i < (int)gPhotos.size()) { phIdx = i; loadPhoto(); phView = 1; phOverlay = true; }
+        if (c >= 0 && c < PH_COLS && i >= 0 && i < (int)gPhotos.size()) { phIdx = i; loadPhoto(); phView = 1; phOverlay = true; phSlide = false; }
     }
 }
 
 // ---------------------------------------------------------------- Calendar (UI)
 static const Col CAL_PURPLE = {110, 70, 215};
 static const int CAL_X = 56, CAL_Y = 168, CAL_CW = 130, CAL_RH = 80;
-static void drawCalendar() {
-    Col bg = CAL_PURPLE;
-    for (int y = 0; y < UIH; y += 6) rect(0, y, W, 6, mix(Col{120, 78, 224}, Col{92, 56, 190}, y / (float)UIH));
-    text(MONTHS[calM - 1], F72, 56, 14, WHITE);
-    text(std::to_string(calY), F44, 56 + tw(MONTHS[calM - 1], F72) + 24, 44, WHITE, 0, 200);
-    // month arrows + today
-    ring(1030, 62, 26, 3, WHITE, bg); line(1038, 62, 1022, 62, 3, WHITE); line(1022, 62, 1030, 54, 3, WHITE); line(1022, 62, 1030, 70, 3, WHITE);
-    ring(1100, 62, 26, 3, WHITE, bg); line(1092, 62, 1108, 62, 3, WHITE); line(1108, 62, 1100, 54, 3, WHITE); line(1108, 62, 1100, 70, 3, WHITE);
-    btn(1148, 42, 100, 40, "Today", Col{90, 56, 190}, WHITE);
-    for (int c = 0; c < 7; c++) text(WD3[c], F22, 56 + c * 128 + 62, 128, WHITE, 1, 200);
-    int first = dow(calY, calM, 1), dim = daysIn(calY, calM);
-    int pm = calM == 1 ? 12 : calM - 1, py = calM == 1 ? calY - 1 : calY;
-    int pdim = daysIn(py, pm);
-    for (int idx = 0; idx < 42; idx++) {
-        int col = idx % 7, row = idx / 7;
-        int x = CAL_X + col * CAL_CW - 60 + 0, y = CAL_Y + row * CAL_RH - 4;
-        x = 56 + col * 128 - 0; // cell origin
-        int d = idx - first + 1;
-        bool inMonth = d >= 1 && d <= dim;
-        int shown = inMonth ? d : (d < 1 ? pdim + d : d - dim);
-        bool today = inMonth && calY == gNow.y && calM == gNow.mo && d == gNow.d;
-        bool selc = inMonth && d == calSel;
-        rect(x, y, 124, 76, WHITE, today ? 255 : (inMonth ? 34 : 12));
-        if (selc) outline(x, y, 124, 76, 3, WHITE);
-        text(std::to_string(shown), F30, x + 10, y + 4, today ? bg : WHITE, 0, inMonth ? 255 : 110);
-        if (inMonth) {
-            auto it = calEv.find(calKey(calY, calM, d));
-            if (it != calEv.end()) for (int k = 0; k < std::min<int>(4, it->second.size()); k++) disc(x + 16 + k * 16, y + 62, 5, today ? bg : Col{255, 214, 90});
-        }
-    }
-    // side panel: events of the selected day
-    int px = 1000;
-    rect(px - 14, 108, 2, 540, WHITE, 50);
-    char hd[64]; snprintf(hd, sizeof hd, "%s, %d", WD[dow(calY, calM, calSel)], calSel);
-    text(hd, F30, px, 112, WHITE);
-    text(std::string(MONTHS[calM - 1]) + " " + std::to_string(calY), F22, px, 152, WHITE, 0, 190);
-    auto it = calEv.find(calKey(calY, calM, calSel));
-    int ey = 204;
-    if (it == calEv.end() || it->second.empty()) text("Nothing planned", F22, px, ey, WHITE, 0, 170);
-    else for (size_t k = 0; k < it->second.size() && ey < 520; k++) {
-        rect(px, ey, 6, 40, Col{255, 214, 90});
-        std::string t = it->second[k];
-        while (tw(t, F22) > 200 && t.size() > 3) t.pop_back();
-        text(t, F22, px + 16, ey + 6, WHITE);
-        text("x", F22, W - 22, ey + 6, WHITE, 2, 150);
-        ey += 52;
-    }
-    btn(px, 560, 250, 50, "+ New event", Col{90, 56, 190}, WHITE);
-    if (kbOpen && kbTarget == 7) {
-        rect(0, KBTOP - 70, W, 70, Col{245, 245, 247});
-        text("Event on " + std::string(hd) + ":", F22, 20, KBTOP - 58, Col{90, 56, 190});
-        text(gCalIn + (((SDL_GetTicks() / 500) % 2 == 0) ? "|" : ""), F30, 340, KBTOP - 62, DARK);
-    }
-}
-static void calendarTap(int x, int y) {
-    if (kbOpen && kbTarget == 7) { if (y < KBTOP - 70) hideKb(); else return; }
-    if ((x - 1030) * (x - 1030) + (y - 62) * (y - 62) < 900) { calMonth(-1); return; }
-    if ((x - 1100) * (x - 1100) + (y - 62) * (y - 62) < 900) { calMonth(1); return; }
-    if (inR(x, y, 1148, 42, 100, 40)) { calY = gNow.y; calM = gNow.mo; calSel = gNow.d; return; }
-    if (inR(x, y, 1000, 560, 250, 50)) { gCalIn.clear(); openKb(7); return; }
-    auto it = calEv.find(calKey(calY, calM, calSel));
-    if (it != calEv.end() && x > W - 60) {
-        int k = (y - 204) / 52;
-        if (k >= 0 && k < (int)it->second.size() && y >= 204) { it->second.erase(it->second.begin() + k); if (it->second.empty()) calEv.erase(it); calSave(); return; }
-    }
-    int col = (x - 56) / 128, row = (y - (CAL_Y - 4)) / CAL_RH;
-    if (x >= 56 && x < 56 + 7 * 128 && y >= CAL_Y - 4 && row >= 0 && row < 6) {
-        int d = row * 7 + col - dow(calY, calM, 1) + 1;
-        if (d >= 1 && d <= daysIn(calY, calM)) calSel = d;
-        else if (d < 1) { calMonth(-1); calSel = std::max(1, daysIn(calY, calM) + d); }
-        else { calSel = d - daysIn(calY, calM); calMonth(1); calSel = std::min(calSel, daysIn(calY, calM)); }
-    }
-}
-
 // @@APPS_B@@
 // ================================================================ network layer (Wi-Fi), JSON helpers, generic text-field keyboard target
 struct NetJob {
@@ -4880,6 +5176,8 @@ struct NetJob {
     std::string url, a, b, c, d, e, f;  // free parameters
     std::string user, pass, from, to, payload, cmd1, cmd2;   // mail jobs
     std::string out;
+    std::string savePath; long long maxBytes = 0; Uint32 maxMs = 0, t0 = 0;   // download straight to a file (stops quietly after maxBytes if set)
+    volatile long long dlNow = 0, dlTotal = 0; volatile bool cancel = false; FILE* fp = nullptr;
     int code = 0;
     bool ok = false;
     volatile int state = 0;             // 1 running, 2 finished
@@ -4931,6 +5229,15 @@ static size_t curlRead(char* p, size_t sz, size_t n, void* u) {
     memcpy(p, c->s->data() + c->pos, want); c->pos += want;
     return want;
 }
+static size_t curlWriteFile(char* p, size_t sz, size_t n, void* u) {
+    NetJob* j = (NetJob*)u; size_t len = sz * n;
+    if (j->cancel) return 0;
+    if (j->fp) fwrite(p, 1, len, j->fp);
+    j->dlNow += (long long)len;
+    if (j->maxBytes && j->dlNow >= j->maxBytes) return 0;
+    return len;
+}
+static int curlProg(void* u, curl_off_t dlt, curl_off_t, curl_off_t, curl_off_t) { NetJob* j = (NetJob*)u; j->dlTotal = (long long)dlt; if (j->maxMs && SDL_GetTicks() - j->t0 > j->maxMs) return 1; return j->cancel ? 1 : 0; }
 static void curlCommon(CURL* c, NetJob& j) {
     curl_easy_setopt(c, CURLOPT_URL, j.url.c_str());
     curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, curlWrite);
@@ -4941,8 +5248,20 @@ static void curlCommon(CURL* c, NetJob& j) {
     curl_easy_setopt(c, CURLOPT_TIMEOUT, 40L);
     curl_easy_setopt(c, CURLOPT_SSL_VERIFYPEER, 0L);   // the Switch has no CA bundle; see the About page
     curl_easy_setopt(c, CURLOPT_SSL_VERIFYHOST, 0L);
-    curl_easy_setopt(c, CURLOPT_USERAGENT, "WinNX/0.6.1 (Nintendo Switch)");
+    curl_easy_setopt(c, CURLOPT_USERAGENT, "WinNX/0.7.0 (Nintendo Switch)");
     curl_easy_setopt(c, CURLOPT_NOSIGNAL, 1L);
+    if (!j.savePath.empty()) {
+        j.t0 = SDL_GetTicks();
+        j.fp = fopen((j.savePath + ".part").c_str(), "wb");
+        curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, curlWriteFile);
+        curl_easy_setopt(c, CURLOPT_WRITEDATA, &j);
+        curl_easy_setopt(c, CURLOPT_XFERINFOFUNCTION, curlProg);
+        curl_easy_setopt(c, CURLOPT_XFERINFODATA, &j);
+        curl_easy_setopt(c, CURLOPT_NOPROGRESS, 0L);
+        curl_easy_setopt(c, CURLOPT_TIMEOUT, 0L);
+        curl_easy_setopt(c, CURLOPT_LOW_SPEED_LIMIT, 1000L);
+        curl_easy_setopt(c, CURLOPT_LOW_SPEED_TIME, 30L);
+    }
 }
 #endif
 static bool httpDo(NetJob& j) {
@@ -4959,7 +5278,9 @@ static bool httpDo(NetJob& j) {
         curl_easy_getinfo(c, CURLINFO_RESPONSE_CODE, &code);
         j.code = (int)code;
         curl_easy_cleanup(c);
-        return rc == CURLE_OK && code >= 200 && code < 300;
+        bool good = (rc == CURLE_OK || (rc == CURLE_WRITE_ERROR && j.maxBytes && j.dlNow >= j.maxBytes) || (rc == CURLE_ABORTED_BY_CALLBACK && j.maxMs && j.dlNow > 20000)) && code >= 200 && code < 300;
+        if (j.fp) { fclose(j.fp); j.fp = nullptr; if (good) { remove(j.savePath.c_str()); rename((j.savePath + ".part").c_str(), j.savePath.c_str()); } else remove((j.savePath + ".part").c_str()); }
+        return good;
     }
     curl_easy_setopt(c, CURLOPT_USERNAME, j.user.c_str());
     curl_easy_setopt(c, CURLOPT_PASSWORD, j.pass.c_str());
@@ -6188,13 +6509,1729 @@ static void robloxTap(int x, int y) {
 
 
 
+// ================================================================ Calendar (events with times, repeats, reminders)
+static const Col EVCOL[6] = {{255, 214, 90}, {255, 120, 120}, {110, 220, 140}, {90, 200, 255}, {255, 160, 60}, {220, 140, 255}};
+static const char* REPN[5] = {"None", "Daily", "Weekly", "Monthly", "Yearly"};
+static const int REMV[5] = {-1, 0, 5, 15, 60};
+static const char* REMN[5] = {"None", "At time", "5 min", "15 min", "1 hour"};
+static bool calIsToday(int y, int m, int d) { return y == gNow.y && m == gNow.mo && d == gNow.d; }
+static long dayNum(int y, int m, int d) {
+    y -= m <= 2; long era = (y >= 0 ? y : y - 399) / 400; unsigned yoe = (unsigned)(y - era * 400);
+    unsigned doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1; unsigned doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    return era * 146097 + (long)doe - 719468;
+}
+static void calStepDay(int& y, int& m, int& d, int n) {
+    d += n;
+    while (d < 1) { m--; if (m < 1) { m = 12; y--; } d += daysIn(y, m); }
+    while (d > daysIn(y, m)) { d -= daysIn(y, m); m++; if (m > 12) { m = 1; y++; } }
+}
+static bool calOccurs(const CalEvent& e, int y, int m, int d) {
+    long a = dayNum(e.y, e.m, e.d), b = dayNum(y, m, d);
+    if (b < a) return false;
+    switch (e.rep) {
+        case 0: return b == a;
+        case 1: return true;
+        case 2: return (b - a) % 7 == 0;
+        case 3: return d == std::min(e.d, daysIn(y, m));
+        default: return m == e.m && d == std::min(e.d, daysIn(y, m));
+    }
+}
+static std::string hhmm(int h, int m) {
+    char b[24];
+    if (g24) snprintf(b, sizeof b, "%02d:%02d", h, m);
+    else { int hh = h % 12; if (!hh) hh = 12; snprintf(b, sizeof b, "%d:%02d%s", hh, m, h >= 12 ? "p" : "a"); }
+    return b;
+}
+static void calSave() {
+    std::string d = "#v2\n";
+    for (auto& e : gCal) {
+        auto cl = [](std::string s) { for (auto& c : s) if (c == '|' || c == '\n' || c == '\r') c = ' '; return s; };
+        char b[160];
+        snprintf(b, sizeof b, "%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|", e.y, e.m, e.d, e.sh, e.sm, e.dur, e.allday ? 1 : 0, e.rep, e.rem, e.col);
+        d += std::string(b) + cl(e.title) + "|" + cl(e.place) + "\n";
+    }
+    writeFile(DIR_ + "calendar.txt", d);
+}
+static void calEnsure() {
+    if (gCalLoaded) return;
+    gCalLoaded = true; gCal.clear();
+    std::string d;
+    if (!readFile(DIR_ + "calendar.txt", d)) return;
+    size_t p = 0;
+    while (p < d.size()) {
+        size_t e = d.find('\n', p); if (e == std::string::npos) e = d.size();
+        std::string ln = d.substr(p, e - p); p = e + 1;
+        if (ln.empty() || ln[0] == '#') continue;
+        CalEvent ev;
+        if (ln.size() > 11 && ln[4] == '-' && ln[7] == '-' && ln[10] == '|') { // old format: date|text
+            ev.y = atoi(ln.c_str()); ev.m = atoi(ln.c_str() + 5); ev.d = atoi(ln.c_str() + 8); ev.allday = true; ev.title = ln.substr(11);
+            ev.id = gCalNextId++; gCal.push_back(ev); continue;
+        }
+        std::vector<std::string> f; size_t q = 0;
+        for (int i = 0; i < 10; i++) { size_t t = ln.find('|', q); if (t == std::string::npos) break; f.push_back(ln.substr(q, t - q)); q = t + 1; }
+        if (f.size() < 10) continue;
+        size_t t = ln.find('|', q);
+        ev.title = ln.substr(q, t == std::string::npos ? std::string::npos : t - q);
+        if (t != std::string::npos) ev.place = ln.substr(t + 1);
+        ev.y = atoi(f[0].c_str()); ev.m = atoi(f[1].c_str()); ev.d = atoi(f[2].c_str()); ev.sh = atoi(f[3].c_str()); ev.sm = atoi(f[4].c_str());
+        ev.dur = atoi(f[5].c_str()); ev.allday = atoi(f[6].c_str()) != 0; ev.rep = std::max(0, std::min(4, atoi(f[7].c_str())));
+        ev.rem = atoi(f[8].c_str()); ev.col = std::max(0, std::min(5, atoi(f[9].c_str())));
+        ev.id = gCalNextId++; gCal.push_back(ev);
+    }
+}
+static void calLoad() { calEnsure(); calY = gNow.y; calM = gNow.mo; calSel = gNow.d; calEdit = false; calView = 0; calScroll = 0; }
+static void calAdd() { hideKb(); }
+static void calMonth(int d) {
+    calM += d;
+    if (calM < 1) { calM = 12; calY--; } else if (calM > 12) { calM = 1; calY++; }
+    calSel = std::min(calSel, daysIn(calY, calM));
+}
+static std::vector<int> calDayList(int y, int m, int d) {
+    calEnsure();
+    std::vector<int> v;
+    for (int i = 0; i < (int)gCal.size(); i++) if (calOccurs(gCal[i], y, m, d)) v.push_back(i);
+    std::sort(v.begin(), v.end(), [](int a, int b) {
+        const CalEvent &x = gCal[a], &y2 = gCal[b];
+        if (x.allday != y2.allday) return x.allday;
+        return x.sh * 60 + x.sm < y2.sh * 60 + y2.sm;
+    });
+    return v;
+}
+static std::string calTileLine() {
+    auto v = calDayList(gNow.y, gNow.mo, gNow.d);
+    int nowM = gNow.h * 60 + gNow.mi;
+    for (int i : v) {
+        const CalEvent& e = gCal[i];
+        if (e.allday) return e.title;
+        if (e.sh * 60 + e.sm + std::max(15, e.dur) >= nowM) return hhmm(e.sh, e.sm) + "  " + e.title;
+    }
+    return v.empty() ? "No events today" : "Done for today";
+}
+static void calTick() {
+    static Uint32 last = 0; Uint32 n = SDL_GetTicks();
+    if (n - last < 5000) return;
+    last = n; calEnsure();
+    int nowM = gNow.h * 60 + gNow.mi;
+    for (auto& e : gCal) {
+        if (e.rem < 0 || e.allday || !calOccurs(e, gNow.y, gNow.mo, gNow.d)) continue;
+        int st = e.sh * 60 + e.sm;
+        if (nowM < st - e.rem || nowM > st) continue;
+        char key[48]; snprintf(key, sizeof key, "%d:%04d%02d%02d", e.id, gNow.y, gNow.mo, gNow.d);
+        if (gCalFired.count(key)) continue;
+        gCalFired.insert(key);
+        notify(A_CALENDAR, e.title, "Starts " + hhmm(e.sh, e.sm) + (e.place.empty() ? "" : " - " + e.place));
+    }
+}
+// ---- editor
+struct CalHit { SDL_Rect r; int id; };
+static std::vector<CalHit> gCalHits;
+static void calHit(int x, int y, int w, int h, int id) { gCalHits.push_back({SDL_Rect{x, y, w, h}, id}); }
+static void calNewEvent() {
+    calE = CalEvent(); calE.y = calY; calE.m = calM; calE.d = calSel;
+    int h = gNow.h + 1; if (!calIsToday(calY, calM, calSel)) h = 9;
+    calE.sh = std::min(h, 23); calE.sm = 0; calE.dur = 60; calE.rem = 15; calE.col = (int)(gCal.size() % 6);
+    calEi = -1; calEdit = true;
+}
+static void calEditEvent(int idx) { calE = gCal[idx]; calEi = idx; calEdit = true; }
+static void calSaveEdit() {
+    if (calE.title.empty()) calE.title = "(No title)";
+    if (calEi >= 0 && calEi < (int)gCal.size()) gCal[calEi] = calE;
+    else { calE.id = gCalNextId++; gCal.push_back(calE); }
+    gCalFired.clear();
+    calSave(); calEdit = false; hideKb();
+    calY = calE.y; calM = calE.m; calSel = calE.d;
+}
+static bool calBack() { if (calEdit) { calEdit = false; hideKb(); return true; } return false; }
+static void drawCalEditor() {
+    gCalHits.clear();
+    Col bg = CAL_PURPLE;
+    for (int y = 0; y < UIH; y += 6) rect(0, y, W, 6, mix(Col{120, 78, 224}, Col{92, 56, 190}, y / (float)UIH));
+    text(calEi >= 0 ? "Edit event" : "New event", F44, 56, 20, WHITE);
+    drawField(56, 90, 760, 52, &calE.title, "Event name", F30, DARK, WHITE, Col{255, 255, 255});
+    calHit(56, 90, 760, 52, 1);
+    drawField(56, 152, 760, 44, &calE.place, "Place (optional)", F22, DARK, WHITE, Col{255, 255, 255});
+    calHit(56, 152, 760, 44, 2);
+    // date
+    char db[80]; snprintf(db, sizeof db, "%s, %d %s %d", WD[dow(calE.y, calE.m, calE.d)], calE.d, MONTHS[calE.m - 1], calE.y);
+    text(db, F30, 56, 214, WHITE);
+    btn(560, 208, 60, 44, "-1d", Col{90, 56, 190}, WHITE); calHit(560, 208, 60, 44, 10);
+    btn(626, 208, 60, 44, "+1d", Col{90, 56, 190}, WHITE); calHit(626, 208, 60, 44, 11);
+    btn(692, 208, 60, 44, "-1m", Col{90, 56, 190}, WHITE); calHit(692, 208, 60, 44, 12);
+    btn(758, 208, 60, 44, "+1m", Col{90, 56, 190}, WHITE); calHit(758, 208, 60, 44, 13);
+    // time
+    rect(56, 268, 130, 44, calE.allday ? Col{255, 255, 255} : Col{90, 56, 190});
+    text("All day", F22, 121, 277, calE.allday ? bg : WHITE, 1); calHit(56, 268, 130, 44, 20);
+    if (!calE.allday) {
+        text(hhmm(calE.sh, calE.sm), F44, 216, 262, WHITE);
+        btn(386, 268, 50, 44, "h-", Col{90, 56, 190}, WHITE); calHit(386, 268, 50, 44, 21);
+        btn(440, 268, 50, 44, "h+", Col{90, 56, 190}, WHITE); calHit(440, 268, 50, 44, 22);
+        btn(494, 268, 50, 44, "m-", Col{90, 56, 190}, WHITE); calHit(494, 268, 50, 44, 23);
+        btn(548, 268, 50, 44, "m+", Col{90, 56, 190}, WHITE); calHit(548, 268, 50, 44, 24);
+        static const int DV[3] = {30, 60, 120}; static const char* DN[3] = {"30 min", "1 h", "2 h"};
+        for (int i = 0; i < 3; i++) {
+            rect(620 + i * 68, 268, 64, 44, calE.dur == DV[i] ? Col{255, 255, 255} : Col{90, 56, 190});
+            text(DN[i], F16, 652 + i * 68, 280, calE.dur == DV[i] ? bg : WHITE, 1); calHit(620 + i * 68, 268, 64, 44, 30 + i);
+        }
+    }
+    text("Repeat", F22, 56, 340, WHITE, 0, 200);
+    for (int i = 0; i < 5; i++) {
+        int x = 56 + i * 124;
+        rect(x, 372, 118, 48, calE.rep == i ? Col{255, 255, 255} : Col{90, 56, 190});
+        text(REPN[i], F22, x + 59, 382, calE.rep == i ? bg : WHITE, 1); calHit(x, 372, 118, 48, 40 + i);
+    }
+    text("Reminder", F22, 56, 432, WHITE, 0, 200);
+    for (int i = 0; i < 5; i++) {
+        int x = 56 + i * 124;
+        rect(x, 462, 118, 48, calE.rem == REMV[i] ? Col{255, 255, 255} : Col{90, 56, 190});
+        text(REMN[i], F22, x + 59, 472, calE.rem == REMV[i] ? bg : WHITE, 1); calHit(x, 462, 118, 48, 50 + i);
+    }
+    for (int i = 0; i < 6; i++) {
+        disc(80 + i * 64, 556, 22, EVCOL[i]);
+        if (calE.col == i) ring(80 + i * 64, 556, 27, 3, WHITE, bg);
+        calHit(56 + i * 64, 530, 52, 52, 60 + i);
+    }
+    btn(56, 598, 200, 54, "Save", Col{255, 255, 255}, bg); calHit(56, 598, 200, 54, 70);
+    btn(272, 598, 200, 54, "Cancel", Col{90, 56, 190}, WHITE); calHit(272, 598, 200, 54, 72);
+    if (calEi >= 0) { btn(488, 598, 200, 54, "Delete", Col{190, 40, 60}, WHITE); calHit(488, 598, 200, 54, 71); }
+}
+static void calEditorTap(int x, int y) {
+    if (kbOpen && y >= KBTOP) return;
+    int id = 0;
+    for (auto& h : gCalHits) if (inR(x, y, h.r.x, h.r.y, h.r.w, h.r.h)) { id = h.id; break; }
+    if (kbOpen && id != 1 && id != 2) hideKb();
+    switch (id) {
+        case 1: openKbStr(&calE.title, 60); break;
+        case 2: openKbStr(&calE.place, 60); break;
+        case 10: calStepDay(calE.y, calE.m, calE.d, -1); break;
+        case 11: calStepDay(calE.y, calE.m, calE.d, 1); break;
+        case 12: calStepDay(calE.y, calE.m, calE.d, -daysIn(calE.m == 1 ? calE.y - 1 : calE.y, calE.m == 1 ? 12 : calE.m - 1)); break;
+        case 13: calStepDay(calE.y, calE.m, calE.d, daysIn(calE.y, calE.m)); break;
+        case 20: calE.allday = !calE.allday; break;
+        case 21: calE.sh = (calE.sh + 23) % 24; break;
+        case 22: calE.sh = (calE.sh + 1) % 24; break;
+        case 23: calE.sm = (calE.sm + 55) % 60; break;
+        case 24: calE.sm = (calE.sm + 5) % 60; break;
+        case 30: calE.dur = 30; break; case 31: calE.dur = 60; break; case 32: calE.dur = 120; break;
+        case 70: calSaveEdit(); break;
+        case 71: if (calEi >= 0 && calEi < (int)gCal.size()) { gCal.erase(gCal.begin() + calEi); calSave(); } calEdit = false; hideKb(); break;
+        case 72: calEdit = false; hideKb(); break;
+        default:
+            if (id >= 40 && id < 45) calE.rep = id - 40;
+            else if (id >= 50 && id < 55) calE.rem = REMV[id - 50];
+            else if (id >= 60 && id < 66) calE.col = id - 60;
+    }
+}
+static void drawCalendar() {
+    if (calEdit) { drawCalEditor(); return; }
+    Col bg = CAL_PURPLE;
+    for (int y = 0; y < UIH; y += 6) rect(0, y, W, 6, mix(Col{120, 78, 224}, Col{92, 56, 190}, y / (float)UIH));
+    text(MONTHS[calM - 1], F72, 56, 14, WHITE);
+    text(std::to_string(calY), F44, 56 + tw(MONTHS[calM - 1], F72) + 24, 44, WHITE, 0, 200);
+    ring(1030, 62, 26, 3, WHITE, bg); line(1038, 62, 1022, 62, 3, WHITE); line(1022, 62, 1030, 54, 3, WHITE); line(1022, 62, 1030, 70, 3, WHITE);
+    ring(1100, 62, 26, 3, WHITE, bg); line(1092, 62, 1108, 62, 3, WHITE); line(1108, 62, 1100, 54, 3, WHITE); line(1108, 62, 1100, 70, 3, WHITE);
+    btn(1148, 42, 100, 40, "Today", Col{90, 56, 190}, WHITE);
+    for (int i = 0; i < 2; i++) {
+        rect(640 + i * 124, 42, 118, 40, calView == i ? Col{255, 255, 255} : Col{90, 56, 190});
+        text(i ? "Agenda" : "Month", F22, 699 + i * 124, 48, calView == i ? bg : WHITE, 1);
+    }
+    if (calView == 0) {
+        int ws = gWeekStart ? 1 : 0;
+        for (int c = 0; c < 7; c++) text(WD3[(c + ws) % 7], F22, 56 + c * 128 + 62, 128, WHITE, 1, 200);
+        int first = (dow(calY, calM, 1) + 7 - ws) % 7, dim = daysIn(calY, calM);
+        int pm = calM == 1 ? 12 : calM - 1, py = calM == 1 ? calY - 1 : calY;
+        int pdim = daysIn(py, pm);
+        for (int idx = 0; idx < 42; idx++) {
+            int col = idx % 7, row = idx / 7;
+            int x = 56 + col * 128, y = CAL_Y + row * CAL_RH - 4;
+            int d = idx - first + 1;
+            bool inMonth = d >= 1 && d <= dim;
+            int shown = inMonth ? d : (d < 1 ? pdim + d : d - dim);
+            bool today = inMonth && calIsToday(calY, calM, d);
+            bool selc = inMonth && d == calSel;
+            rect(x, y, 124, 76, WHITE, today ? 255 : (inMonth ? 34 : 12));
+            if (selc) outline(x, y, 124, 76, 3, WHITE);
+            text(std::to_string(shown), F22, x + 8, y + 2, today ? bg : WHITE, 0, inMonth ? 255 : 110);
+            if (inMonth) {
+                auto v = calDayList(calY, calM, d);
+                for (int k = 0; k < (int)v.size() && k < 2; k++) {
+                    const CalEvent& e = gCal[v[k]];
+                    rect(x + 6, y + 30 + k * 18, 3, 14, EVCOL[e.col]);
+                    std::string t = e.title; while (t.size() > 2 && tw(t, F16) > 100) t.pop_back();
+                    text(t, F16, x + 13, y + 28 + k * 18, today ? bg : WHITE, 0, 230);
+                }
+                if (v.size() > 2) text("+" + std::to_string(v.size() - 2), F16, x + 116, y + 4, today ? bg : WHITE, 2, 200);
+            }
+        }
+    } else {
+        // agenda: the next 60 days
+        SDL_Rect clip = {0, 100, 980, UIH - 100}; SDL_RenderSetClipRect(gR, &clip);
+        int y = 108 - calScroll, y0 = calY, m0 = calM, d0 = 1;
+        if (calY == gNow.y && calM == gNow.mo) d0 = gNow.d;
+        int yy = y0, mm = m0, dd = d0, shownRows = 0;
+        calAgendaRows.clear();
+        for (int n = 0; n < 62; n++, calStepDay(yy, mm, dd, 1)) {
+            auto v = calDayList(yy, mm, dd);
+            if (v.empty()) continue;
+            char hb[64]; snprintf(hb, sizeof hb, "%s %d %s", WD[dow(yy, mm, dd)], dd, MONTHS[mm - 1]);
+            if (y > 60 && y < UIH) text(hb, F22, 56, y, calIsToday(yy, mm, dd) ? Col{255, 214, 90} : WHITE, 0, 230);
+            y += 34;
+            for (int i : v) {
+                const CalEvent& e = gCal[i];
+                if (y > 60 && y < UIH) {
+                    rect(56, y, 900, 54, WHITE, 28); rect(56, y, 8, 54, EVCOL[e.col]);
+                    text(e.allday ? "All day" : hhmm(e.sh, e.sm), F22, 80, y + 14, WHITE);
+                    text(e.title, F22, 220, y + 14, WHITE);
+                    if (!e.place.empty()) text(e.place, F16, 940, y + 18, WHITE, 2, 170);
+                }
+                calAgendaRows.push_back({y + calScroll, i});
+                y += 60; shownRows++;
+            }
+            y += 10;
+        }
+        calAgendaH = y + calScroll;
+        if (!shownRows) text("Nothing planned this month", F30, 56, 150, WHITE, 0, 190);
+        SDL_RenderSetClipRect(gR, nullptr);
+    }
+    // side panel: events of the selected day
+    int px = 1000;
+    if (calView == 0) {
+        rect(px - 14, 108, 2, 540, WHITE, 50);
+        char hd[64]; snprintf(hd, sizeof hd, "%s, %d", WD[dow(calY, calM, calSel)], calSel);
+        text(hd, F30, px, 112, WHITE);
+        text(std::string(MONTHS[calM - 1]) + " " + std::to_string(calY), F22, px, 152, WHITE, 0, 190);
+        auto v = calDayList(calY, calM, calSel);
+        int ey = 196;
+        if (v.empty()) text("Nothing planned", F22, px, ey, WHITE, 0, 170);
+        for (size_t k = 0; k < v.size() && ey < 520; k++) {
+            const CalEvent& e = gCal[v[k]];
+            rect(px, ey, 6, 46, EVCOL[e.col]);
+            text(e.allday ? "All day" : hhmm(e.sh, e.sm) + " - " + hhmm((e.sh * 60 + e.sm + e.dur) / 60 % 24, (e.sh * 60 + e.sm + e.dur) % 60), F16, px + 16, ey, WHITE, 0, 190);
+            std::string t = e.title; while (t.size() > 3 && tw(t, F22) > 240) t.pop_back();
+            text(t, F22, px + 16, ey + 20, WHITE);
+            ey += 56;
+        }
+        btn(px, 560, 250, 50, "+ New event", Col{90, 56, 190}, WHITE);
+    } else btn(px + 10, 560, 240, 50, "+ New event", Col{90, 56, 190}, WHITE);
+}
+static void calendarTap(int x, int y) {
+    if (calEdit) { calEditorTap(x, y); return; }
+    if ((x - 1030) * (x - 1030) + (y - 62) * (y - 62) < 900) { calMonth(-1); calScroll = 0; return; }
+    if ((x - 1100) * (x - 1100) + (y - 62) * (y - 62) < 900) { calMonth(1); calScroll = 0; return; }
+    if (inR(x, y, 1148, 42, 100, 40)) { calY = gNow.y; calM = gNow.mo; calSel = gNow.d; calScroll = 0; return; }
+    if (inR(x, y, 640, 42, 118, 40)) { calView = 0; return; }
+    if (inR(x, y, 764, 42, 118, 40)) { calView = 1; calScroll = 0; return; }
+    if (inR(x, y, calView ? 1010 : 1000, 560, 250, 50)) { calNewEvent(); return; }
+    if (calView == 1) {
+        int cy = y + calScroll;
+        if (x < 980 && y >= 100) for (auto& r : calAgendaRows) if (cy >= r.first && cy < r.first + 54) { calEditEvent(r.second); return; }
+        return;
+    }
+    auto v = calDayList(calY, calM, calSel);
+    if (x >= 1000 && y >= 196) {
+        int k = (y - 196) / 56;
+        if (k >= 0 && k < (int)v.size() && (y - 196) % 56 < 48) { calEditEvent(v[k]); return; }
+    }
+    int ws = gWeekStart ? 1 : 0;
+    int col = (x - 56) / 128, row = (y - (CAL_Y - 4)) / CAL_RH;
+    if (x >= 56 && x < 56 + 7 * 128 && y >= CAL_Y - 4 && row >= 0 && row < 6) {
+        int d = row * 7 + col - ((dow(calY, calM, 1) + 7 - ws) % 7) + 1;
+        if (d >= 1 && d <= daysIn(calY, calM)) {
+            if (d == calSel) { auto vv = calDayList(calY, calM, d); if (vv.empty()) calNewEvent(); }
+            calSel = d;
+        }
+        else if (d < 1) { calMonth(-1); calSel = std::max(1, daysIn(calY, calM) + d); }
+        else { calSel = d - daysIn(calY, calM); calMonth(1); calSel = std::min(calSel, daysIn(calY, calM)); }
+    }
+}
+static void calendarDrag(int dx, int dy) {
+    static int ax = 0;
+    if (calEdit) return;
+    if (calView == 1) { calScroll = std::max(0, std::min(std::max(0, calAgendaH - (UIH - 100)), calScroll - dy)); return; }
+    ax += dx;
+    if (ax > 220) { calMonth(-1); ax = 0; } else if (ax < -220) { calMonth(1); ax = 0; }
+}
+
+// ================================================================ Files (file manager)
+struct FmEnt { std::string name; bool dir; long long size; long long mt; };
+struct FmOp { int t; std::string a, b; };
+static std::string fmPath = "sdmc:/";
+static std::vector<FmEnt> fmList;
+static int fmSort = 0, fmScroll = 0, fmMode = 0, fmPrompt = 0, fmTScroll = 0;
+static bool fmDesc = false, fmSelMode = false, fmCut = false;
+static std::set<std::string> fmSel;
+static std::vector<std::string> fmClip;
+static std::string fmInput, fmFrom, fmTitle;
+static std::vector<std::string> fmLines;
+static std::vector<FmOp> fmOps; static size_t fmOpI = 0; static FILE *fmIn = nullptr, *fmOutF = nullptr;
+static bool fmBusy = false; static std::string fmJobName;
+static long long fmFree = 0, fmTotalB = 0;
+static std::vector<CalHit> fmHits;
+static std::vector<std::pair<std::string, std::string>> gFmSegs;
+static void fmHit(int x, int y, int w, int h, int id) { fmHits.push_back({SDL_Rect{x, y, w, h}, id}); }
+static std::string fmJoin(const std::string& d, const std::string& n) { return d.back() == '/' ? d + n : d + "/" + n; }
+static std::string fmBase(const std::string& p) { size_t s = p.find_last_of('/'); return s == std::string::npos ? p : p.substr(s + 1); }
+static std::string fmParent(const std::string& p) {
+    if (p == "sdmc:/" || p.size() <= 6) return "sdmc:/";
+    size_t s = p.find_last_of('/');
+    std::string r = p.substr(0, s);
+    return r.size() < 6 ? "sdmc:/" : r;
+}
+static std::string fmSize(long long b) {
+    char t[32];
+    if (b < 1024) snprintf(t, sizeof t, "%lld B", b);
+    else if (b < 1024 * 1024) snprintf(t, sizeof t, "%.1f KB", b / 1024.0);
+    else if (b < 1024LL * 1024 * 1024) snprintf(t, sizeof t, "%.1f MB", b / 1048576.0);
+    else snprintf(t, sizeof t, "%.2f GB", b / 1073741824.0);
+    return t;
+}
+static std::string fmExt(const std::string& n) { size_t d = n.find_last_of('.'); return d == std::string::npos ? "" : lower(n.substr(d + 1)); }
+static int fmKind(const std::string& n) { // 0 other, 1 image, 2 audio, 3 pdf, 4 text, 5 nro
+    std::string e = fmExt(n);
+    if (isImg(n)) return 1;
+    if (e == "mp3" || e == "ogg" || e == "wav" || e == "flac" || e == "mod" || e == "mid" || e == "opus" || e == "m4a" || e == "it" || e == "xm" || e == "s3m") return 2;
+    if (e == "pdf") return 3;
+    if (e == "nro") return 5;
+    static const char* T[] = {"txt", "md", "log", "ini", "cfg", "json", "xml", "csv", "c", "cpp", "h", "hpp", "py", "lua", "sh", "html", "css", "js", "conf", "yml", "yaml", "nfo", "srt", "toml", "bat", "rtf", "tsv", "inc", "make", "mk", nullptr};
+    for (int i = 0; T[i]; i++) if (e == T[i]) return 4;
+    return 0;
+}
+static void fmStorage() {
+    struct statvfs sv;
+    if (statvfs("sdmc:/", &sv) == 0) { fmFree = (long long)sv.f_bavail * sv.f_frsize; fmTotalB = (long long)sv.f_blocks * sv.f_frsize; }
+}
+static void fmRefresh() {
+    fmList.clear();
+    DIR* d = opendir(fmPath.c_str());
+    if (d) {
+        struct dirent* e;
+        while ((e = readdir(d)) != nullptr) {
+            std::string n = e->d_name;
+            if (n == "." || n == "..") continue;
+            struct stat st;
+            if (stat(fmJoin(fmPath, n).c_str(), &st) != 0) continue;
+            fmList.push_back({n, S_ISDIR(st.st_mode), (long long)st.st_size, (long long)st.st_mtime});
+            if (fmList.size() > 4000) break;
+        }
+        closedir(d);
+    }
+    std::sort(fmList.begin(), fmList.end(), [](const FmEnt& a, const FmEnt& b) {
+        if (a.dir != b.dir) return a.dir;
+        bool lt;
+        if (fmSort == 1) lt = a.size != b.size ? a.size < b.size : lower(a.name) < lower(b.name);
+        else if (fmSort == 2) lt = a.mt != b.mt ? a.mt < b.mt : lower(a.name) < lower(b.name);
+        else lt = lower(a.name) < lower(b.name);
+        return fmDesc ? !lt : lt;
+    });
+    fmStorage();
+}
+static void fmGo(const std::string& p) { fmPath = p; fmScroll = 0; fmSel.clear(); fmSelMode = false; fmRefresh(); }
+static std::string fmUnique(const std::string& dir, const std::string& name) {
+    std::string p = fmJoin(dir, name);
+    struct stat st;
+    if (stat(p.c_str(), &st) != 0) return p;
+    std::string stem = name, ext;
+    size_t d = name.find_last_of('.');
+    if (d != std::string::npos && d > 0) { stem = name.substr(0, d); ext = name.substr(d); }
+    for (int i = 1; i < 1000; i++) {
+        p = fmJoin(dir, stem + " - copy" + (i > 1 ? " " + std::to_string(i) : "") + ext);
+        if (stat(p.c_str(), &st) != 0) return p;
+    }
+    return p;
+}
+static void fmPlanCopy(const std::string& src, const std::string& dst) {
+    struct stat st;
+    if (stat(src.c_str(), &st) != 0) return;
+    if (S_ISDIR(st.st_mode)) {
+        fmOps.push_back({0, "", dst});
+        DIR* d = opendir(src.c_str());
+        if (!d) return;
+        struct dirent* e;
+        std::vector<std::string> names;
+        while ((e = readdir(d)) != nullptr) { std::string n = e->d_name; if (n != "." && n != "..") names.push_back(n); }
+        closedir(d);
+        for (auto& n : names) fmPlanCopy(fmJoin(src, n), fmJoin(dst, n));
+    } else fmOps.push_back({1, src, dst});
+}
+static void fmPlanDelete(const std::string& p) {
+    struct stat st;
+    if (stat(p.c_str(), &st) != 0) return;
+    if (S_ISDIR(st.st_mode)) {
+        DIR* d = opendir(p.c_str());
+        if (d) {
+            struct dirent* e; std::vector<std::string> names;
+            while ((e = readdir(d)) != nullptr) { std::string n = e->d_name; if (n != "." && n != "..") names.push_back(n); }
+            closedir(d);
+            for (auto& n : names) fmPlanDelete(fmJoin(p, n));
+        }
+        fmOps.push_back({3, p, ""});
+    } else fmOps.push_back({2, p, ""});
+}
+static void fmStartJob(const std::string& name) {
+    fmJobName = name; fmOpI = 0; fmBusy = !fmOps.empty();
+    if (!fmBusy) fmRefresh();
+}
+static void fmPaste() {
+    if (fmClip.empty() || fmBusy) return;
+    fmOps.clear();
+    std::vector<std::string> removeAfter;
+    for (auto& src : fmClip) {
+        std::string dst = fmUnique(fmPath, fmBase(src));
+        if (src == fmPath || dst.compare(0, src.size() + 1, src + "/") == 0) { toast("Can't paste a folder into itself"); continue; }
+        if (fmCut) {
+            std::string tgt = fmJoin(fmPath, fmBase(src));
+            struct stat st;
+            if (fmParent(src) == fmPath) continue;
+            if (stat(tgt.c_str(), &st) != 0 && rename(src.c_str(), tgt.c_str()) == 0) continue;
+            removeAfter.push_back(src);
+        }
+        fmPlanCopy(src, dst);
+    }
+    for (auto& r : removeAfter) fmPlanDelete(r);
+    if (fmCut) fmClip.clear();
+    fmStartJob(fmCut ? "Moving" : "Copying");
+}
+static void fmFinishJob() {
+    if (fmIn) { fclose(fmIn); fmIn = nullptr; }
+    if (fmOutF) { fclose(fmOutF); fmOutF = nullptr; }
+    fmOps.clear(); fmBusy = false; fmSel.clear(); fmSelMode = false;
+    fmRefresh();
+    toast(fmJobName == "Deleting" ? "Deleted" : "Done");
+}
+static void filesUpdate(float dt) {
+    (void)dt;
+    if (!fmBusy) return;
+    Uint32 t0 = SDL_GetTicks();
+    static char buf[262144];
+    while (fmOpI < fmOps.size() && SDL_GetTicks() - t0 < 10) {
+        FmOp& o = fmOps[fmOpI];
+        if (o.t == 0) { mkdir(o.b.c_str(), 0777); fmOpI++; }
+        else if (o.t == 1) {
+            if (!fmIn) {
+                fmIn = fopen(o.a.c_str(), "rb"); fmOutF = fopen(o.b.c_str(), "wb");
+                if (!fmIn || !fmOutF) { if (fmIn) fclose(fmIn); if (fmOutF) fclose(fmOutF); fmIn = fmOutF = nullptr; fmOpI++; continue; }
+            }
+            size_t n = fread(buf, 1, sizeof buf, fmIn);
+            if (n > 0) fwrite(buf, 1, n, fmOutF);
+            if (n < sizeof buf) { fclose(fmIn); fclose(fmOutF); fmIn = fmOutF = nullptr; fmOpI++; }
+        }
+        else if (o.t == 2) { remove(o.a.c_str()); fmOpI++; }
+        else if (o.t == 3) { rmdir(o.a.c_str()); fmOpI++; }
+        else fmOpI++;
+    }
+    if (fmOpI >= fmOps.size()) fmFinishJob();
+}
+static void musPlayFile(const std::string& path);
+static void fmOpen(const FmEnt& e) {
+    std::string p = fmJoin(fmPath, e.name);
+    if (e.dir) { fmGo(p); return; }
+    switch (fmKind(e.name)) {
+        case 1: gPhotoOpenPath = p; if (running[A_PHOTOS]) appReset(A_PHOTOS); pendingApp = A_PHOTOS; closeApp(false); break;
+        case 2: musPlayFile(p); toast("Playing " + e.name); break;
+        case 3: gPdfOpenPath = p; if (running[A_PDF]) appReset(A_PDF); pendingApp = A_PDF; closeApp(false); break;
+        case 5: saveAll(); toast("Launching " + e.name); if (R_SUCCEEDED(envSetNextLoad(p.c_str(), p.c_str()))) gRun = false; break;
+        case 4: {
+            std::string d;
+            FILE* f = fopen(p.c_str(), "rb");
+            if (f) { char b[4096]; size_t n; while (d.size() < 262144 && (n = fread(b, 1, sizeof b, f)) > 0) d.append(b, n); fclose(f); }
+            fmLines.clear();
+            std::string cur;
+            for (size_t i = 0; i <= d.size() && fmLines.size() < 5000; i++) {
+                if (i == d.size() || d[i] == '\n') { for (auto& l : wrapText(cur, F22, 1130)) fmLines.push_back(l); if (cur.empty()) fmLines.push_back(""); cur.clear(); }
+                else if (d[i] != '\r') cur += (d[i] == '\t' ? ' ' : d[i]);
+            }
+            fmTitle = e.name; fmTScroll = 0; fmMode = 1;
+            break;
+        }
+        default: toast("No app can open ." + fmExt(e.name) + " files yet");
+    }
+}
+static void fmDoPrompt() {
+    if (fmInput.empty()) { fmMode = 0; hideKb(); return; }
+    std::string dst = fmJoin(fmPath, fmInput);
+    struct stat st;
+    if (stat(dst.c_str(), &st) == 0) { toast("That name already exists"); return; }
+    bool ok = fmPrompt == 1 ? rename(fmFrom.c_str(), dst.c_str()) == 0 : mkdir(dst.c_str(), 0777) == 0;
+    if (!ok) toast("That didn't work");
+    fmMode = 0; hideKb(); fmSel.clear(); fmSelMode = false; fmRefresh();
+}
+static bool filesBack() {
+    if (fmMode == 3) { hideKb(); fmMode = 0; return true; }
+    if (fmMode != 0) { fmMode = 0; return true; }
+    if (fmSelMode) { fmSelMode = false; fmSel.clear(); return true; }
+    if (fmPath != "sdmc:/") { fmGo(fmParent(fmPath)); return true; }
+    return false;
+}
+static void filesInit() { if (fmList.empty() || true) { fmSelMode = false; fmSel.clear(); fmMode = 0; fmRefresh(); } }
+static Col fmKindCol(int k, bool dir) {
+    if (dir) return Col{255, 200, 70};
+    switch (k) { case 1: return Col{0, 150, 160}; case 2: return Col{222, 89, 26}; case 3: return Col{210, 50, 50}; case 4: return Col{110, 120, 140}; case 5: return Col{130, 80, 200}; default: return Col{90, 90, 100}; }
+}
+static const int FM_TOP = 192, FM_ROW = 54;
+static void drawFiles() {
+    fmHits.clear();
+    rect(0, 0, W, UIH, Col{30, 32, 38});
+    if (fmMode == 1) { // text viewer
+        rect(0, 0, W, 70, Col{44, 46, 54});
+        text(fmTitle, F30, 70, 18, WHITE);
+        btn(1130, 14, 100, 42, "Close", Col{70, 72, 82}, WHITE); fmHit(1130, 14, 100, 42, 90);
+        SDL_Rect clip = {0, 74, W, UIH - 74}; SDL_RenderSetClipRect(gR, &clip);
+        int maxS = std::max(0, (int)fmLines.size() * 28 - (UIH - 100));
+        fmTScroll = std::max(0, std::min(fmTScroll, maxS));
+        for (int i = std::max(0, fmTScroll / 28); i < (int)fmLines.size(); i++) {
+            int y = 84 + i * 28 - fmTScroll;
+            if (y > UIH) break;
+            text(fmLines[i], F22, 70, y, WHITE, 0, 235);
+        }
+        SDL_RenderSetClipRect(gR, nullptr);
+        return;
+    }
+    text("Files", F44, 56, 16, WHITE);
+    // storage
+    if (fmTotalB > 0) {
+        float used = 1.0f - (float)fmFree / fmTotalB;
+        rect(780, 38, 440, 12, WHITE, 40); rect(780, 38, (int)(440 * used), 12, used > 0.9f ? Col{209, 52, 56} : Col{0, 150, 220});
+        text(fmSize(fmFree) + " free of " + fmSize(fmTotalB), F16, 1220, 56, WHITE, 2, 190);
+    }
+    // path bar
+    rect(56, 84, 1168, 44, WHITE, 24);
+    btn(56, 84, 56, 44, "Up", Col{70, 74, 86}, WHITE); fmHit(56, 84, 56, 44, 1);
+    {
+        std::string rest = fmPath.size() > 6 ? fmPath.substr(6) : "";
+        int x = 126; std::string acc = "sdmc:/";
+        std::vector<std::pair<std::string, std::string>> segs = {{"SD card", "sdmc:/"}};
+        size_t p = 0;
+        while (p < rest.size()) { size_t q = rest.find('/', p); if (q == std::string::npos) q = rest.size(); if (q > p) { acc = fmJoin(acc, rest.substr(p, q - p)); segs.push_back({rest.substr(p, q - p), acc}); } p = q + 1; }
+        int tot = 0; for (auto& sg : segs) tot += tw(sg.first, F22) + 36;
+        size_t st = 0;
+        while (tot > 1060 && st + 1 < segs.size()) { tot -= tw(segs[st].first, F22) + 36; st++; }
+        for (size_t i = st; i < segs.size(); i++) {
+            int w = tw(segs[i].first, F22);
+            text(segs[i].first, F22, x, 92, i + 1 == segs.size() ? WHITE : Col{150, 200, 255});
+            fmHit(x - 8, 84, w + 16, 44, 200 + (int)i);
+            x += w + 14;
+            if (i + 1 < segs.size()) { text(">", F22, x, 92, WHITE, 0, 140); x += 22; }
+        }
+        gFmSegs = segs;
+    }
+    // toolbar
+    int bx = 56;
+    btn(bx, 138, 120, 44, fmSelMode ? "Done" : "Select", fmSelMode ? Col{0, 120, 215} : Col{70, 74, 86}, WHITE); fmHit(bx, 138, 120, 44, 2); bx += 128;
+    btn(bx, 138, 170, 44, "New folder", Col{70, 74, 86}, WHITE); fmHit(bx, 138, 170, 44, 3); bx += 178;
+    { static const char* SN[3] = {"Name", "Size", "Date"}; std::string l = std::string("Sort: ") + SN[fmSort] + (fmDesc ? " v" : " ^");
+      btn(bx, 138, 190, 44, l.c_str(), Col{70, 74, 86}, WHITE); fmHit(bx, 138, 190, 44, 4); bx += 198; }
+    if (!fmClip.empty()) { std::string l = std::string(fmCut ? "Move here (" : "Paste (") + std::to_string(fmClip.size()) + ")";
+      btn(bx, 138, 210, 44, l.c_str(), Col{16, 150, 50}, WHITE); fmHit(bx, 138, 210, 44, 5); }
+    text(std::to_string(fmList.size()) + " items", F16, 1224, 150, WHITE, 2, 150);
+    int bottom = UIH - (fmSelMode ? 70 : 0);
+    int maxS = std::max(0, (int)fmList.size() * FM_ROW - (bottom - FM_TOP) + 6);
+    fmScroll = std::max(0, std::min(fmScroll, maxS));
+    SDL_Rect clip = {0, FM_TOP, W, bottom - FM_TOP}; SDL_RenderSetClipRect(gR, &clip);
+    for (int i = std::max(0, fmScroll / FM_ROW); i < (int)fmList.size(); i++) {
+        int y = FM_TOP + i * FM_ROW - fmScroll;
+        if (y > bottom) break;
+        const FmEnt& e = fmList[i];
+        bool sel = fmSel.count(e.name) > 0;
+        rect(56, y, 1168, FM_ROW - 4, sel ? Col{0, 100, 190} : Col{44, 46, 54});
+        int k = e.dir ? 0 : fmKind(e.name);
+        int ix = 72;
+        if (fmSelMode) { outline(70, y + 12, 26, 26, 2, WHITE); if (sel) rect(75, y + 17, 16, 16, WHITE); ix = 112; }
+        Col kc = fmKindCol(k, e.dir);
+        if (e.dir) { rect(ix, y + 10, 18, 7, kc); rect(ix, y + 15, 38, 26, kc); }
+        else { rect(ix + 4, y + 6, 30, 38, kc); std::string ex = fmExt(e.name); if (ex.size() > 4) ex = ex.substr(0, 4); text(ex, F16, ix + 19, y + 16, WHITE, 1); }
+        std::string nm = e.name; while (nm.size() > 3 && tw(nm, F22) > 700) nm.pop_back();
+        text(nm, F22, ix + 56, y + 12, WHITE);
+        if (!e.dir) text(fmSize(e.size), F16, 1000, y + 16, WHITE, 2, 190);
+        time_t tt = (time_t)e.mt; struct tm* lt = localtime(&tt);
+        if (lt && e.mt > 0) { char db[32]; snprintf(db, sizeof db, "%04d-%02d-%02d", lt->tm_year + 1900, lt->tm_mon + 1, lt->tm_mday); text(db, F16, 1200, y + 16, WHITE, 2, 160); }
+    }
+    SDL_RenderSetClipRect(gR, nullptr);
+    if (fmList.empty()) text("This folder is empty", F30, W / 2, 330, WHITE, 1, 160);
+    if (fmSelMode) {
+        rect(0, UIH - 70, W, 70, Col{20, 22, 28});
+        const char* L[6] = {"Copy", "Cut", "Delete", "Rename", "Select all", "Cancel"};
+        for (int i = 0; i < 6; i++) { int x = 40 + i * 195; bool dis = (i == 3 && fmSel.size() != 1) || (i < 4 && fmSel.empty());
+            btn(x, UIH - 62, 185, 54, L[i], i == 2 ? Col{190, 40, 60} : Col{70, 74, 86}, dis ? Col{130, 130, 135} : WHITE); fmHit(x, UIH - 62, 185, 54, 10 + i); }
+    }
+    if (fmBusy) {
+        rect(0, 0, W, UIH, BLACK, 140);
+        rect(340, 250, 600, 170, Col{40, 42, 50}); outline(340, 250, 600, 170, 2, WHITE);
+        text(fmJobName + "...", F30, 640, 272, WHITE, 1);
+        rect(380, 340, 520, 16, WHITE, 40); rect(380, 340, (int)(520.0f * fmOpI / std::max<size_t>(1, fmOps.size())), 16, Col{0, 150, 220});
+        text(std::to_string(fmOpI) + " / " + std::to_string(fmOps.size()), F16, 640, 372, WHITE, 1, 180);
+    } else if (fmMode == 2 || fmMode == 3) {
+        rect(0, 0, W, UIH, BLACK, 150);
+        rect(240, 100, 800, 230, Col{40, 42, 50}); outline(240, 100, 800, 230, 2, WHITE);
+        if (fmMode == 2) {
+            text("Delete " + std::to_string(fmSel.size()) + (fmSel.size() == 1 ? " item?" : " items?"), F30, 640, 130, WHITE, 1);
+            text("This can't be undone.", F22, 640, 180, WHITE, 1, 180);
+            btn(300, 250, 300, 56, "Delete", Col{190, 40, 60}, WHITE); fmHit(300, 250, 300, 56, 30);
+            btn(680, 250, 300, 56, "Cancel", Col{70, 74, 86}, WHITE); fmHit(680, 250, 300, 56, 31);
+        } else {
+            text(fmPrompt == 1 ? "Rename" : "New folder", F30, 640, 116, WHITE, 1);
+            drawField(280, 170, 720, 56, &fmInput, "Name", F30, DARK, WHITE, Col{255, 255, 255}); fmHit(280, 170, 720, 56, 32);
+            btn(300, 252, 300, 54, "OK", Col{0, 120, 215}, WHITE); fmHit(300, 252, 300, 54, 33);
+            btn(680, 252, 300, 54, "Cancel", Col{70, 74, 86}, WHITE); fmHit(680, 252, 300, 54, 31);
+        }
+    }
+}
+static void filesTap(int x, int y) {
+    if (fmBusy) return;
+    if (fmMode == 3 && kbOpen && y >= KBTOP) return;
+    int id = 0;
+    for (auto& h : fmHits) if (inR(x, y, h.r.x, h.r.y, h.r.w, h.r.h)) { id = h.id; break; }
+    if (fmMode == 1) { if (id == 90) fmMode = 0; return; }
+    if (fmMode == 2) {
+        if (id == 30) {
+            fmOps.clear();
+            for (auto& n : fmSel) fmPlanDelete(fmJoin(fmPath, n));
+            fmMode = 0; fmStartJob("Deleting");
+        } else if (id == 31) fmMode = 0;
+        return;
+    }
+    if (fmMode == 3) {
+        if (id == 32) openKbStr(&fmInput, 80, fmDoPrompt);
+        else if (id == 33) fmDoPrompt();
+        else if (id == 31) { hideKb(); fmMode = 0; }
+        return;
+    }
+    if (id >= 200) { if (id - 200 < (int)gFmSegs.size()) fmGo(gFmSegs[id - 200].second); return; }
+    switch (id) {
+        case 1: if (fmPath != "sdmc:/") fmGo(fmParent(fmPath)); return;
+        case 2: fmSelMode = !fmSelMode; fmSel.clear(); return;
+        case 3: fmPrompt = 2; fmInput.clear(); fmMode = 3; openKbStr(&fmInput, 80, fmDoPrompt); return;
+        case 4: if (!fmDesc) fmDesc = true; else { fmDesc = false; fmSort = (fmSort + 1) % 3; } fmRefresh(); return;
+        case 5: fmPaste(); return;
+        case 10: case 11: if (!fmSel.empty()) { fmClip.clear(); for (auto& n : fmSel) fmClip.push_back(fmJoin(fmPath, n)); fmCut = id == 11; fmSelMode = false; fmSel.clear(); toast(fmCut ? "Cut - open a folder and tap Move here" : "Copied - open a folder and tap Paste"); } return;
+        case 12: if (!fmSel.empty()) fmMode = 2; return;
+        case 13: if (fmSel.size() == 1) { fmFrom = fmJoin(fmPath, *fmSel.begin()); fmInput = *fmSel.begin(); fmPrompt = 1; fmMode = 3; openKbStr(&fmInput, 80, fmDoPrompt); } return;
+        case 14: if (fmSel.size() == fmList.size()) fmSel.clear(); else for (auto& e : fmList) fmSel.insert(e.name); return;
+        case 15: fmSelMode = false; fmSel.clear(); return;
+        default: break;
+    }
+    int bottom = UIH - (fmSelMode ? 70 : 0);
+    if (y >= FM_TOP && y < bottom) {
+        int i = (y - FM_TOP + fmScroll) / FM_ROW;
+        if (i >= 0 && i < (int)fmList.size()) {
+            if (fmSelMode) { const std::string& n = fmList[i].name; if (fmSel.count(n)) fmSel.erase(n); else fmSel.insert(n); }
+            else fmOpen(fmList[i]);
+        }
+    }
+}
+static void filesDrag(int dx, int dy) { (void)dx; if (fmMode == 1) fmTScroll -= dy; else if (fmMode == 0) fmScroll -= dy; }
+
+// ================================================================ Maps (OpenStreetMap tiles, cached on the SD card)
+struct MTile { SDL_Texture* t = nullptr; Uint32 last = 0, failT = 0; bool loading = false; };
+static std::map<long long, MTile> mpTiles;
+static double mpLat = 36.75, mpLon = 3.04, mpZoom = 4;
+static int mpJobsN = 0, mpDiskBudget = 0;
+static std::string mpQuery, mpMsg; static bool mpBusy = false;
+struct MPlace { std::string name; double lat, lon; };
+static std::vector<MPlace> mpResults; static bool mpMark = false; static double mpMLat = 0, mpMLon = 0;
+static Uint32 mpTapT = 0; static int mpTapX = 0, mpTapY = 0;
+static double mpWorld(double zoom) { return 256.0 * pow(2.0, zoom); }
+static double mpPxX(double lon, double zoom) { return (lon + 180.0) / 360.0 * mpWorld(zoom); }
+static double mpPxY(double lat, double zoom) { double r = lat * M_PI / 180.0; return (1.0 - log(tan(r) + 1.0 / cos(r)) / M_PI) / 2.0 * mpWorld(zoom); }
+static double mpLonOf(double px, double zoom) { return px / mpWorld(zoom) * 360.0 - 180.0; }
+static double mpLatOf(double py, double zoom) { double n = M_PI - 2.0 * M_PI * py / mpWorld(zoom); return 180.0 / M_PI * atan(0.5 * (exp(n) - exp(-n))); }
+static long long mpKey(int z, int x, int y) { return ((long long)z << 40) | ((long long)x << 20) | (long long)y; }
+static std::string mpPath(int z, int x, int y) { return DIR_ + "maptiles/" + std::to_string(z) + "/" + std::to_string(x) + "/" + std::to_string(y) + ".png"; }
+static void mpTileDone(NetJob& j) {
+    mpJobsN = std::max(0, mpJobsN - 1);
+    auto it = mpTiles.find(atoll(j.a.c_str()));
+    if (it == mpTiles.end()) return;
+    it->second.loading = false;
+    if (!j.ok) it->second.failT = SDL_GetTicks();
+}
+static SDL_Texture* mpTile(int z, int x, int y) {
+    long long k = mpKey(z, x, y);
+    MTile& m = mpTiles[k];
+    m.last = SDL_GetTicks();
+    if (m.t) return m.t;
+    if (m.loading) return nullptr;
+    if (mpDiskBudget > 0) {
+        std::string p = mpPath(z, x, y);
+        struct stat st;
+        if (stat(p.c_str(), &st) == 0 && st.st_size > 0) {
+            mpDiskBudget--;
+            SDL_Surface* sf = IMG_Load(p.c_str());
+            if (sf) { m.t = SDL_CreateTextureFromSurface(gR, sf); SDL_FreeSurface(sf); if (m.t) return m.t; }
+            remove(p.c_str());
+        }
+    }
+    if (mpJobsN < 4 && (m.failT == 0 || SDL_GetTicks() - m.failT > 20000) && netUp()) {
+        mkdir((DIR_ + "maptiles").c_str(), 0777);
+        mkdir((DIR_ + "maptiles/" + std::to_string(z)).c_str(), 0777);
+        mkdir((DIR_ + "maptiles/" + std::to_string(z) + "/" + std::to_string(x)).c_str(), 0777);
+        NetJob* j = new NetJob(); char u[160]; snprintf(u, sizeof u, "https://tile.openstreetmap.org/%d/%d/%d.png", z, x, y);
+        j->url = u; j->savePath = mpPath(z, x, y); j->a = std::to_string(k); j->done = mpTileDone;
+        if (netStart(j)) { m.loading = true; mpJobsN++; }
+    }
+    return nullptr;
+}
+static void mpTrim() {
+    if (mpTiles.size() < 120) return;
+    Uint32 now = SDL_GetTicks();
+    for (auto it = mpTiles.begin(); it != mpTiles.end();) {
+        if (!it->second.loading && now - it->second.last > 4000) { if (it->second.t) SDL_DestroyTexture(it->second.t); it = mpTiles.erase(it); } else ++it;
+    }
+}
+static void mapsFree() { for (auto& t : mpTiles) if (t.second.t) SDL_DestroyTexture(t.second.t); mpTiles.clear(); }
+static void mapsInit() {
+    mpMsg.clear(); mpResults.clear();
+    std::string d;
+    if (readFile(DIR_ + "maps.txt", d)) sscanf(d.c_str(), "%lf %lf %lf", &mpLat, &mpLon, &mpZoom);
+    else if (gWxHaveLoc) { mpLat = gWxLat; mpLon = gWxLon; mpZoom = 11; }
+}
+static void mapsSave() { char b[96]; snprintf(b, sizeof b, "%.6f %.6f %.2f\n", mpLat, mpLon, mpZoom); writeFile(DIR_ + "maps.txt", b); }
+static void mapsClose() { mapsSave(); mapsFree(); }
+static void mpPan(double dx, double dy) {
+    double cx = mpPxX(mpLon, mpZoom) - dx, cy = mpPxY(mpLat, mpZoom) - dy;
+    double ws = mpWorld(mpZoom);
+    cy = std::max(0.0, std::min(ws - 1, cy));
+    mpLon = mpLonOf(cx, mpZoom); while (mpLon > 180) mpLon -= 360; while (mpLon < -180) mpLon += 360;
+    mpLat = mpLatOf(cy, mpZoom);
+}
+static void mpSetZoom(double z) { mpZoom = std::max(2.0, std::min(18.0, z)); }
+static void mpSearchDone(NetJob& j) {
+    mpBusy = false; mpResults.clear();
+    size_t p = 0;
+    while (mpResults.size() < 6) {
+        size_t a = j.out.find("\"lat\"", p);
+        if (a == std::string::npos) break;
+        MPlace m; m.lat = atof(jstr(j.out, "lat", a).c_str()); m.lon = atof(jstr(j.out, "lon", a).c_str());
+        m.name = jstr(j.out, "display_name", a);
+        if (m.name.empty()) m.name = "Place";
+        mpResults.push_back(m); p = a + 5;
+    }
+    mpMsg = mpResults.empty() ? "Nothing found." : "";
+}
+static void mpSearch() {
+    hideKb();
+    if (mpQuery.empty() || mpBusy) return;
+    if (!netUp()) { mpMsg = gOffline ? "Offline mode is on." : "No internet connection."; return; }
+    NetJob* j = new NetJob(); j->url = "https://nominatim.openstreetmap.org/search?format=json&limit=6&q=" + urlEncode(mpQuery); j->done = mpSearchDone;
+    if (netStart(j)) { mpBusy = true; mpMsg = "Searching..."; }
+}
+static void mapsPinch(float sc, int, int, bool begin) {
+    static double z0 = 4;
+    if (begin) { z0 = mpZoom; return; }
+    mpSetZoom(z0 + log2((double)std::max(0.1f, sc)));
+}
+static void drawMaps() {
+    rect(0, 0, W, UIH, Col{226, 222, 212});
+    mpDiskBudget = 3;
+    int z = std::max(1, std::min(17, (int)floor(mpZoom + 0.0001)));
+    double sc = pow(2.0, mpZoom - z), ts = 256.0 * sc;
+    double cx = mpPxX(mpLon, z), cy = mpPxY(mpLat, z);       // centre in level-z pixels
+    double left = cx - W / 2.0 / sc, top = cy - UIH / 2.0 / sc;
+    int n = 1 << z;
+    int tx0 = (int)floor(left / 256.0), tx1 = (int)floor((left + W / sc) / 256.0), ty0 = (int)floor(top / 256.0), ty1 = (int)floor((top + UIH / sc) / 256.0);
+    SDL_Rect clip = {0, 0, W, UIH}; SDL_RenderSetClipRect(gR, &clip);
+    for (int ty = ty0; ty <= ty1; ty++) for (int tx = tx0; tx <= tx1; tx++) {
+        if (ty < 0 || ty >= n) continue;
+        int wx = ((tx % n) + n) % n;
+        int sx = (int)floor((tx * 256.0 - left) * sc), sy = (int)floor((ty * 256.0 - top) * sc);
+        SDL_Rect d = {sx, sy, (int)ceil(ts) + 1, (int)ceil(ts) + 1};
+        SDL_Texture* t = mpTile(z, wx, ty);
+        if (t) SDL_RenderCopy(gR, t, nullptr, &d);
+        else { rect(d.x, d.y, d.w, d.h, Col{232, 228, 218}); outline(d.x, d.y, d.w, d.h, 1, Col{210, 205, 195}); }
+    }
+    auto mark = [&](double la, double lo, Col c, bool pin) {
+        double px = (mpPxX(lo, mpZoom) - mpPxX(mpLon, mpZoom)) + W / 2.0, py = (mpPxY(la, mpZoom) - mpPxY(mpLat, mpZoom)) + UIH / 2.0;
+        if (px < -40 || px > W + 40 || py < -40 || py > UIH + 40) return;
+        if (pin) { tri((float)px, (float)py, (float)px - 12, (float)py - 30, (float)px + 12, (float)py - 30, c); disc((int)px, (int)py - 34, 14, c); disc((int)px, (int)py - 34, 5, WHITE); }
+        else { disc((int)px, (int)py, 12, WHITE); disc((int)px, (int)py, 8, c); }
+    };
+    if (gWxHaveLoc) mark(gWxLat, gWxLon, Col{0, 120, 215}, false);
+    if (mpMark) mark(mpMLat, mpMLon, Col{209, 52, 56}, true);
+    SDL_RenderSetClipRect(gR, nullptr);
+    mpTrim();
+    // overlay: search + zoom
+    rect(0, 0, W, 66, BLACK, 150);
+    drawField(70, 12, 600, 44, &mpQuery, "Search for a place", F22, DARK, WHITE, WHITE);
+    btn(680, 12, 90, 44, "Go", Col{30, 150, 90}, WHITE);
+    btn(780, 12, 120, 44, "My spot", Col{70, 74, 86}, WHITE);
+    btn(W - 270, 12, 60, 44, "-", Col{70, 74, 86}, WHITE);
+    btn(W - 200, 12, 60, 44, "+", Col{70, 74, 86}, WHITE);
+    char zb[16]; snprintf(zb, sizeof zb, "z%.1f", mpZoom); text(zb, F16, W - 90, 24, WHITE, 1, 200);
+    if (!mpMsg.empty()) { rect(W / 2 - 200, 76, 400, 40, BLACK, 170); text(mpMsg, F22, W / 2, 82, WHITE, 1); }
+    int y = 76;
+    for (size_t i = 0; i < mpResults.size() && mpMsg.empty(); i++) {
+        std::string nm = mpResults[i].name; while (nm.size() > 3 && tw(nm, F16) > 540) nm.pop_back();
+        rect(70, y, 600, 44, BLACK, 190); text(nm, F16, 84, y + 12, WHITE); y += 48;
+    }
+    rect(0, UIH - 22, 330, 22, WHITE, 190);
+    text("(c) OpenStreetMap contributors", F16, 8, UIH - 20, Col{60, 60, 60});
+    if (!netUp()) text("Offline: showing saved tiles only", F16, W - 14, UIH - 20, Col{120, 40, 40}, 2);
+    // cross-hair
+    line(W / 2 - 8, UIH / 2, W / 2 + 8, UIH / 2, 2, Col{60, 60, 60}, 140); line(W / 2, UIH / 2 - 8, W / 2, UIH / 2 + 8, 2, Col{60, 60, 60}, 140);
+}
+static void mapsTap(int x, int y) {
+    if (kbOpen && kbTarget == 99 && y < KBTOP) hideKb();
+    if (y < 66) {
+        if (inR(x, y, 70, 12, 600, 44)) { openKbStr(&mpQuery, 60, mpSearch); return; }
+        if (inR(x, y, 680, 12, 90, 44)) { mpSearch(); return; }
+        if (inR(x, y, 780, 12, 120, 44)) { if (gWxHaveLoc) { mpLat = gWxLat; mpLon = gWxLon; mpSetZoom(13); } else toast("Set your city in Weather first"); return; }
+        if (inR(x, y, W - 270, 12, 60, 44)) { mpSetZoom(floor(mpZoom + 0.01) - 1); return; }
+        if (inR(x, y, W - 200, 12, 60, 44)) { mpSetZoom(floor(mpZoom + 0.01) + 1); return; }
+        return;
+    }
+    if (!mpResults.empty() && mpMsg.empty() && x >= 70 && x < 670 && y >= 76 && y < 76 + (int)mpResults.size() * 48) {
+        int i = (y - 76) / 48;
+        if (i >= 0 && i < (int)mpResults.size()) { mpLat = mpResults[i].lat; mpLon = mpResults[i].lon; mpSetZoom(14); mpMark = true; mpMLat = mpLat; mpMLon = mpLon; mpResults.clear(); mapsSave(); }
+        return;
+    }
+    mpResults.clear(); mpMsg.clear();
+    Uint32 now = SDL_GetTicks();
+    if (now - mpTapT < 380 && abs(x - mpTapX) < 40 && abs(y - mpTapY) < 40) { mpPan(W / 2.0 - x, UIH / 2.0 - y); mpSetZoom(mpZoom + 1); mpTapT = 0; }
+    else { mpTapT = now; mpTapX = x; mpTapY = y; }
+}
+static void mapsDrag(int dx, int dy) { mpPan(dx, dy); }
+
+// ================================================================ Podcasts and Internet radio
+struct PodShow { std::string name, url; };
+struct PodEp { std::string title, url, date; };
+static std::vector<PodShow> gShows; static std::vector<PodEp> gEps;
+static int podView = 0, podSel = -1, podScroll = 0; static std::string podMsg, podInput; static bool podBusy = false;
+struct PodDl { NetJob* j; std::string url; };
+static std::vector<PodDl> podDls;
+static const PodShow POD_STARTER[3] = {{"NPR Up First", "https://feeds.npr.org/510318/podcast.xml"}, {"BBC Global News Podcast", "https://podcasts.files.bbci.co.uk/p02nq0gn.rss"}, {"99% Invisible", "https://feeds.simplecast.com/BqbsxVfO"}};
+static std::string podHash(const std::string& s) { unsigned long long h = 1469598103934665603ULL; for (unsigned char c : s) { h ^= c; h *= 1099511628211ULL; } char b[24]; snprintf(b, sizeof b, "%016llx", h); return std::string(b).substr(0, 12); }
+static void podSave() { std::string o; for (auto& s : gShows) o += s.url + "\t" + s.name + "\n"; writeFile(DIR_ + "podcasts.txt", o); }
+static void podLoad() {
+    gShows.clear(); std::string d;
+    if (readFile(DIR_ + "podcasts.txt", d)) {
+        size_t p = 0;
+        while (p < d.size()) { size_t e = d.find('\n', p); if (e == std::string::npos) e = d.size(); std::string l = d.substr(p, e - p); p = e + 1; size_t t = l.find('\t'); if (t != std::string::npos) gShows.push_back({l.substr(t + 1), l.substr(0, t)}); }
+    }
+}
+static std::string podAttr(const std::string& tag, const char* attr) {
+    std::string k = std::string(attr) + "=";
+    size_t a = tag.find(k); if (a == std::string::npos) return "";
+    char q = tag[a + k.size()]; size_t b = tag.find(q, a + k.size() + 1);
+    return b == std::string::npos ? "" : tag.substr(a + k.size() + 1, b - a - k.size() - 1);
+}
+static bool podParse(const std::string& x, std::string* showName) {
+    std::vector<PodEp> v; size_t p = 0;
+    size_t first = x.find("<item");
+    if (showName) { std::string t = htmlToText(xmlTag(x.substr(0, first == std::string::npos ? x.size() : first), "title", 0)); while (!t.empty() && t.back() == '\n') t.pop_back(); if (!t.empty()) *showName = t; }
+    while (v.size() < 60) {
+        size_t a = x.find("<item", p); if (a == std::string::npos) break;
+        size_t b = x.find("</item>", a); if (b == std::string::npos) break;
+        std::string it = x.substr(a, b - a);
+        PodEp e; e.title = htmlToText(xmlTag(it, "title", 0)); while (!e.title.empty() && e.title.back() == '\n') e.title.pop_back();
+        size_t en = it.find("<enclosure");
+        if (en != std::string::npos) { size_t ee = it.find('>', en); e.url = podAttr(it.substr(en, ee - en), "url"); }
+        e.date = xmlTag(it, "pubDate", 0); if (e.date.size() > 16) e.date = e.date.substr(0, 16);
+        if (!e.url.empty() && !e.title.empty()) {
+            std::string ent; for (size_t i = 0; i < e.url.size(); i++) { if (e.url.compare(i, 5, "&amp;") == 0) { ent += '&'; i += 4; } else ent += e.url[i]; }
+            e.url = ent; v.push_back(e);
+        }
+        p = b + 7;
+    }
+    if (v.empty()) return false;
+    gEps = v; return true;
+}
+static std::string podFile(const PodEp& e) { return DIR_ + "podcasts/" + podHash(e.url) + ".mp3"; }
+static bool podHave(const PodEp& e) { struct stat st; return stat(podFile(e).c_str(), &st) == 0 && st.st_size > 1000; }
+static PodDl* podDlFor(const std::string& u) { for (auto& d : podDls) if (d.url == u) return &d; return nullptr; }
+static void podFeedDone(NetJob& j) {
+    podBusy = false;
+    if (podSel < 0 || podSel >= (int)gShows.size() || gShows[podSel].url != j.url) return;
+    std::string nm;
+    if (j.ok && podParse(j.out, &nm)) { writeFile(DIR_ + "podcasts/" + podHash(j.url) + ".xml", j.out); if (gShows[podSel].name.empty() || gShows[podSel].name == gShows[podSel].url) { gShows[podSel].name = nm; podSave(); } podMsg.clear(); }
+    else podMsg = "Couldn't load this feed.";
+}
+static void podOpen(int i) {
+    podSel = i; podView = 1; podScroll = 0; gEps.clear(); podMsg.clear();
+    mkdir((DIR_ + "podcasts").c_str(), 0777);
+    std::string d;
+    if (readFile(DIR_ + "podcasts/" + podHash(gShows[i].url) + ".xml", d)) podParse(d, nullptr);
+    if (podBusy) return;
+    if (!netUp()) { if (gEps.empty()) podMsg = gOffline ? "Offline mode is on." : "No internet connection."; return; }
+    NetJob* j = new NetJob(); j->url = gShows[i].url; j->done = podFeedDone;
+    if (netStart(j)) { podBusy = true; if (gEps.empty()) podMsg = "Loading episodes..."; }
+}
+static void podAddUrl(const std::string& url, const std::string& name) {
+    if (url.compare(0, 4, "http") != 0) { toast("Paste a link that starts with http"); return; }
+    for (auto& s : gShows) if (s.url == url) { toast("Already subscribed"); return; }
+    gShows.push_back({name.empty() ? url : name, url}); podSave();
+    podOpen((int)gShows.size() - 1);
+}
+static void podAddEnter() { hideKb(); std::string u = podInput; podInput.clear(); if (!u.empty()) podAddUrl(u, ""); }
+static void podDlDone(NetJob& j) {
+    for (size_t i = 0; i < podDls.size(); i++) if (podDls[i].j == &j) { podDls.erase(podDls.begin() + i); break; }
+    toast(j.ok ? "Episode downloaded" : "Download failed");
+}
+static void podDownload(const PodEp& e) {
+    if (podDlFor(e.url) || !netUp()) { if (!netUp()) toast(gOffline ? "Offline mode is on." : "No internet connection."); return; }
+    mkdir((DIR_ + "podcasts").c_str(), 0777);
+    NetJob* j = new NetJob(); j->url = e.url; j->savePath = podFile(e); j->done = podDlDone;
+    if (netStart(j)) podDls.push_back({j, e.url});
+}
+static void podInit() { podLoad(); podView = 0; podScroll = 0; podMsg.clear(); }
+static void podMiniBar() {
+    if (musIdx < 0 || musIdx >= (int)gSongs.size()) return;
+    int y = UIH - 64;
+    rect(0, y, W, 64, Col{20, 22, 28});
+    std::string t = gSongs[musIdx].title; while (t.size() > 3 && tw(t, F22) > 800) t.pop_back();
+    text(t, F22, 70, y + 18, WHITE);
+    btn(1060, y + 8, 150, 48, musPlaying && !musPaused ? "Pause" : "Play", Col{150, 60, 200}, WHITE);
+}
+static void drawPodcasts() {
+    rect(0, 0, W, UIH, Col{36, 22, 52});
+    int bottom = UIH - (musIdx >= 0 ? 64 : 0);
+    if (podView == 0) {
+        text("Podcasts", F72, 56, 14, WHITE);
+        SDL_Rect clip = {0, 120, W, bottom - 120}; SDL_RenderSetClipRect(gR, &clip);
+        int y = 124 - podScroll;
+        for (size_t i = 0; i < gShows.size(); i++) {
+            rect(56, y, 1168, 66, WHITE, 30); rect(56, y, 8, 66, Col{190, 110, 255});
+            std::string t = gShows[i].name; while (t.size() > 3 && tw(t, F30) > 1000) t.pop_back();
+            text(t, F30, 84, y + 16, WHITE); text("x", F30, 1196, y + 14, WHITE, 1, 150);
+            y += 74;
+        }
+        if (gShows.empty()) { text("No shows yet. Pick a starter show or add a podcast link.", F22, 56, y, WHITE, 0, 190); y += 40; }
+        text("Starter shows", F22, 56, y + 8, WHITE, 0, 170); y += 44;
+        for (int i = 0; i < 3; i++) { rect(56, y, 1168, 54, WHITE, 16); text("+  " + POD_STARTER[i].name, F22, 84, y + 12, WHITE, 0, 220); y += 60; }
+        btn(56, y + 6, 360, 54, "Add a podcast by link", Col{150, 60, 200}, WHITE);
+        SDL_RenderSetClipRect(gR, nullptr);
+    } else {
+        btn(56, 20, 100, 44, "Back", Col{70, 50, 100}, WHITE);
+        std::string t = podSel >= 0 && podSel < (int)gShows.size() ? gShows[podSel].name : ""; while (t.size() > 3 && tw(t, F44) > 900) t.pop_back();
+        text(t, F44, 176, 14, WHITE);
+        if (!podMsg.empty()) text(podMsg, F22, 56, 100, WHITE, 0, 200);
+        SDL_Rect clip = {0, 84, W, bottom - 84}; SDL_RenderSetClipRect(gR, &clip);
+        int y = 90 - podScroll;
+        for (size_t i = 0; i < gEps.size(); i++) {
+            if (y + 78 > 84 && y < bottom) {
+                rect(56, y, 1168, 72, WHITE, 26);
+                std::string tt = gEps[i].title; while (tt.size() > 3 && tw(tt, F22) > 820) tt.pop_back();
+                text(tt, F22, 76, y + 10, WHITE); text(gEps[i].date, F16, 76, y + 42, WHITE, 0, 150);
+                PodDl* d = podDlFor(gEps[i].url);
+                if (d) { rect(960, y + 20, 240, 30, WHITE, 40); long long tot = d->j->dlTotal; int pw = tot > 0 ? (int)(240.0 * d->j->dlNow / tot) : (int)((d->j->dlNow / 40000) % 240); rect(960, y + 20, std::min(240, pw), 30, Col{190, 110, 255}); text(fmSize(d->j->dlNow), F16, 1080, y + 25, WHITE, 1); }
+                else if (podHave(gEps[i])) btn(1000, y + 12, 200, 48, "Play", Col{150, 60, 200}, WHITE);
+                else btn(1000, y + 12, 200, 48, "Download", Col{70, 50, 100}, WHITE);
+            }
+            y += 80;
+        }
+        SDL_RenderSetClipRect(gR, nullptr);
+    }
+    podMiniBar();
+}
+static void podcastsTap(int x, int y) {
+    if (musIdx >= 0 && y >= UIH - 64) { if (inR(x, y, 1060, UIH - 56, 150, 48)) musToggle(); return; }
+    if (podView == 0) {
+        int yy = 124 - podScroll;
+        for (size_t i = 0; i < gShows.size(); i++) {
+            if (y >= yy && y < yy + 66) { if (x > 1150) { gShows.erase(gShows.begin() + i); podSave(); } else podOpen((int)i); return; }
+            yy += 74;
+        }
+        if (gShows.empty()) yy += 40;
+        yy += 44;
+        for (int i = 0; i < 3; i++) { if (y >= yy && y < yy + 54) { podAddUrl(POD_STARTER[i].url, POD_STARTER[i].name); return; } yy += 60; }
+        if (inR(x, y, 56, yy + 6, 360, 54)) { podInput.clear(); openKbStr(&podInput, 200, podAddEnter); }
+    } else {
+        if (inR(x, y, 56, 20, 100, 44)) { podView = 0; podScroll = 0; return; }
+        int yy = 90 - podScroll;
+        for (size_t i = 0; i < gEps.size(); i++) {
+            if (y >= yy && y < yy + 72 && x >= 1000) {
+                if (podDlFor(gEps[i].url)) return;
+                if (podHave(gEps[i])) { musPlayFile(podFile(gEps[i])); toast("Playing"); } else podDownload(gEps[i]);
+                return;
+            }
+            yy += 80;
+        }
+    }
+}
+static void podcastsDrag(int, int dy) { podScroll = std::max(0, podScroll - dy); }
+static bool podcastsBack() { if (kbOpen) { hideKb(); return true; } if (podView == 1) { podView = 0; return true; } return false; }
+
+// ---- radio
+struct RStation { std::string name, url; };
+static std::vector<RStation> gStations; static int rdCur = -1, rdState = 0, rdSlot = 0, rdScroll = 0; static NetJob* rdJob = nullptr;
+static std::string rdReady, rdInput, rdMsg; static Uint32 rdRetryT = 0;
+static void rdSave() { std::string o; for (auto& s : gStations) o += s.url + "\t" + s.name + "\n"; writeFile(DIR_ + "radio.txt", o); }
+static void rdLoad() {
+    gStations.clear(); std::string d;
+    if (readFile(DIR_ + "radio.txt", d)) {
+        size_t p = 0;
+        while (p < d.size()) { size_t e = d.find('\n', p); if (e == std::string::npos) e = d.size(); std::string l = d.substr(p, e - p); p = e + 1; size_t t = l.find('\t'); if (t != std::string::npos) gStations.push_back({l.substr(t + 1), l.substr(0, t)}); }
+    }
+    if (gStations.empty()) {
+        gStations = {{"SomaFM Groove Salad", "https://ice1.somafm.com/groovesalad-128-mp3"}, {"Radio Paradise", "https://stream.radioparadise.com/mp3-128"}, {"KEXP Seattle", "https://kexp.streamguys1.com/kexp128.mp3"}, {"SomaFM Defcon", "https://ice1.somafm.com/defcon-128-mp3"}, {"BBC World Service", "https://stream.live.vc.bbcmedia.co.uk/bbc_world_service"}};
+        rdSave();
+    }
+}
+static void rdDone(NetJob& j) {
+    rdJob = nullptr;
+    if (rdCur < 0) return;
+    if (j.ok || j.dlNow > 20000) { rdReady = j.savePath; rdMsg.clear(); }
+    else { rdMsg = "Couldn't reach this station."; rdRetryT = SDL_GetTicks() + 5000; }
+}
+static void rdFetch() {
+    if (rdCur < 0 || rdCur >= (int)gStations.size() || rdJob) return;
+    if (!netUp()) { rdMsg = gOffline ? "Offline mode is on." : "No internet connection."; rdRetryT = SDL_GetTicks() + 5000; return; }
+    NetJob* j = new NetJob(); j->url = gStations[rdCur].url; j->savePath = DIR_ + (rdSlot ? "radio_b.mp3" : "radio_a.mp3"); j->maxMs = rdState == 0 ? 8000 : 12000; j->done = rdDone;
+    rdSlot ^= 1;
+    if (netStart(j)) rdJob = j;
+}
+static void rdStop() { if (rdJob) rdJob->cancel = true; rdCur = -1; rdState = 0; rdReady.clear(); rdMsg.clear(); musStop(); }
+static void rdPlay(int i) { rdStop(); rdCur = i; rdState = 0; rdMsg = "Buffering..."; rdRetryT = 0; rdFetch(); }
+static void radioInit() { rdLoad(); rdScroll = 0; }
+static void radioUpdate(float) {
+    if (rdCur < 0) return;
+    if (!rdReady.empty() && !(musPlaying)) { std::string p = rdReady; rdReady.clear(); musPlayFile(p); if (!musPlaying) { rdStop(); rdMsg = "This station can't be played here."; return; } rdState = 1; rdMsg.clear(); rdFetch(); }
+    else if (!rdJob && rdReady.empty() && rdRetryT && SDL_GetTicks() > rdRetryT) { rdRetryT = 0; rdFetch(); }
+    else if (!rdJob && rdReady.empty() && rdState == 1 && musPlaying) rdFetch();
+}
+static void drawRadio() {
+    rect(0, 0, W, UIH, Col{60, 30, 10});
+    text("Radio", F72, 56, 14, WHITE);
+    text("Beta: stations play in 12-second pieces, so there is a short delay at the start.", F16, 330, 56, WHITE, 0, 170);
+    int bottom = UIH - 74;
+    SDL_Rect clip = {0, 110, W, bottom - 110}; SDL_RenderSetClipRect(gR, &clip);
+    int y = 114 - rdScroll;
+    for (size_t i = 0; i < gStations.size(); i++) {
+        bool cur = (int)i == rdCur;
+        rect(56, y, 1168, 62, cur ? Col{230, 110, 20} : Col{255, 255, 255}, cur ? 255 : 30);
+        std::string t = gStations[i].name; while (t.size() > 3 && tw(t, F30) > 900) t.pop_back();
+        text(t, F30, 80, y + 14, WHITE); text("x", F30, 1196, y + 12, WHITE, 1, 150);
+        y += 70;
+    }
+    btn(56, y + 8, 300, 54, "Add a station link", Col{230, 110, 20}, WHITE);
+    SDL_RenderSetClipRect(gR, nullptr);
+    rect(0, UIH - 74, W, 74, Col{30, 14, 4});
+    std::string st = rdCur < 0 ? (rdMsg.empty() ? "Pick a station" : rdMsg) : (rdMsg.empty() ? "Playing: " + gStations[rdCur].name : rdMsg);
+    text(st, F22, 56, UIH - 52, WHITE);
+    if (rdCur >= 0) btn(1060, UIH - 64, 150, 54, "Stop", Col{190, 40, 60}, WHITE);
+}
+static void radioAddEnter() { hideKb(); std::string u = rdInput; rdInput.clear(); if (u.compare(0, 4, "http") != 0) { toast("The link must start with http"); return; } size_t s = u.find("//"); std::string nm = u.substr(s == std::string::npos ? 0 : s + 2); nm = nm.substr(0, nm.find('/')); gStations.push_back({nm, u}); rdSave(); }
+static void radioTap(int x, int y) {
+    if (y >= UIH - 74) { if (rdCur >= 0 && inR(x, y, 1060, UIH - 64, 150, 54)) rdStop(); return; }
+    int yy = 114 - rdScroll;
+    for (size_t i = 0; i < gStations.size(); i++) {
+        if (y >= yy && y < yy + 62) { if (x > 1150) { if ((int)i == rdCur) rdStop(); else if (rdCur > (int)i) rdCur--; gStations.erase(gStations.begin() + i); rdSave(); } else rdPlay((int)i); return; }
+        yy += 70;
+    }
+    if (inR(x, y, 56, yy + 8, 300, 54)) { rdInput.clear(); openKbStr(&rdInput, 200, radioAddEnter); }
+}
+static void radioDrag(int, int dy) { rdScroll = std::max(0, rdScroll - dy); }
+
+// ================================================================ Terminal and PowerShell
+struct TLine { std::string s; int kind; };   // kind 0 normal, 1 prompt/input, 2 error, 3 info
+struct TermSess { std::vector<TLine> lines; std::string input, cwd = "sdmc:/"; std::vector<std::string> hist; int hpos = 0, scroll = 0; bool init = false; };
+static TermSess gTerm[2];
+static int gTermCur = 0;   // 0 Terminal, 1 PowerShell
+static void tOut(TermSess& t, const std::string& s, int kind = 0) {
+    size_t p = 0;
+    while (p <= s.size()) { size_t e = s.find('\n', p); if (e == std::string::npos) e = s.size(); t.lines.push_back({s.substr(p, e - p), kind}); p = e + 1; if (e == s.size()) break; }
+    if (t.lines.size() > 600) t.lines.erase(t.lines.begin(), t.lines.begin() + (t.lines.size() - 600));
+    t.scroll = 0;
+}
+static std::string tResolve(const TermSess& t, std::string p) {
+    if (p.compare(0, 6, "sdmc:/") != 0) {
+        if (!p.empty() && p[0] == '/') p = "sdmc:" + p;
+        else p = fmJoin(t.cwd, p);
+    }
+    for (auto& c : p) if (c == '\\') c = '/';
+    std::string rest = p.size() > 6 ? p.substr(6) : "";
+    std::vector<std::string> seg; size_t a = 0;
+    while (a <= rest.size()) { size_t b = rest.find('/', a); if (b == std::string::npos) b = rest.size(); std::string s = rest.substr(a, b - a); if (s == "..") { if (!seg.empty()) seg.pop_back(); } else if (!s.empty() && s != ".") seg.push_back(s); a = b + 1; }
+    std::string o = "sdmc:/";
+    for (size_t i = 0; i < seg.size(); i++) o += (i ? "/" : "") + seg[i];
+    return o;
+}
+static std::vector<std::string> tTokens(const std::string& l) {
+    std::vector<std::string> v; std::string cur; bool q = false, has = false; char qc = 0;
+    for (char c : l) {
+        if (q) { if (c == qc) q = false; else cur += c; }
+        else if (c == '"' || c == '\'') { q = true; qc = c; has = true; }
+        else if (c == ' ' || c == '\t') { if (has || !cur.empty()) { v.push_back(cur); cur.clear(); has = false; } }
+        else cur += c;
+    }
+    if (has || !cur.empty()) v.push_back(cur);
+    return v;
+}
+static bool tIsDir(const std::string& p) { struct stat st; return stat(p.c_str(), &st) == 0 && S_ISDIR(st.st_mode); }
+static bool tExists(const std::string& p) { struct stat st; return stat(p.c_str(), &st) == 0; }
+static void tRunOps(TermSess& t) {
+    static char buf[65536];
+    for (auto& o : fmOps) {
+        if (o.t == 0) mkdir(o.b.c_str(), 0777);
+        else if (o.t == 1) { FILE* a = fopen(o.a.c_str(), "rb"); FILE* b = fopen(o.b.c_str(), "wb"); if (a && b) { size_t n; while ((n = fread(buf, 1, sizeof buf, a)) > 0) fwrite(buf, 1, n, b); } else tOut(t, "cannot copy " + o.a, 2); if (a) fclose(a); if (b) fclose(b); }
+        else if (o.t == 2) remove(o.a.c_str());
+        else if (o.t == 3) rmdir(o.a.c_str());
+    }
+    fmOps.clear();
+}
+static std::string tCanon(const std::string& c0) {
+    std::string c = lower(c0);
+    static const char* M[][2] = {{"get-childitem", "ls"}, {"gci", "ls"}, {"dir", "ls"}, {"set-location", "cd"}, {"sl", "cd"}, {"chdir", "cd"}, {"get-content", "cat"}, {"gc", "cat"}, {"type", "cat"},
+        {"new-item", "newitem"}, {"ni", "newitem"}, {"remove-item", "rm"}, {"del", "rm"}, {"ri", "rm"}, {"erase", "rm"}, {"copy-item", "cp"}, {"copy", "cp"}, {"move-item", "mv"}, {"move", "mv"},
+        {"get-process", "ps"}, {"gps", "ps"}, {"start-process", "launch"}, {"start", "launch"}, {"clear-host", "clear"}, {"cls", "clear"}, {"get-date", "date"}, {"write-output", "echo"}, {"write-host", "echo"},
+        {"get-location", "pwd"}, {"gl", "pwd"}, {"get-help", "help"}, {"man", "help"}, {"stop-process", "kill"}, {"get-psdrive", "df"}, {"select-string", "grep"}, {"sls", "grep"}, {"quit", "exit"}, {"ipconfig", "ip"}, {"get-netipaddress", "ip"}, {nullptr, nullptr}};
+    for (int i = 0; M[i][0]; i++) if (c == M[i][0]) return M[i][1];
+    return c;
+}
+static int tFindApp(const std::string& q0) {
+    std::string q = lower(q0);
+    for (int a = 0; a < A_COUNT; a++) if (lower(ADEF[a].key) == q || lower(ADEF[a].name) == q) return a;
+    for (int a = 0; a < A_COUNT; a++) if (lower(ADEF[a].name).find(q) != std::string::npos) return a;
+    return -1;
+}
+static void termExec(TermSess& t, bool ps, const std::string& line) {
+    auto tk = tTokens(line);
+    if (tk.empty()) return;
+    std::string cmd = tCanon(tk[0]);
+    std::vector<std::string> args, flags;
+    for (size_t i = 1; i < tk.size(); i++) { if (tk[i].size() > 1 && tk[i][0] == '-' && !(tk[i][1] >= '0' && tk[i][1] <= '9')) flags.push_back(lower(tk[i])); else args.push_back(tk[i]); }
+    auto hasF = [&](const char* a, const char* b = "") { for (auto& f : flags) if (f == a || (*b && f == b)) return true; return false; };
+    if (cmd == "help") {
+        tOut(t, "Commands: ls cd pwd cat head mkdir touch rm cp mv echo clear date whoami uname ps launch kill df ip wifi grep wc tree open run bsod exit", 3);
+        tOut(t, "Examples:  ls -l   cd switch   cat notes.txt   launch maps   cp a.txt b.txt   rm -r folder", 3);
+        if (ps) tOut(t, "PowerShell names work too: Get-ChildItem, Set-Location, Get-Content, Copy-Item, Move-Item, Remove-Item, Get-Process, Start-Process ...", 3);
+    } else if (cmd == "clear") { t.lines.clear(); }
+    else if (cmd == "pwd") tOut(t, t.cwd);
+    else if (cmd == "cd") {
+        std::string d = args.empty() ? "sdmc:/" : tResolve(t, args[0]);
+        if (tIsDir(d)) t.cwd = d; else tOut(t, "cd: no such directory: " + (args.empty() ? "" : args[0]), 2);
+    } else if (cmd == "ls") {
+        std::string d = args.empty() ? t.cwd : tResolve(t, args[0]);
+        if (!tIsDir(d)) { tOut(t, "ls: cannot access " + d, 2); return; }
+        std::vector<FmEnt> v; DIR* dp = opendir(d.c_str());
+        if (dp) { struct dirent* e; while ((e = readdir(dp)) != nullptr) { std::string n = e->d_name; if (n == "." || n == "..") continue; struct stat st; if (stat(fmJoin(d, n).c_str(), &st) == 0) v.push_back({n, S_ISDIR(st.st_mode), (long long)st.st_size, (long long)st.st_mtime}); } closedir(dp); }
+        std::sort(v.begin(), v.end(), [](const FmEnt& a, const FmEnt& b) { if (a.dir != b.dir) return a.dir; return lower(a.name) < lower(b.name); });
+        bool lg = hasF("-l") || hasF("-la") || ps;
+        if (lg) { for (auto& e : v) { char b[200]; time_t tt = (time_t)e.mt; struct tm* lt = localtime(&tt); char db[32] = ""; if (lt) snprintf(db, sizeof db, "%04d-%02d-%02d", lt->tm_year + 1900, lt->tm_mon + 1, lt->tm_mday); snprintf(b, sizeof b, "%s %10s  %s  %s%s", e.dir ? "d" : "-", e.dir ? "" : fmSize(e.size).c_str(), db, e.name.c_str(), e.dir ? "/" : ""); tOut(t, b, e.dir ? 3 : 0); } }
+        else { std::string row; for (auto& e : v) { row += e.name + (e.dir ? "/" : "") + "   "; if (row.size() > 90) { tOut(t, row); row.clear(); } } if (!row.empty()) tOut(t, row); }
+        if (v.empty()) tOut(t, "(empty)", 3);
+    } else if (cmd == "cat" || cmd == "head") {
+        if (args.empty()) { tOut(t, cmd + ": missing file", 2); return; }
+        std::string d; if (!readRaw(tResolve(t, args[0]), d)) { tOut(t, cmd + ": cannot open " + args[0], 2); return; }
+        int lim = cmd == "head" ? 10 : 200, n = 0; size_t p = 0;
+        while (p < d.size() && n < lim) { size_t e = d.find('\n', p); if (e == std::string::npos) e = d.size(); std::string l = d.substr(p, e - p); if (!l.empty() && l.back() == '\r') l.pop_back(); tOut(t, l); p = e + 1; n++; }
+        if (p < d.size()) tOut(t, "... (output cut)", 3);
+    } else if (cmd == "mkdir") {
+        if (args.empty()) { tOut(t, "mkdir: missing name", 2); return; }
+        for (auto& a : args) if (mkdir(tResolve(t, a).c_str(), 0777) != 0) tOut(t, "mkdir: cannot create " + a, 2);
+    } else if (cmd == "newitem") {
+        std::string path; bool dir = false;
+        for (size_t i = 1; i < tk.size(); i++) { std::string l = lower(tk[i]); if (l == "-itemtype" || l == "-type") { if (i + 1 < tk.size()) dir = lower(tk[++i]) == "directory"; } else if (l == "-name" || l == "-path") { if (i + 1 < tk.size()) path = tk[++i]; } else if (tk[i][0] != '-') path = tk[i]; }
+        if (path.empty()) { tOut(t, "New-Item: missing path", 2); return; }
+        std::string r = tResolve(t, path);
+        if (dir) { if (mkdir(r.c_str(), 0777) != 0) tOut(t, "cannot create " + path, 2); } else { FILE* f = fopen(r.c_str(), "ab"); if (f) fclose(f); else tOut(t, "cannot create " + path, 2); }
+    } else if (cmd == "touch") {
+        for (auto& a : args) { FILE* f = fopen(tResolve(t, a).c_str(), "ab"); if (f) fclose(f); else tOut(t, "touch: cannot create " + a, 2); }
+    } else if (cmd == "rm" || cmd == "rmdir") {
+        if (args.empty()) { tOut(t, cmd + ": missing name", 2); return; }
+        bool rec = hasF("-r", "-recurse") || hasF("-rf") || hasF("-fr");
+        for (auto& a : args) {
+            std::string r = tResolve(t, a);
+            if (r == "sdmc:/") { tOut(t, "refusing to delete the SD card root", 2); continue; }
+            if (!tExists(r)) { tOut(t, cmd + ": no such file: " + a, 2); continue; }
+            if (tIsDir(r) && !rec) { if (rmdir(r.c_str()) != 0) tOut(t, a + " is a folder that isn't empty. Use -r to delete it with everything inside.", 2); continue; }
+            if (fmBusy) { tOut(t, "Files is busy, try again", 2); continue; }
+            fmOps.clear(); fmPlanDelete(r); tRunOps(t);
+        }
+    } else if (cmd == "cp" || cmd == "mv") {
+        if (args.size() < 2) { tOut(t, cmd + ": need a source and a destination", 2); return; }
+        std::string s = tResolve(t, args[0]), d = tResolve(t, args[1]);
+        if (!tExists(s)) { tOut(t, cmd + ": no such file: " + args[0], 2); return; }
+        if (tIsDir(d)) d = fmJoin(d, fmBase(s));
+        if (tExists(d)) { tOut(t, cmd + ": destination exists", 2); return; }
+        if (d.compare(0, s.size() + 1, s + "/") == 0) { tOut(t, cmd + ": can't copy a folder into itself", 2); return; }
+        if (cmd == "mv" && rename(s.c_str(), d.c_str()) == 0) return;
+        if (fmBusy) { tOut(t, "Files is busy, try again", 2); return; }
+        fmOps.clear(); fmPlanCopy(s, d); if (cmd == "mv") fmPlanDelete(s); tRunOps(t);
+    } else if (cmd == "echo") {
+        std::string o; size_t gt = std::string::npos; for (size_t i = 0; i < args.size(); i++) if (args[i] == ">" || args[i] == ">>") { gt = i; break; }
+        for (size_t i = 0; i < (gt == std::string::npos ? args.size() : gt); i++) o += (i ? " " : "") + args[i];
+        if (gt != std::string::npos && gt + 1 < args.size()) { FILE* f = fopen(tResolve(t, args[gt + 1]).c_str(), args[gt] == ">>" ? "ab" : "wb"); if (f) { fwrite((o + "\n").data(), 1, o.size() + 1, f); fclose(f); } else tOut(t, "echo: cannot write", 2); }
+        else tOut(t, o);
+    } else if (cmd == "date") { char b[64]; snprintf(b, sizeof b, "%s %d %s %d  %02d:%02d:%02d", WD[dow(gNow.y, gNow.mo, gNow.d)], gNow.d, MONTHS[gNow.mo - 1], gNow.y, gNow.h, gNow.mi, gNow.s); tOut(t, b); }
+    else if (cmd == "whoami") tOut(t, gUser);
+    else if (cmd == "uname" || cmd == "ver" || cmd == "version") tOut(t, "WinNX 0.7.0 on Nintendo Switch (aarch64)");
+    else if (cmd == "ps") { tOut(t, "App                  State", 3); for (int a = 0; a < A_COUNT; a++) if (running[a]) { char b[100]; snprintf(b, sizeof b, "%-20s %s", ADEF[a].name, a == curApp ? "foreground" : "background"); tOut(t, b); } }
+    else if (cmd == "launch" || cmd == "run" || cmd == "open") {
+        if (args.empty()) { tOut(t, cmd + ": what should I open?", 2); return; }
+        std::string q = args[0]; for (size_t i = 1; i < args.size(); i++) q += " " + args[i];
+        std::string r = tResolve(t, args[0]);
+        if (tExists(r) && !tIsDir(r)) {
+            int k = fmKind(r);
+            if (k == 5) { saveAll(); if (R_SUCCEEDED(envSetNextLoad(r.c_str(), r.c_str()))) gRun = false; return; }
+            if (k == 1) { gPhotoOpenPath = r; if (running[A_PHOTOS]) appReset(A_PHOTOS); pendingApp = A_PHOTOS; closeApp(false); return; }
+            if (k == 2) { musPlayFile(r); tOut(t, "playing", 3); return; }
+            if (k == 3) { gPdfOpenPath = r; if (running[A_PDF]) appReset(A_PDF); pendingApp = A_PDF; closeApp(false); return; }
+            tOut(t, "no app for this file type", 2); return;
+        }
+        int a = tFindApp(q);
+        if (a < 0 || !appAvail(a)) { tOut(t, "unknown or not installed: " + q, 2); return; }
+        if (a == curApp) return;
+        pendingApp = a; closeApp(false);
+    } else if (cmd == "kill") {
+        if (args.empty()) { tOut(t, "kill: which app?", 2); return; }
+        int a = tFindApp(args[0]);
+        if (a < 0 || !running[a]) { tOut(t, "not running: " + args[0], 2); return; }
+        if (a == curApp) { tOut(t, "that's this window; use exit", 2); return; }
+        appReset(a); tOut(t, "closed " + std::string(ADEF[a].name), 3);
+    } else if (cmd == "df") { fmStorage(); tOut(t, "SD card: " + fmSize(fmFree) + " free of " + fmSize(fmTotalB)); }
+    else if (cmd == "ip" || cmd == "wifi" || cmd == "ping") { tOut(t, netUp() ? "Wi-Fi: connected, signal " + std::to_string(gWifiBars) + "/3" : (gOffline ? "Offline mode is on" : "Wi-Fi: not connected")); }
+    else if (cmd == "grep") {
+        if (args.size() < 2) { tOut(t, "grep: usage: grep word file", 2); return; }
+        std::string d; if (!readRaw(tResolve(t, args[1]), d)) { tOut(t, "grep: cannot open " + args[1], 2); return; }
+        int n = 0; size_t p = 0; std::string w = lower(args[0]);
+        while (p < d.size() && n < 100) { size_t e = d.find('\n', p); if (e == std::string::npos) e = d.size(); std::string l = d.substr(p, e - p); p = e + 1; if (lower(l).find(w) != std::string::npos) { tOut(t, l); n++; } }
+        if (!n) tOut(t, "(no matches)", 3);
+    } else if (cmd == "wc") {
+        if (args.empty()) { tOut(t, "wc: missing file", 2); return; }
+        std::string d; if (!readRaw(tResolve(t, args[0]), d)) { tOut(t, "wc: cannot open " + args[0], 2); return; }
+        int lines = 0, words = 0; bool in = false; for (char c : d) { if (c == '\n') lines++; if (c == ' ' || c == '\n' || c == '\t') in = false; else if (!in) { in = true; words++; } }
+        tOut(t, std::to_string(lines) + " lines  " + std::to_string(words) + " words  " + std::to_string(d.size()) + " bytes");
+    } else if (cmd == "tree") {
+        std::function<void(const std::string&, const std::string&, int)> walk = [&](const std::string& d, const std::string& pre, int depth) {
+            if (depth > 2) return;
+            std::vector<FmEnt> v; DIR* dp = opendir(d.c_str()); if (!dp) return; struct dirent* e;
+            while ((e = readdir(dp)) != nullptr) { std::string n = e->d_name; if (n == "." || n == "..") continue; v.push_back({n, tIsDir(fmJoin(d, n)), 0, 0}); } closedir(dp);
+            std::sort(v.begin(), v.end(), [](const FmEnt& a, const FmEnt& b) { return lower(a.name) < lower(b.name); });
+            for (auto& e2 : v) { if (t.lines.size() > 400) return; tOut(t, pre + e2.name + (e2.dir ? "/" : ""), e2.dir ? 3 : 0); if (e2.dir) walk(fmJoin(d, e2.name), pre + "  ", depth + 1); }
+        };
+        walk(args.empty() ? t.cwd : tResolve(t, args[0]), "", 0);
+    } else if (cmd == "bsod") { bsodNow("MANUALLY_INITIATED_CRASH", "typed in the terminal"); }
+    else if (cmd == "exit") { closeApp(false); }
+    else tOut(t, (ps ? "The term '" : "command not found: ") + tk[0] + (ps ? "' is not recognized. Type help." : ". Type help."), 2);
+}
+static void termEnter() {
+    TermSess& t = gTerm[gTermCur]; bool ps = gTermCur == 1;
+    std::string prompt = ps ? "PS " + t.cwd + "> " : "winnx:" + t.cwd + "$ ";
+    tOut(t, prompt + t.input, 1);
+    if (!t.input.empty()) { t.hist.push_back(t.input); if (t.hist.size() > 50) t.hist.erase(t.hist.begin()); }
+    t.hpos = (int)t.hist.size();
+    std::string l = t.input; t.input.clear();
+    termExec(t, ps, l);
+    openKbStr(&t.input, 200, termEnter);
+}
+static void termInit(int which) {
+    gTermCur = which; TermSess& t = gTerm[which];
+    if (!t.init) { t.init = true; tOut(t, which ? "Windows PowerShell (WinNX edition)" : "WinNX Terminal 0.7", 3); tOut(t, "Type help for commands. Tap the screen to bring up the keyboard.", 3); }
+    openKbStr(&t.input, 200, termEnter);
+}
+static void drawTerm() {
+    TermSess& t = gTerm[gTermCur]; bool ps = gTermCur == 1;
+    Col bg = ps ? Col{1, 36, 86} : Col{12, 12, 12};
+    Col fg = ps ? Col{238, 237, 240} : Col{204, 204, 204};
+    rect(0, 0, W, UIH, bg);
+    int bottom = kbOpen ? KBTOP : UIH;
+    int ly = bottom - 34;
+    std::string prompt = ps ? "PS " + t.cwd + "> " : "winnx:" + t.cwd + "$ ";
+    std::string cur = t.input + ((SDL_GetTicks() / 500) % 2 ? "_" : "");
+    std::string full = prompt + cur;
+    text(full, F22, 16, ly, ps ? Col{255, 255, 120} : Col{120, 255, 120});
+    int rows = (ly - 40) / 26;
+    int total = (int)t.lines.size();
+    int maxScroll = std::max(0, total - rows);
+    t.scroll = std::max(0, std::min(t.scroll, maxScroll));
+    int first = std::max(0, total - rows - t.scroll);
+    int y = ly - 26 * std::min(rows, total - first);
+    for (int i = first; i < std::min(total, first + rows); i++, y += 26) {
+        Col c = fg;
+        switch (t.lines[i].kind) { case 1: c = ps ? Col{255, 255, 120} : Col{120, 255, 120}; break; case 2: c = Col{255, 110, 110}; break; case 3: c = ps ? Col{150, 200, 255} : Col{120, 190, 255}; break; default: break; }
+        text(t.lines[i].s, F22, 16, y, c);
+    }
+    btn(W - 130, 46, 100, 40, "Prev", ps ? Col{20, 60, 120} : Col{50, 50, 50}, WHITE);
+}
+static void termTap(int x, int y) {
+    TermSess& t = gTerm[gTermCur];
+    if (inR(x, y, W - 130, 46, 100, 40)) { if (!t.hist.empty()) { t.hpos = std::max(0, t.hpos - 1); t.input = t.hist[t.hpos]; } return; }
+    if (!kbOpen) openKbStr(&t.input, 200, termEnter);
+}
+static void termDrag(int, int dy) { gTerm[gTermCur].scroll += dy / 26; }
+
+// ================================================================ Chess
+struct ChPos { int8_t b[64]; int turn; bool cK[2], cQ[2]; int ep; };   // turn 0 white 1 black; b>0 white
+struct ChMove { int8_t f, t, pr; };
+static ChPos chP; static std::vector<ChPos> chHist;
+static int chSel = -1, chLevel = 2, chSide = 0, chOver = 0, chPromoFrom = -1, chPromoTo = -1, chLast[2] = {-1, -1}; // chOver 1 mate 2 stalemate
+static std::string chMsg;
+static void chNew() {
+    static const int8_t back[8] = {4, 2, 3, 5, 6, 3, 2, 4};
+    memset(&chP, 0, sizeof chP);
+    for (int i = 0; i < 8; i++) { chP.b[i] = -back[i]; chP.b[8 + i] = -1; chP.b[48 + i] = 1; chP.b[56 + i] = back[i]; }
+    chP.cK[0] = chP.cK[1] = chP.cQ[0] = chP.cQ[1] = true; chP.ep = -1; chP.turn = 0;
+    chHist.clear(); chSel = -1; chOver = 0; chMsg = ""; chLast[0] = chLast[1] = -1; chPromoFrom = -1;
+}
+static bool chAttacked(const ChPos& p, int sq, int by) {   // is sq attacked by colour 'by'
+    int r = sq / 8, c = sq % 8, sg = by ? -1 : 1;
+    int pr = r + (by ? -1 : 1);   // pawn of 'by' sits one row behind in its moving direction
+    for (int dc = -1; dc <= 1; dc += 2) { int cc = c + dc; if (pr >= 0 && pr < 8 && cc >= 0 && cc < 8 && p.b[pr * 8 + cc] == sg * 1) return true; }
+    static const int kn[8][2] = {{1, 2}, {2, 1}, {-1, 2}, {-2, 1}, {1, -2}, {2, -1}, {-1, -2}, {-2, -1}};
+    for (auto& k : kn) { int rr = r + k[0], cc = c + k[1]; if (rr >= 0 && rr < 8 && cc >= 0 && cc < 8 && p.b[rr * 8 + cc] == sg * 2) return true; }
+    for (int dr = -1; dr <= 1; dr++) for (int dc = -1; dc <= 1; dc++) {
+        if (!dr && !dc) continue;
+        int rr = r + dr, cc = c + dc;
+        if (rr >= 0 && rr < 8 && cc >= 0 && cc < 8 && p.b[rr * 8 + cc] == sg * 6) return true;
+        bool diag = dr && dc; rr = r + dr; cc = c + dc;
+        while (rr >= 0 && rr < 8 && cc >= 0 && cc < 8) {
+            int v = p.b[rr * 8 + cc];
+            if (v) { if (v == sg * 5 || v == sg * (diag ? 3 : 4)) return true; break; }
+            rr += dr; cc += dc;
+        }
+    }
+    return false;
+}
+static int chKing(const ChPos& p, int col) { for (int i = 0; i < 64; i++) if (p.b[i] == (col ? -6 : 6)) return i; return -1; }
+static bool chInCheck(const ChPos& p, int col) { int k = chKing(p, col); return k >= 0 && chAttacked(p, k, !col); }
+static void chApply(ChPos& p, const ChMove& m) {
+    int pc = p.b[m.f], col = pc > 0 ? 0 : 1, ap = abs(pc);
+    int cap = p.b[m.t];
+    p.b[m.t] = pc; p.b[m.f] = 0;
+    if (ap == 1 && m.t == p.ep) p.b[m.t + (col ? -8 : 8)] = 0;   // en passant
+    if (ap == 1 && (m.t / 8 == 0 || m.t / 8 == 7)) p.b[m.t] = (col ? -1 : 1) * (m.pr ? m.pr : 5);
+    if (ap == 6 && abs(m.t - m.f) == 2) { if (m.t > m.f) { p.b[m.f + 1] = p.b[m.f + 3]; p.b[m.f + 3] = 0; } else { p.b[m.f - 1] = p.b[m.f - 4]; p.b[m.f - 4] = 0; } }
+    p.ep = (ap == 1 && abs(m.t - m.f) == 16) ? (m.f + m.t) / 2 : -1;
+    if (ap == 6) p.cK[col] = p.cQ[col] = false;
+    if (m.f == 0 || m.t == 0) p.cQ[1] = false; if (m.f == 7 || m.t == 7) p.cK[1] = false;
+    if (m.f == 56 || m.t == 56) p.cQ[0] = false; if (m.f == 63 || m.t == 63) p.cK[0] = false;
+    (void)cap; p.turn = !col;
+}
+static void chGen(const ChPos& p, std::vector<ChMove>& out, bool legalOnly = true) {
+    int col = p.turn, sg = col ? -1 : 1;
+    std::vector<ChMove> ps;
+    auto add = [&](int f, int t) { ps.push_back({(int8_t)f, (int8_t)t, 0}); };
+    for (int i = 0; i < 64; i++) {
+        int v = p.b[i] * sg; if (v <= 0) continue;
+        int r = i / 8, c = i % 8;
+        if (v == 1) {
+            int dir = col ? 1 : -1, r1 = r + dir;
+            if (r1 < 0 || r1 > 7) continue;
+            if (!p.b[r1 * 8 + c]) { add(i, r1 * 8 + c); int start = col ? 1 : 6; if (r == start && !p.b[(r1 + dir) * 8 + c]) add(i, (r1 + dir) * 8 + c); }
+            for (int dc = -1; dc <= 1; dc += 2) { int cc = c + dc; if (cc < 0 || cc > 7) continue; int t = r1 * 8 + cc; if ((p.b[t] * sg < 0) || t == p.ep) add(i, t); }
+        } else if (v == 2 || v == 6) {
+            static const int kn[8][2] = {{1, 2}, {2, 1}, {-1, 2}, {-2, 1}, {1, -2}, {2, -1}, {-1, -2}, {-2, -1}};
+            static const int kg[8][2] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
+            for (int k = 0; k < 8; k++) { int rr = r + (v == 2 ? kn[k][0] : kg[k][0]), cc = c + (v == 2 ? kn[k][1] : kg[k][1]); if (rr < 0 || rr > 7 || cc < 0 || cc > 7) continue; if (p.b[rr * 8 + cc] * sg > 0) continue; add(i, rr * 8 + cc); }
+            if (v == 6) {
+                int home = col ? 4 : 60;
+                if (i == home && !chAttacked(p, home, !col)) {
+                    if (p.cK[col] && !p.b[home + 1] && !p.b[home + 2] && p.b[home + 3] == sg * 4 && !chAttacked(p, home + 1, !col) && !chAttacked(p, home + 2, !col)) add(i, home + 2);
+                    if (p.cQ[col] && !p.b[home - 1] && !p.b[home - 2] && !p.b[home - 3] && p.b[home - 4] == sg * 4 && !chAttacked(p, home - 1, !col) && !chAttacked(p, home - 2, !col)) add(i, home - 2);
+                }
+            }
+        } else {
+            for (int dr = -1; dr <= 1; dr++) for (int dc = -1; dc <= 1; dc++) {
+                if (!dr && !dc) continue; bool diag = dr && dc;
+                if (v == 3 && !diag) continue; if (v == 4 && diag) continue;
+                int rr = r + dr, cc = c + dc;
+                while (rr >= 0 && rr < 8 && cc >= 0 && cc < 8) { int q = p.b[rr * 8 + cc] * sg; if (q > 0) break; add(i, rr * 8 + cc); if (q < 0) break; rr += dr; cc += dc; }
+            }
+        }
+    }
+    if (!legalOnly) { out = ps; return; }
+    for (auto& m : ps) { ChPos q = p; chApply(q, m); if (!chInCheck(q, col)) out.push_back(m); }
+}
+static int chEval(const ChPos& p) {   // from white's view
+    static const int val[7] = {0, 100, 320, 330, 500, 900, 0};
+    int s = 0;
+    for (int i = 0; i < 64; i++) {
+        int v = p.b[i]; if (!v) continue; int a = abs(v), sg = v > 0 ? 1 : -1, r = i / 8, c = i % 8;
+        int rr = sg > 0 ? 7 - r : r;   // advancement
+        int bonus = 0;
+        if (a == 1) bonus = rr * 8 + ((c == 3 || c == 4) ? 6 : 0);
+        else if (a == 2 || a == 3) bonus = 10 - (abs(3 - c) + abs(3 - r)) * 2 + (abs(c - 3.5) < 2 && abs(r - 3.5) < 2 ? 6 : 0);
+        else if (a == 5) bonus = (c > 1 && c < 6) ? 3 : 0;
+        s += sg * (val[a] + bonus);
+    }
+    return s;
+}
+static int chSearch(const ChPos& p, int depth, int alpha, int beta, long& nodes) {   // negamax, returns score for side to move
+    nodes++;
+    std::vector<ChMove> mv; chGen(p, mv);
+    if (mv.empty()) return chInCheck(p, p.turn) ? -100000 - depth : 0;
+    if (depth == 0) return (p.turn ? -1 : 1) * chEval(p);
+    std::sort(mv.begin(), mv.end(), [&](const ChMove& a, const ChMove& b) { return abs(p.b[a.t]) > abs(p.b[b.t]); });
+    for (auto& m : mv) {
+        ChPos q = p; chApply(q, m);
+        int sc = -chSearch(q, depth - 1, -beta, -alpha, nodes);
+        if (sc >= beta) return beta;
+        if (sc > alpha) alpha = sc;
+        if (nodes > 400000) break;
+    }
+    return alpha;
+}
+static void chCheckEnd() {
+    std::vector<ChMove> mv; chGen(chP, mv);
+    if (mv.empty()) { if (chInCheck(chP, chP.turn)) { chOver = 1; chMsg = chP.turn ? "Checkmate. White wins." : "Checkmate. Black wins."; } else { chOver = 2; chMsg = "Stalemate. It's a draw."; } }
+    else chMsg = chInCheck(chP, chP.turn) ? "Check!" : "";
+}
+static void chSave() {
+    std::string s = std::to_string(chLevel) + " " + std::to_string(chSide) + " " + std::to_string(chP.turn) + " " + std::to_string(chP.ep) + " " + std::to_string(chP.cK[0]) + std::to_string(chP.cK[1]) + std::to_string(chP.cQ[0]) + std::to_string(chP.cQ[1]) + "\n";
+    for (int i = 0; i < 64; i++) s += std::to_string((int)chP.b[i]) + " ";
+    writeFile(DIR_ + "chess.txt", s);
+}
+static void chLoad() {
+    std::string d; if (!readFile(DIR_ + "chess.txt", d)) return;
+    int lv, sd, tn, ep; char fl[8] = {0}; int n = 0;
+    if (sscanf(d.c_str(), "%d %d %d %d %7s%n", &lv, &sd, &tn, &ep, fl, &n) < 5 || strlen(fl) < 4) return;
+    ChPos q; memset(&q, 0, sizeof q); const char* p = d.c_str() + n;
+    for (int i = 0; i < 64; i++) { int v; int k; if (sscanf(p, "%d%n", &v, &k) != 1) return; q.b[i] = (int8_t)v; p += k; }
+    q.turn = tn; q.ep = ep; q.cK[0] = fl[0] == '1'; q.cK[1] = fl[1] == '1'; q.cQ[0] = fl[2] == '1'; q.cQ[1] = fl[3] == '1';
+    chP = q; chLevel = lv; chSide = sd; chHist.clear(); chOver = 0; chSel = -1; chCheckEnd();
+}
+static void chAI() {
+    if (chOver || chP.turn == chSide) return;
+    std::vector<ChMove> mv; chGen(chP, mv); if (mv.empty()) return;
+    int depth = chLevel + 1; long nodes = 0; int best = -1000000; ChMove bm = mv[0];
+    std::sort(mv.begin(), mv.end(), [&](const ChMove& a, const ChMove& b) { return abs(chP.b[a.t]) > abs(chP.b[b.t]); });
+    for (auto& m : mv) {
+        ChPos q = chP; chApply(q, m);
+        int sc = -chSearch(q, depth - 1, -1000000, 1000000, nodes) + (chLevel == 0 ? (int)(SDL_GetTicks() % 60) : 0);
+        if (sc > best) { best = sc; bm = m; }
+    }
+    chHist.push_back(chP); chLast[0] = bm.f; chLast[1] = bm.t; chApply(chP, bm); chCheckEnd(); chSave();
+}
+static int chCell() { return 72; }
+static void chBoardXY(int sq, int& x, int& y) { int r = sq / 8, c = sq % 8; if (chSide) { r = 7 - r; c = 7 - c; } x = 50 + c * 72; y = 48 + r * 72; }
+static void drawChess() {
+    rect(0, 0, W, UIH, Col{38, 36, 34});
+    for (int i = 0; i < 64; i++) {
+        int x, y; chBoardXY(i, x, y); bool lt = ((i / 8) + (i % 8)) % 2 == 0;
+        Col c = lt ? Col{238, 220, 186} : Col{176, 124, 82};
+        if (i == chLast[0] || i == chLast[1]) c = mix(c, Col{255, 230, 80}, 0.45f);
+        rect(x, y, 72, 72, c);
+    }
+    std::vector<ChMove> mv; if (chSel >= 0) chGen(chP, mv);
+    int ks = chInCheck(chP, chP.turn) ? chKing(chP, chP.turn) : -1;
+    if (ks >= 0) { int x, y; chBoardXY(ks, x, y); rect(x, y, 72, 72, Col{230, 70, 60}); }
+    if (chSel >= 0) { int x, y; chBoardXY(chSel, x, y); rect(x, y, 72, 72, Col{90, 180, 255}); }
+    static const char* L = " PNBRQK";
+    for (int i = 0; i < 64; i++) {
+        int v = chP.b[i]; if (!v) continue; int x, y; chBoardXY(i, x, y);
+        bool w = v > 0; char s[2] = {L[abs(v)], 0};
+        disc(x + 36, y + 38, 27, w ? Col{20, 20, 20} : Col{10, 10, 10}, 255);
+        disc(x + 36, y + 36, 26, w ? Col{250, 248, 240} : Col{52, 50, 56}, 255);
+        text(s, F30, x + 36, y + 20, w ? Col{30, 30, 30} : Col{240, 240, 240}, 1);
+    }
+    for (auto& m : mv) if (m.f == chSel) { int x, y; chBoardXY(m.t, x, y); int i = m.t; if (chP.b[m.t]) { bool lt2 = ((i / 8) + (i % 8)) % 2 == 0; ring(x + 36, y + 36, 33, 5, Col{60, 200, 90}, lt2 ? Col{238, 220, 186} : Col{176, 124, 82}); } else disc(x + 36, y + 36, 11, Col{60, 200, 90}, 200); }
+    text("Chess", F44, 700, 52, WHITE);
+    const char* lv[3] = {"Easy", "Medium", "Hard"};
+    text(chOver ? chMsg : (chP.turn == chSide ? "Your move" + (chMsg.empty() ? std::string() : "  -  " + chMsg) : "Thinking..."), F22, 700, 120, chMsg == "Check!" ? Col{255, 120, 100} : Col{210, 210, 210});
+    text("Level", F16, 700, 176, Col{170, 170, 170});
+    for (int i = 0; i < 3; i++) btn(700 + i * 160, 200, 148, 48, lv[i], chLevel == i ? Col{124, 58, 220} : Col{70, 68, 74}, WHITE);
+    text("You play", F16, 700, 270, Col{170, 170, 170});
+    btn(700, 294, 148, 48, "White", chSide == 0 ? Col{124, 58, 220} : Col{70, 68, 74}, WHITE);
+    btn(860, 294, 148, 48, "Black", chSide == 1 ? Col{124, 58, 220} : Col{70, 68, 74}, WHITE);
+    btn(700, 380, 148, 52, "New game", Col{40, 120, 70}, WHITE);
+    btn(860, 380, 148, 52, "Undo", chHist.size() >= 2 ? Col{70, 68, 74} : Col{50, 50, 54}, WHITE);
+    if (chPromoFrom >= 0) {
+        rect(0, 0, W, UIH, Col{0, 0, 0}, 170); rect(300, 240, 680, 170, Col{50, 48, 54});
+        text("Promote pawn to", F22, 640, 256, WHITE, 1);
+        const char* nm[4] = {"Queen", "Rook", "Bishop", "Knight"};
+        for (int i = 0; i < 4; i++) btn(320 + i * 160, 320, 150, 60, nm[i], Col{124, 58, 220}, WHITE);
+    }
+}
+static void chTryMove(int from, int to, int promo) {
+    std::vector<ChMove> mv; chGen(chP, mv);
+    for (auto& m : mv) if (m.f == from && m.t == to) {
+        chHist.push_back(chP); chLast[0] = from; chLast[1] = to;
+        ChMove mm = m; mm.pr = promo; chApply(chP, mm); chSel = -1; chCheckEnd(); chSave(); return;
+    }
+}
+static void chessTap(int x, int y) {
+    if (chPromoFrom >= 0) {
+        for (int i = 0; i < 4; i++) if (inR(x, y, 320 + i * 160, 320, 150, 60)) { static const int pr[4] = {5, 4, 3, 2}; chTryMove(chPromoFrom, chPromoTo, pr[i]); chPromoFrom = -1; }
+        return;
+    }
+    for (int i = 0; i < 3; i++) if (inR(x, y, 700 + i * 160, 200, 148, 48)) { chLevel = i; chSave(); return; }
+    if (inR(x, y, 700, 294, 148, 48)) { chSide = 0; chNew(); chSave(); return; }
+    if (inR(x, y, 860, 294, 148, 48)) { chSide = 1; chNew(); chSave(); return; }
+    if (inR(x, y, 700, 380, 148, 52)) { chNew(); chSave(); return; }
+    if (inR(x, y, 860, 380, 148, 52)) { if (chHist.size() >= 2 && !chOver) { chP = chHist[chHist.size() - 2]; chHist.resize(chHist.size() - 2); chSel = -1; chMsg = ""; chLast[0] = chLast[1] = -1; chSave(); } return; }
+    if (chOver || chP.turn != chSide) return;
+    for (int i = 0; i < 64; i++) {
+        int bx, by; chBoardXY(i, bx, by); if (!inR(x, y, bx, by, 72, 72)) continue;
+        if (chSel >= 0) {
+            std::vector<ChMove> mv; chGen(chP, mv); bool ok = false;
+            for (auto& m : mv) if (m.f == chSel && m.t == i) ok = true;
+            if (ok) {
+                bool pawn = abs(chP.b[chSel]) == 1 && (i / 8 == 0 || i / 8 == 7);
+                if (pawn) { chPromoFrom = chSel; chPromoTo = i; return; }
+                chTryMove(chSel, i, 0); return;
+            }
+        }
+        chSel = (chP.b[i] && (chP.b[i] > 0) == (chP.turn == 0) && chSel != i) ? i : -1;
+        return;
+    }
+}
+static void chessUpdate() { if (!chOver && chP.turn != chSide && chPromoFrom < 0) { static int delay = 0; if (++delay > 12) { delay = 0; chAI(); } } }
+static void chessInit() { static bool first = true; if (first) { first = false; chNew(); chLoad(); } }
+
+// ================================================================ Acrobat Reader (text PDFs, beta)
+#include <zlib.h>
+static std::vector<std::string> pdfLines; static std::string pdfName, pdfMsg; static int pdfScroll = 0, pdfFont = 0, pdfPages = 0; static std::string pdfRaw;
+static bool pdfInflate(const std::string& in, std::string& out) {
+    z_stream z; memset(&z, 0, sizeof z); if (inflateInit(&z) != Z_OK) return false;
+    z.next_in = (Bytef*)in.data(); z.avail_in = (uInt)in.size(); char buf[32768]; int r;
+    do { z.next_out = (Bytef*)buf; z.avail_out = sizeof buf; r = inflate(&z, Z_NO_FLUSH); if (r != Z_OK && r != Z_STREAM_END) break; out.append(buf, sizeof buf - z.avail_out); if (out.size() > 20000000) break; } while (r != Z_STREAM_END);
+    inflateEnd(&z); return !out.empty();
+}
+static std::string pdfText(const std::string& c) {
+    std::string o; size_t p = 0;
+    while (true) {
+        size_t b = c.find("BT", p); if (b == std::string::npos) break;
+        size_t e = c.find("ET", b); if (e == std::string::npos) e = c.size();
+        std::string seg = c.substr(b + 2, e - b - 2);
+        for (size_t i = 0; i < seg.size(); i++) {
+            char ch = seg[i];
+            if (ch == '(') {
+                int depth = 1; i++;
+                while (i < seg.size() && depth > 0) {
+                    char d = seg[i];
+                    if (d == '\\' && i + 1 < seg.size()) { char n = seg[++i]; if (n == 'n') o += '\n'; else if (n >= '0' && n <= '7') { int v = n - '0'; int k = 0; while (k < 2 && i + 1 < seg.size() && seg[i + 1] >= '0' && seg[i + 1] <= '7') { v = v * 8 + seg[++i] - '0'; k++; } if (v >= 32 && v < 127) o += (char)v; else if (v == 146 || v == 147 || v == 148) o += '\''; } else if (n != '\r' && n != '\n') o += n; }
+                    else if (d == '(') { depth++; o += d; } else if (d == ')') { if (--depth > 0) o += d; } else o += d;
+                    i++;
+                }
+                i--;
+            } else if (ch == '[') { }
+            else if (ch == '-' || (ch >= '0' && ch <= '9')) { size_t j = i; while (j < seg.size() && (seg[j] == '-' || seg[j] == '.' || (seg[j] >= '0' && seg[j] <= '9'))) j++; if (j > i && j < seg.size() && seg[j - 1] != '-' ) { double v = atof(seg.substr(i, j - i).c_str()); if (v < -200 && !o.empty() && o.back() != ' ' && o.back() != '\n') o += ' '; } if (j > i) i = j - 1; }
+            else if ((ch == 'T' && i + 1 < seg.size() && (seg[i + 1] == 'd' || seg[i + 1] == 'D' || seg[i + 1] == '*')) || ch == '\'' || ch == '"') { if (!o.empty() && o.back() != '\n') o += '\n'; }
+        }
+        if (!o.empty() && o.back() != '\n') o += '\n';
+        p = e + 2;
+    }
+    return o;
+}
+static void pdfOpen(const std::string& path) {
+    pdfRaw = path; pdfLines.clear(); pdfMsg.clear(); pdfScroll = 0; pdfPages = 0; pdfName = fmBase(path);
+    std::string raw; if (!readRaw(path, raw)) { pdfMsg = "Couldn't open this file."; return; }
+    if (raw.compare(0, 4, "%PDF") != 0) { pdfMsg = "This isn't a PDF."; return; }
+    if (raw.find("/Encrypt") != std::string::npos) { pdfMsg = "This PDF is password-protected. Acrobat Reader beta can't open it."; return; }
+    std::string all; size_t p = 0; int streams = 0;
+    while (true) {
+        size_t s = raw.find("stream", p); if (s == std::string::npos) break;
+        if (s >= 3 && raw.compare(s - 3, 3, "end") == 0) { p = s + 6; continue; }
+        size_t ds = raw.rfind("obj", s); std::string dict = ds == std::string::npos ? "" : raw.substr(ds, s - ds);
+        size_t b = s + 6; if (b < raw.size() && raw[b] == '\r') b++; if (b < raw.size() && raw[b] == '\n') b++;
+        size_t e = raw.find("endstream", b); if (e == std::string::npos) break;
+        p = e + 9;
+        if (dict.find("/Type/Page") != std::string::npos && dict.find("/Type/Pages") == std::string::npos) pdfPages++;
+        if (dict.find("/Image") != std::string::npos || dict.find("/FontFile") != std::string::npos || dict.find("/Length1") != std::string::npos || dict.find("/XRef") != std::string::npos || dict.find("/ObjStm") != std::string::npos) continue;
+        std::string data = raw.substr(b, e - b), dec;
+        if (dict.find("FlateDecode") != std::string::npos) { if (!pdfInflate(data, dec)) continue; } else dec = data;
+        if (dec.find("BT") == std::string::npos) continue;
+        std::string t = pdfText(dec); if (t.empty()) continue;
+        all += t + "\n"; if (++streams > 3000) break;
+    }
+    std::string cur; 
+    for (char c : all) { if (c == '\n') { for (auto& l : wrapText(cur.empty() ? " " : cur, pdfFont ? F30 : F22, 1140)) pdfLines.push_back(l); cur.clear(); } else if ((unsigned char)c >= 32 && (unsigned char)c < 127) cur += c; }
+    if (pdfLines.empty()) pdfMsg = "No readable text found. This PDF may be scanned images or use embedded fonts the beta reader can't decode.";
+}
+static void pdfInit() { if (!gPdfOpenPath.empty()) { std::string p = gPdfOpenPath; gPdfOpenPath.clear(); pdfOpen(p); } }
+static void drawPdf() {
+    rect(0, 0, W, UIH, Col{82, 86, 89});
+    if (pdfName.empty()) {
+        text("Acrobat Reader", F44, 640, 220, WHITE, 1); text("Open a PDF from Files to read it here.", F22, 640, 290, Col{220, 220, 220}, 1);
+        btn(540, 350, 200, 56, "Open Files", Col{200, 30, 40}, WHITE); return;
+    }
+    rect(0, 40, W, 50, Col{50, 52, 54});
+    text(pdfName + (pdfPages ? "   -   " + std::to_string(pdfPages) + " pages" : ""), F22, 20, 50, WHITE);
+    btn(W - 250, 46, 100, 38, "A-", Col{80, 82, 86}, WHITE); btn(W - 140, 46, 100, 38, "A+", Col{80, 82, 86}, WHITE);
+    rect(60, 100, W - 120, UIH - 100, Col{252, 252, 250});
+    int lh = pdfFont ? 40 : 30, rows = (UIH - 120) / lh, total = (int)pdfLines.size();
+    pdfScroll = std::max(0, std::min(pdfScroll, std::max(0, total - rows)));
+    if (!pdfMsg.empty()) { for (auto& l : wrapText(pdfMsg, F22, 1000)) { static int yy; (void)yy; } int y = 140; for (auto& l : wrapText(pdfMsg, F22, 1000)) { text(l, F22, 100, y, Col{60, 60, 60}); y += 32; } return; }
+    for (int i = 0; i < rows && pdfScroll + i < total; i++) text(pdfLines[pdfScroll + i], pdfFont ? F30 : F22, 90, 110 + i * lh, Col{30, 30, 30});
+    int sbH = std::max(30, (UIH - 100) * rows / std::max(rows, total)); int sbY = 100 + (total > rows ? (UIH - 100 - sbH) * pdfScroll / (total - rows) : 0);
+    rect(W - 54, sbY, 8, sbH, Col{150, 150, 150});
+}
+static void pdfTap(int x, int y) {
+    if (pdfName.empty()) { if (inR(x, y, 540, 350, 200, 56)) { pendingApp = A_FILES; closeApp(false); } return; }
+    int old = pdfFont;
+    if (inR(x, y, W - 250, 46, 100, 38)) pdfFont = 0; else if (inR(x, y, W - 140, 46, 100, 38)) pdfFont = 1;
+    if (old != pdfFont) pdfOpen(pdfRaw);
+}
+static void pdfDrag(int, int dy) { pdfScroll -= dy / (pdfFont ? 40 : 30); }
+
+// ================================================================ Camera (Joy-Con IR sensor, beta)
+static SDL_Texture* camTex = nullptr; static bool camOn = false, camTint = true, camInv = false; static std::string camMsg; static u8* camBuf = nullptr; static int camShots = 0; static float camFlash = 0;
+#ifndef WNX_HOST
+static IrsIrCameraHandle camH; static bool camIrsInit = false;
+#endif
+static void camStop() {
+#ifndef WNX_HOST
+    if (camOn) irsStopImageProcessor(camH);
+#endif
+    camOn = false;
+}
+static void camStart() {
+    camMsg.clear();
+#ifndef WNX_HOST
+    if (!camIrsInit) { if (R_FAILED(irsInitialize())) { camMsg = "The IR sensor service isn't available."; return; } camIrsInit = true; }
+    if (!camBuf) camBuf = (u8*)aligned_alloc(0x1000, 0x14000);
+    if (!camBuf) { camMsg = "Out of memory."; return; }
+    memset(camBuf, 0, 0x14000);
+    Result rc = irsGetIrCameraHandle(&camH, HidNpadIdType_No1);
+    if (R_FAILED(rc)) rc = irsGetIrCameraHandle(&camH, HidNpadIdType_Handheld);
+    if (R_FAILED(rc)) { camMsg = "No IR camera found. Attach the right Joy-Con."; return; }
+    IrsImageTransferProcessorConfig cfg; irsGetDefaultImageTransferProcessorConfig(&cfg);
+    cfg.format = IrsImageTransferProcessorFormat_320x240;
+    rc = irsRunImageTransferProcessor(camH, &cfg, 0x14000);
+    if (R_FAILED(rc)) { camMsg = "Couldn't start the IR camera. Attach the right Joy-Con."; return; }
+    camOn = true;
+#else
+    camMsg = "The IR camera only works on a real Switch with the right Joy-Con attached.";
+#endif
+}
+static void camUpdate() {
+#ifndef WNX_HOST
+    if (!camOn || !camBuf) return;
+    IrsImageTransferProcessorState st;
+    if (R_FAILED(irsGetImageTransferProcessorState(camH, camBuf, 0x14000, &st))) { camMsg = "Lost the IR camera."; camStop(); return; }
+    if (!camTex) camTex = SDL_CreateTexture(gR, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, 320, 240);
+    if (!camTex) return;
+    static u32 px[320 * 240];
+    for (int i = 0; i < 320 * 240; i++) { int v = camBuf[i]; if (camInv) v = 255 - v; v = std::min(255, v * 3 / 2); px[i] = camTint ? (0xFF000000u | ((u32)v << 8) | ((u32)(v / 4) << 16) | (u32)(v / 4)) : (0xFF000000u | v | (v << 8) | (v << 16)); }
+    SDL_UpdateTexture(camTex, nullptr, px, 320 * 4);
+#endif
+}
+static void camSnap() {
+    if (!camTex) { camMsg = "Nothing to capture yet."; return; }
+    mkdir("sdmc:/Pictures", 0777);
+    SDL_Surface* s = SDL_CreateRGBSurfaceWithFormat(0, 320, 240, 32, SDL_PIXELFORMAT_RGBA32);
+    if (!s) return;
+    SDL_Texture* old = SDL_GetRenderTarget(gR);
+    SDL_Texture* rt = SDL_CreateTexture(gR, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, 320, 240);
+    if (rt) { SDL_SetRenderTarget(gR, rt); SDL_RenderCopy(gR, camTex, nullptr, nullptr); SDL_RenderReadPixels(gR, nullptr, SDL_PIXELFORMAT_RGBA32, s->pixels, s->pitch); SDL_SetRenderTarget(gR, old); SDL_DestroyTexture(rt); }
+    char n[96]; snprintf(n, sizeof n, "sdmc:/Pictures/IR_%04d%02d%02d_%02d%02d%02d.png", gNow.y, gNow.mo, gNow.d, gNow.h, gNow.mi, gNow.s);
+    if (IMG_SavePNG(s, n) == 0) { camShots++; camFlash = 1; toast("Saved to Pictures"); } else camMsg = "Couldn't save the picture.";
+    SDL_FreeSurface(s);
+}
+static void camInit() { camStart(); }
+static void drawCamera() {
+    rect(0, 0, W, UIH, Col{16, 18, 20});
+    if (camTex && camOn) { SDL_Rect r{320, 90, 640, 480}; SDL_RenderCopy(gR, camTex, nullptr, &r); }
+    else { rect(320, 90, 640, 480, Col{30, 32, 36}); text(camMsg.empty() ? "Starting..." : camMsg, F22, 640, 320, Col{220, 220, 220}, 1); }
+    if (camFlash > 0) { rect(320, 90, 640, 480, WHITE, (int)(camFlash * 200)); camFlash -= 0.06f; }
+    text("Camera", F30, 40, 50, WHITE); text("IR beta", F16, 40, 96, Col{170, 170, 170});
+    btn(40, 160, 220, 56, camTint ? "Night green: on" : "Night green: off", Col{60, 64, 72}, WHITE);
+    btn(40, 230, 220, 56, camInv ? "Invert: on" : "Invert: off", Col{60, 64, 72}, WHITE);
+    btn(40, 300, 220, 56, camOn ? "Stop" : "Start", Col{60, 64, 72}, WHITE);
+    disc(640, 622, 34, WHITE); disc(640, 622, 28, Col{200, 40, 50});
+    if (camShots) text(std::to_string(camShots) + " saved", F16, 700, 612, Col{170, 170, 170});
+}
+static void camTap(int x, int y) {
+    if (inR(x, y, 40, 160, 220, 56)) camTint = !camTint;
+    else if (inR(x, y, 40, 230, 220, 56)) camInv = !camInv;
+    else if (inR(x, y, 40, 300, 220, 56)) { if (camOn) camStop(); else camStart(); }
+    else if (inR(x - 606, y - 588, 0, 0, 68, 68) || (x > 606 && x < 674 && y > 588 && y < 656)) camSnap();
+}
+
 // ---------------------------------------------------------------- live tiles
 static void liveTick() {
     static Uint32 last = 0; static bool first = true;
     Uint32 now = SDL_GetTicks();
     if (!first && now - last < 60000) return;
     first = false; last = now;
-    calLoad();
+    calEnsure();
     if (!gWx.have && !gWxHaveLoc) wxLoad();
     if (gWxHaveLoc || gLocOK) wxFetch(false);
     if (gMAddr.empty()) mailLoadAcct();
@@ -6216,9 +8253,7 @@ static bool liveTileDraw(const Tile& t, SDL_Rect r, float phase, bool& drewAll) 
             text(dn, F22, cx + 14, cy + 82, WHITE);
             text(MONTHS[gNow.mo - 1], F16, cx + 16, cy + 114, WHITE, 0, 200);
             if (wide) {
-                std::string key = calKey(gNow.y, gNow.mo, gNow.d);
-                auto it = calEv.find(key);
-                std::string ev = (it != calEv.end() && !it->second.empty()) ? it->second[0] : "No events today";
+                std::string ev = calTileLine();
                 rect(cx + 170, cy + 16, 2, r.h - 32, WHITE, 90);
                 auto L = wrapText(ev, F22, r.w - 210);
                 text("Today", F16, cx + 190, cy + 16, WHITE, 0, 190);
@@ -6305,6 +8340,7 @@ static void appTouch(int phase, int x, int y) {
         case A_MAIL: mailTouch(phase, x, y); break;
         case A_NEWS: gNewsTx = x; break;
         case A_ROBLOX: robloxTouch(phase, x, y); break;
+        case A_SETTINGS: if (gSetup) authTouch(phase, x, y); break;
         // @@TOUCH@@
         default: break;
     }
@@ -6417,7 +8453,8 @@ static void hbOpenOriginal() {
 static void settingsTap(int x, int y, const Theme& th);
 static void appUpdate(float dt) {
     netTick(SDL_GetTicks()); netPoll();
-    if (uiState == 2) liveTick();
+    if (uiState == 2) { liveTick(); calTick(); }
+    filesUpdate(dt); photosUpdate(dt); authUpdate(dt); radioUpdate(dt); if (curApp == A_CHESS) chessUpdate(); if (curApp == A_CAMERA) camUpdate(); else if (camOn) camStop(); if (phDelArm > 0) phDelArm -= dt;
     if (gHbConfirm > 0) { gHbConfirm -= dt; if (gHbConfirm <= 0) gHbWhich = 0; }
     if (curApp == A_MINES && appDir == 0 && mState == 1) mTime += dt;
     if (curApp == A_SNAKE && appDir == 0 && sState == 1) {
@@ -6442,6 +8479,368 @@ static void setRow(int y, const char* title, const char* desc, bool on) {
     if (desc && *desc) text(desc, F16, 500, y + 30, Col{120, 120, 128});
     setToggle(1130, y + 2, on);
 }
+// ================================================================ sign-in options (PIN, password, picture, pattern, button code), accounts, lock-screen widgets
+struct Gest { int t = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0; };   // t: 0 tap, 1 line, 2 circle (x1,y1 = centre, x2 = radius)
+static int gLockMethod = 0, gLockLen = 0;           // 0 none, 1 PIN, 2 password, 3 picture, 4 pattern, 5 button code
+static std::string gLockHash;
+static std::vector<Gest> gLockPic3;
+static int gAuthMode = 0, gAuthMethod = 0, gSetupTarget = 0, gAuthFails = 0, gAuthPatCur = 4;
+static std::string gAuthIn, gAuthTmp, gAuthMsg;
+static std::vector<int> gAuthPat; static std::vector<std::string> gAuthBtns;
+static std::vector<Gest> gAuthG, gAuthGTmp;
+static std::vector<std::pair<int, int>> gAuthStroke;
+static float gAuthShake = 0; static Uint32 gAuthLockUntil = 0;
+static bool gAuthDown = false; static int gAuthX0 = 0, gAuthY0 = 0; static bool gAuthMoved = false;
+static const char* LOCKN[6] = {"None", "PIN", "Password", "Picture password", "Pattern", "Button code"};
+static std::string lockHash(const std::string& s) {
+    unsigned long long h = 1469598103934665603ULL;
+    std::string t = "winnx:" + s;
+    for (unsigned char c : t) { h ^= c; h *= 1099511628211ULL; }
+    char b[24]; snprintf(b, sizeof b, "%016llx", h); return b;
+}
+static void lockSave() {
+    std::string o = "method=" + std::to_string(gLockMethod) + "\nlen=" + std::to_string(gLockLen) + "\nhash=" + gLockHash + "\npic=";
+    for (auto& g : gLockPic3) o += std::to_string(g.t) + "," + std::to_string(g.x1) + "," + std::to_string(g.y1) + "," + std::to_string(g.x2) + "," + std::to_string(g.y2) + ";";
+    o += "\nname=" + gUser + "\nstatus=" + gUserStatus + "\ninitial=" + std::to_string(gAvInitial ? 1 : 0) + "\n";
+    writeFile(DIR_ + "lock.ini", o);
+}
+static void lockLoad() {
+    std::string d;
+    if (!readFile(DIR_ + "lock.ini", d)) return;
+    size_t p = 0;
+    while (p < d.size()) {
+        size_t e = d.find('\n', p); if (e == std::string::npos) e = d.size();
+        std::string l = d.substr(p, e - p); p = e + 1;
+        size_t q = l.find('='); if (q == std::string::npos) continue;
+        std::string k = l.substr(0, q), v = l.substr(q + 1);
+        if (k == "method") gLockMethod = std::max(0, std::min(5, atoi(v.c_str())));
+        else if (k == "len") gLockLen = atoi(v.c_str());
+        else if (k == "hash") gLockHash = v;
+        else if (k == "name") { if (!v.empty()) gUser = v; }
+        else if (k == "status") gUserStatus = v;
+        else if (k == "initial") gAvInitial = atoi(v.c_str()) != 0;
+        else if (k == "pic") {
+            gLockPic3.clear(); size_t a = 0;
+            while (a < v.size()) { size_t s2 = v.find(';', a); if (s2 == std::string::npos) break; Gest g; sscanf(v.substr(a, s2 - a).c_str(), "%d,%d,%d,%d,%d", &g.t, &g.x1, &g.y1, &g.x2, &g.y2); gLockPic3.push_back(g); a = s2 + 1; }
+        }
+    }
+    if (gLockMethod == 3 && gLockPic3.size() != 3) gLockMethod = 0;
+    if (gLockMethod != 0 && gLockMethod != 3 && gLockHash.empty()) gLockMethod = 0;
+}
+static float gdist(int x1, int y1, int x2, int y2) { float dx = (float)(x1 - x2), dy = (float)(y1 - y2); return sqrtf(dx * dx + dy * dy); }
+static Gest gestClassify(const std::vector<std::pair<int, int>>& st) {
+    Gest g;
+    if (st.empty()) return g;
+    float len = 0; int mnx = 9999, mxx = -9999, mny = 9999, mxy = -9999;
+    for (size_t i = 0; i < st.size(); i++) {
+        if (i) len += gdist(st[i - 1].first, st[i - 1].second, st[i].first, st[i].second);
+        mnx = std::min(mnx, st[i].first); mxx = std::max(mxx, st[i].first); mny = std::min(mny, st[i].second); mxy = std::max(mxy, st[i].second);
+    }
+    auto s = st.front(), e = st.back();
+    if (len < 30) { g.t = 0; g.x1 = (mnx + mxx) / 2; g.y1 = (mny + mxy) / 2; return g; }
+    float se = gdist(s.first, s.second, e.first, e.second);
+    if (len > 150 && se < 0.3f * len && mxx - mnx > 40 && mxy - mny > 40) { g.t = 2; g.x1 = (mnx + mxx) / 2; g.y1 = (mny + mxy) / 2; g.x2 = ((mxx - mnx) + (mxy - mny)) / 4; return g; }
+    g.t = 1; g.x1 = s.first; g.y1 = s.second; g.x2 = e.first; g.y2 = e.second; return g;
+}
+static bool gestMatch(const Gest& a, const Gest& b) {
+    if (a.t != b.t) return false;
+    if (a.t == 0) return gdist(a.x1, a.y1, b.x1, b.y1) <= 70;
+    if (a.t == 1) return gdist(a.x1, a.y1, b.x1, b.y1) <= 100 && gdist(a.x2, a.y2, b.x2, b.y2) <= 100;
+    return gdist(a.x1, a.y1, b.x1, b.y1) <= 90 && abs(a.x2 - b.x2) <= std::max(50, b.x2 / 2);
+}
+static std::string authSecret() { // the typed/drawn secret as a string, for the non-picture methods
+    std::string s;
+    if (gAuthMethod == 1 || gAuthMethod == 2) return gAuthIn;
+    if (gAuthMethod == 4) { for (int d : gAuthPat) s += std::to_string(d) + "-"; return s; }
+    for (auto& b : gAuthBtns) s += b + ","; return s;
+}
+static void authPwEnter();
+static void authReset() { gAuthIn.clear(); gAuthPat.clear(); gAuthBtns.clear(); gAuthG.clear(); gAuthStroke.clear(); gAuthPatCur = 4; gAuthDown = false; if (kbOpen && kbTarget == 99) kbOpen = false; }
+static void authBegin(int mode, int method) {
+    gAuthMode = mode; gAuthMethod = method; gAuthMsg.clear(); authReset();
+    if (method == 2) { openKbStr(&gAuthIn, 40, authPwEnter); }
+}
+static void authSuccess() { gAuth = false; authReset(); gAuthFails = 0; lockAnim = true; introT = 0; kbOpen = false; }
+static void authFail() {
+    gAuthShake = 0.5f; gAuthFails++; authReset();
+    if (gAuthMethod == 2) openKbStr(&gAuthIn, 40, authPwEnter);
+    if (gAuthFails >= 5) { gAuthLockUntil = SDL_GetTicks() + 15000; gAuthFails = 0; }
+    gAuthMsg = "That didn't work. Try again.";
+}
+static void authFinishSetup() {
+    gSetup = false; kbOpen = false; authReset();
+    lockSave(); saveCfg();
+}
+static void authSubmit(bool pic) {
+    if (SDL_GetTicks() < gAuthLockUntil) return;
+    if (gAuthMode == 0) { // verify the current sign-in
+        bool ok;
+        if (gAuthMethod == 3) { ok = gAuthG.size() == 3 && gLockPic3.size() == 3; for (int i = 0; ok && i < 3; i++) ok = gestMatch(gAuthG[i], gLockPic3[i]); }
+        else ok = lockHash(authSecret()) == gLockHash;
+        if (!ok) { authFail(); return; }
+        if (!gSetup) { authSuccess(); return; }
+        if (gSetupTarget == 0) { gLockMethod = 0; gLockHash.clear(); gLockLen = 0; gLockPic3.clear(); authFinishSetup(); toast("Sign-in turned off"); return; }
+        authBegin(1, gSetupTarget); gAuthMsg = "Create your new sign-in";
+        return;
+    }
+    if (gAuthMode == 1) {
+        if (pic) { gAuthGTmp = gAuthG; } else {
+            if ((gAuthMethod == 1 && gAuthIn.size() < 4) || (gAuthMethod == 2 && gAuthIn.size() < 4) || (gAuthMethod == 4 && gAuthPat.size() < 4) || (gAuthMethod == 5 && gAuthBtns.size() < 4)) { gAuthMsg = gAuthMethod == 2 ? "Use at least 4 characters" : "Use at least 4"; authReset(); if (gAuthMethod == 2) openKbStr(&gAuthIn, 40, authPwEnter); return; }
+            gAuthTmp = authSecret();
+        }
+        int m = gAuthMethod; authBegin(2, m); gAuthMsg = "Do it once more to confirm";
+        return;
+    }
+    // confirm
+    bool same;
+    if (pic) { same = gAuthG.size() == 3 && gAuthGTmp.size() == 3; for (int i = 0; same && i < 3; i++) same = gestMatch(gAuthG[i], gAuthGTmp[i]); }
+    else same = authSecret() == gAuthTmp;
+    if (!same) { int m = gAuthMethod; authBegin(1, m); gAuthMsg = "They didn't match. Start again"; gAuthShake = 0.5f; return; }
+    gLockMethod = gAuthMethod;
+    if (pic) { gLockPic3 = gAuthGTmp; gLockHash.clear(); gLockLen = 0; }
+    else { gLockHash = lockHash(gAuthTmp); gLockLen = gAuthMethod == 1 ? (int)gAuthIn.size() : gAuthMethod == 4 ? (int)gAuthPat.size() : gAuthMethod == 5 ? (int)gAuthBtns.size() : 0; gLockPic3.clear(); }
+    authFinishSetup(); toast("Sign-in saved");
+}
+static void authCancel() {
+    if (gSetup) { gSetup = false; authReset(); kbOpen = false; return; }
+    gAuth = false; authReset(); kbOpen = false;
+}
+static void authPwEnter() { authSubmit(false); }
+static const int PAT_CX = 640, PAT_CY = 410, PAT_SP = 110;
+static void patDot(int i, int& x, int& y) { x = PAT_CX + (i % 3 - 1) * PAT_SP; y = PAT_CY + (i / 3 - 1) * PAT_SP; }
+static int patHit(int x, int y) { for (int i = 0; i < 9; i++) { int dx, dy; patDot(i, dx, dy); if (gdist(x, y, dx, dy) < 46) return i; } return -1; }
+static void patAdd(int d) {
+    for (int v : gAuthPat) if (v == d) return;
+    gAuthPat.push_back(d);
+}
+static const char* BTN_NAMES[12] = {"A", "B", "X", "Y", "Up", "Down", "Left", "Right", "L", "R", "ZL", "ZR"};
+static const u64 BTN_MASK[12] = {HidNpadButton_A, HidNpadButton_B, HidNpadButton_X, HidNpadButton_Y, HidNpadButton_AnyUp, HidNpadButton_AnyDown, HidNpadButton_AnyLeft, HidNpadButton_AnyRight, HidNpadButton_L, HidNpadButton_R, HidNpadButton_ZL, HidNpadButton_ZR};
+static void authKeys(u64 kd) {
+    if (!(gAuth || gSetup) || !kd) return;
+    if (gAuthMethod == 5) {
+        if (kd & HidNpadButton_Minus) { if (!gAuthBtns.empty()) gAuthBtns.pop_back(); return; }
+        if ((kd & HidNpadButton_Plus) && gAuthMode != 0) { authSubmit(false); return; }
+        for (int i = 0; i < 12; i++) if (kd & BTN_MASK[i]) {
+            gAuthBtns.push_back(BTN_NAMES[i]);
+            if (gAuthMode == 0 && (int)gAuthBtns.size() >= std::max(4, gLockLen)) authSubmit(false);
+            return;
+        }
+    } else if (gAuthMethod == 4) {
+        int cx = gAuthPatCur % 3, cy = gAuthPatCur / 3;
+        if (kd & HidNpadButton_AnyLeft) cx = std::max(0, cx - 1);
+        if (kd & HidNpadButton_AnyRight) cx = std::min(2, cx + 1);
+        if (kd & HidNpadButton_AnyUp) cy = std::max(0, cy - 1);
+        if (kd & HidNpadButton_AnyDown) cy = std::min(2, cy + 1);
+        gAuthPatCur = cy * 3 + cx;
+        if (kd & HidNpadButton_A) patAdd(gAuthPatCur);
+        if (kd & HidNpadButton_B) gAuthPat.clear();
+        if (kd & HidNpadButton_Plus) { if (gAuthPat.size() >= 4) authSubmit(false); else if (!gAuthPat.empty()) { gAuthMsg = "Connect at least 4 dots"; gAuthPat.clear(); } }
+    }
+}
+static void authUpdate(float dt) {
+    if (gAuthShake > 0) gAuthShake -= dt;
+    // the left stick also moves the pattern cursor
+    static bool stickHeld = false;
+    if ((gAuth || gSetup) && gAuthMethod == 4) {
+#ifndef WNX_HOST
+        HidAnalogStickState st = padGetStickPos(&gPad, 0);
+#else
+        struct { int x, y; } st = {0, 0};
+#endif
+        bool act = abs(st.x) > 16000 || abs(st.y) > 16000;
+        if (act && !stickHeld) {
+            u64 k = 0;
+            if (abs(st.x) > abs(st.y)) k = st.x > 0 ? HidNpadButton_Right : HidNpadButton_Left; else k = st.y > 0 ? HidNpadButton_Up : HidNpadButton_Down;
+            authKeys(k);
+        }
+        stickHeld = act;
+    }
+}
+static void authTouch(int phase, int x, int y) {
+    if (!(gAuth || gSetup)) return;
+    if (kbOpen && y >= KBTOP && gAuthMethod == 2) {
+        if (phase == 0) { buildKeys(); int k = kbHit(x, y); if (k >= 0) { if (gKeys[k].act == "ENTER") authSubmit(false); else kbAction(gKeys[k].act); } }
+        return;
+    }
+    if (phase == 0) { gAuthDown = true; gAuthMoved = false; gAuthX0 = x; gAuthY0 = y; gAuthStroke.clear(); gAuthStroke.push_back({x, y}); if (gAuthMethod == 4) { int d = patHit(x, y); if (d >= 0) patAdd(d); } return; }
+    if (phase == 1) {
+        if (!gAuthDown) return;
+        if (gdist(x, y, gAuthX0, gAuthY0) > 14) gAuthMoved = true;
+        gAuthStroke.push_back({x, y});
+        if (gAuthMethod == 4) { int d = patHit(x, y); if (d >= 0) patAdd(d); }
+        return;
+    }
+    if (!gAuthDown) return;
+    gAuthDown = false;
+    bool tap = !gAuthMoved;
+    // ---- buttons common to every method
+    if (tap) {
+        if (inR(x, y, W / 2 - 100, UIH - 66, 200, 54)) { authCancel(); return; }
+    }
+    if (gAuthMethod == 1 && tap) {
+        for (int i = 0; i < 12; i++) {
+            int c = i % 3, r = i / 3, kx = W / 2 - 188 + c * 128, ky = 252 + r * 70;
+            if (!inR(x, y, kx, ky, 120, 62)) continue;
+            int d = i == 9 ? -1 : (i == 10 ? 0 : (i == 11 ? -2 : i + 1));
+            if (d >= 0 && gAuthIn.size() < 12) { gAuthIn += (char)('0' + d); if (gAuthMode == 0 && (int)gAuthIn.size() >= std::max(4, gLockLen)) authSubmit(false); }
+            else if (d == -2 && !gAuthIn.empty()) gAuthIn.pop_back();
+            else if (d == -1 && gAuthMode != 0) authSubmit(false);   // OK key (not needed when signing in)
+            else if (d == -1 && gAuthMode == 0) authSubmit(false);
+            return;
+        }
+    }
+    if (gAuthMethod == 2 && tap && inR(x, y, W / 2 - 100, 300, 200, 54)) { authSubmit(false); return; }
+    if (gAuthMethod == 4) {
+        if (!gAuthPat.empty() && !tap) {
+            if (gAuthPat.size() >= 4) authSubmit(false); else { gAuthMsg = "Connect at least 4 dots"; gAuthPat.clear(); gAuthShake = 0.4f; }
+        } else if (tap) gAuthPat.clear();
+        return;
+    }
+    if (gAuthMethod == 3) {
+        if (y < 100) return;
+        gAuthG.push_back(gestClassify(gAuthStroke));
+        gAuthStroke.clear();
+        if (gAuthG.size() >= 3) authSubmit(true);
+        return;
+    }
+}
+static void drawGestSample(const Gest& g, Col c) {
+    if (g.t == 0) { ring(g.x1, g.y1, 20, 4, c, Col{0, 0, 0}); }
+    else if (g.t == 1) { line(g.x1, g.y1, g.x2, g.y2, 5, c); disc(g.x1, g.y1, 9, c); tri((float)g.x2, (float)g.y2, g.x2 + (g.x1 < g.x2 ? -22.0f : 22.0f), g.y2 - 14.0f, g.x2 + (g.x1 < g.x2 ? -22.0f : 22.0f), g.y2 + 14.0f, c); }
+    else ring(g.x1, g.y1, std::max(12, g.x2), 4, c, Col{0, 0, 0});
+}
+static void drawAuthUI(bool lockBg) {
+    int shake = gAuthShake > 0 ? (int)(sinf(gAuthShake * 60) * 14 * (gAuthShake / 0.5f)) : 0;
+    if (lockBg) rect(0, 0, W, UIH, BLACK, gAuthMethod == 3 ? 40 : 150); else rect(0, 0, W, UIH, Col{18, 20, 26}, 255);
+    int cxm = W / 2 + shake;
+    drawAvatar(cxm - 40, 20, 80);
+    text(gUser, F30, cxm, 104, WHITE, 1);
+    const char* mt[6] = {"", "Enter your PIN", "Enter your password", "Draw your picture gestures", "Draw your pattern or use the D-pad and A", "Press your button code on the Joy-Con"};
+    std::string hint = gAuthMsg;
+    if (hint.empty()) {
+        if (gAuthMode == 0) hint = mt[gAuthMethod];
+        else hint = gAuthMode == 1 ? std::string("New: ") + mt[gAuthMethod] : std::string("Confirm: ") + mt[gAuthMethod];
+    }
+    if (SDL_GetTicks() < gAuthLockUntil) hint = "Too many tries. Wait " + std::to_string((gAuthLockUntil - SDL_GetTicks()) / 1000 + 1) + " seconds";
+    text(hint, F22, cxm, 146, WHITE, 1, 220);
+    if (gAuthMethod == 1) {
+        int n = std::max(4, std::max(gLockLen, (int)gAuthIn.size()));
+        if (gAuthMode != 0) n = std::max(4, (int)gAuthIn.size());
+        for (int i = 0; i < n; i++) { int x = cxm - (n - 1) * 20 + i * 40; if (i < (int)gAuthIn.size()) disc(x, 214, 11, WHITE); else ring(x, 214, 11, 2, WHITE, Col{0, 0, 0}); }
+        for (int i = 0; i < 12; i++) {
+            int c = i % 3, r = i / 3, kx = cxm - 188 + c * 128, ky = 252 + r * 70;
+            std::string l = i == 9 ? "OK" : (i == 10 ? "0" : (i == 11 ? "DEL" : std::to_string(i + 1)));
+            rect(kx, ky, 120, 62, WHITE, 40); text(l, F44, kx + 60, ky + 8, WHITE, 1);
+        }
+    } else if (gAuthMethod == 2) {
+        drawField(W / 2 - 300, 200, 600, 56, &gAuthIn, "Password", F30, DARK, WHITE, WHITE, true);
+        btn(W / 2 - 100, 300, 200, 54, "OK", Col{0, 120, 215}, WHITE);
+    } else if (gAuthMethod == 4) {
+        for (int i = 0; i < 9; i++) {
+            int x, y; patDot(i, x, y);
+            bool on = false; for (int v : gAuthPat) if (v == i) on = true;
+            if (i == gAuthPatCur) ring(x, y, 30, 2, Col{120, 200, 255}, Col{0, 0, 0});
+            disc(x, y, on ? 16 : 10, on ? Col{0, 170, 255} : Col{230, 230, 235});
+        }
+        for (size_t i = 1; i < gAuthPat.size(); i++) { int x1, y1, x2, y2; patDot(gAuthPat[i - 1], x1, y1); patDot(gAuthPat[i], x2, y2); line(x1, y1, x2, y2, 6, Col{0, 170, 255}); }
+        if (gAuthDown && !gAuthPat.empty() && !gAuthStroke.empty()) { int x1, y1; patDot(gAuthPat.back(), x1, y1); line(x1, y1, gAuthStroke.back().first, gAuthStroke.back().second, 4, Col{0, 170, 255}, 150); }
+    } else if (gAuthMethod == 5) {
+        int n = std::max(4, std::max(gLockLen, (int)gAuthBtns.size()));
+        for (int i = 0; i < n; i++) { int x = cxm - (n - 1) * 24 + i * 48; if (i < (int)gAuthBtns.size()) disc(x, 280, 14, WHITE); else ring(x, 280, 14, 2, WHITE, Col{0, 0, 0}); }
+        text("A B X Y, D-pad, L R ZL ZR", F22, cxm, 350, WHITE, 1, 170);
+        text(gAuthMode != 0 ? "Minus deletes the last press, Plus saves it" : "Minus deletes the last press", F16, cxm, 390, WHITE, 1, 150);
+    } else if (gAuthMethod == 3) {
+        text("Gesture " + std::to_string(std::min<size_t>(3, gAuthG.size() + 1)) + " of 3: tap, draw a line or draw a circle", F22, cxm, 190, WHITE, 1, 200);
+        for (auto& g : gAuthG) drawGestSample(g, Col{255, 255, 255});
+        if (gAuthDown) for (size_t i = 1; i < gAuthStroke.size(); i++) line(gAuthStroke[i - 1].first, gAuthStroke[i - 1].second, gAuthStroke[i].first, gAuthStroke[i].second, 5, Col{0, 190, 255});
+    }
+    btn(W / 2 - 100, UIH - 66, 200, 54, "Cancel", Col{70, 74, 86}, WHITE);
+}
+static void authStartSetup(int target) {
+    gSetup = true; gSetupTarget = target; gAuthFails = 0;
+    if (gLockMethod == 0 && target != 0) { authBegin(1, target); gAuthMsg = "Create your new sign-in"; }
+    else if (gLockMethod == 0) { gSetup = false; }
+    else { authBegin(0, gLockMethod); gAuthMsg = "First confirm your current sign-in"; }
+}
+// ---- lock-screen widgets
+static void drawLockWidgets(int o) {
+    struct Wd { int kind; } items[4]; int n = 0;
+    if (gWeatherLock && gWx.have) items[n++].kind = 0;
+    if (gCalLock) items[n++].kind = 1;
+    if (gMailLock && !gMAddr.empty()) items[n++].kind = 2;
+    if (gMusicLock && musPlaying && musIdx >= 0 && musIdx < (int)gSongs.size()) items[n++].kind = 3;
+    for (int k = 0; k < n; k++) {
+        int x = W - 390, y = o + UIH - 40 - (k + 1) * 78;
+        rect(x, y, 350, 68, BLACK, 110);
+        float tm = SDL_GetTicks() / 1000.0f;
+        switch (items[k].kind) {
+            case 0: wxIcon(gWx.code, gWx.isDay, x + 36, y + 34, 44, tm); text(wxTemp(gWx.temp), F30, x + 76, y + 6, WHITE); text(gWxCity + "  " + wxText(gWx.code), F16, x + 76, y + 44, WHITE, 0, 200); break;
+            case 1: { text("Next up", F16, x + 16, y + 6, WHITE, 0, 170); std::string t = calTileLine(); while (t.size() > 3 && tw(t, F22) > 320) t.pop_back(); text(t, F22, x + 16, y + 30, WHITE); break; }
+            case 2: text(std::to_string(gMUnread) + (gMUnread == 1 ? " unread email" : " unread emails"), F22, x + 16, y + 20, WHITE); break;
+            default: { std::string t = gSongs[musIdx].title; while (t.size() > 3 && tw(t, F22) > 320) t.pop_back(); text("Now playing", F16, x + 16, y + 6, WHITE, 0, 170); text(t, F22, x + 16, y + 30, WHITE); }
+        }
+    }
+}
+// ---- PC settings pages: Users / Accounts
+static int gUsrTab = 0;
+static std::string gNameEdit, gStatusEdit;
+static void applyName() { if (!gNameEdit.empty()) gUser = gNameEdit; lockSave(); hideKb(); }
+static void applyStatus() { gUserStatus = gStatusEdit; lockSave(); hideKb(); }
+static void drawUsersPage() {
+    int X = 500;
+    static const char* SUB[2] = {"Your account", "Sign-in options"};
+    int tx = X;
+    for (int i = 0; i < 2; i++) {
+        text(SUB[i], F22, tx, 50, i == gUsrTab ? SET_BLUE : Col{70, 70, 76});
+        if (i == gUsrTab) rect(tx, 82, tw(SUB[i], F22), 3, SET_BLUE);
+        tx += tw(SUB[i], F22) + 44;
+    }
+    if (gUsrTab == 0) {
+        drawAvatar(X, 116, 150);
+        text(gUser, F44, X + 180, 118, Col{50, 50, 55});
+        btn(X + 180, 180, 160, 44, "Edit name", SET_BLUE, WHITE);
+        text(gUserStatus.empty() ? "No status message" : gUserStatus, F22, X + 180, 238, Col{120, 120, 128});
+        btn(X + 360, 180, 180, 44, "Edit status", Col{232, 233, 237}, Col{50, 50, 55});
+        text("Account colour", F22, X, 290, Col{60, 60, 66});
+        for (int i = 0; i < 8; i++) {
+            rect(X + i * 80, 326, 68, 68, AVCOL[i]);
+            if (i == (gAvatar & 7) && !gAvatarTex) outline(X + i * 80 - 4, 322, 76, 76, 4, SET_BLUE);
+        }
+        setRow(420, "Show my initial", "Use a letter instead of the person picture", gAvInitial);
+        btn(X, 500, 380, 54, "Pick a picture from Photos", SET_BLUE, WHITE);
+        if (gAvatarTex) btn(X + 400, 500, 300, 54, "Remove my picture", Col{232, 233, 237}, Col{50, 50, 55});
+        text("Open a picture there and tap \"Account pic\".", F16, X, 566, Col{120, 120, 128});
+    } else {
+        text("Choose how to unlock the lock screen", F22, X, 110, Col{60, 60, 66});
+        static const char* DESC[6] = {"Just swipe up", "4 or more digits", "Letters and numbers", "Tap, line and circle on your lock screen picture", "Connect dots by touch or with the D-pad and A", "Press 4 or more Joy-Con buttons"};
+        for (int i = 0; i < 6; i++) {
+            int y = 148 + i * 66;
+            rect(X, y, 700, 58, i == gLockMethod ? SET_BLUE : Col{232, 233, 237});
+            text(LOCKN[i], F22, X + 20, y + 6, i == gLockMethod ? WHITE : Col{50, 50, 55});
+            text(DESC[i], F16, X + 20, y + 34, i == gLockMethod ? WHITE : Col{120, 120, 128}, 0, 200);
+        }
+        text("This only locks the WinNX screen. It does not protect your SD card or your Switch.", F16, X, 556, Col{120, 120, 128});
+        text("Tip: hold B + Y while starting WinNX to go back to the original menu.", F16, X, 580, Col{120, 120, 128});
+    }
+}
+static bool usersTap(int x, int y) {
+    int X = 500;
+    static const char* SUB[2] = {"Your account", "Sign-in options"};
+    int tx = X;
+    for (int i = 0; i < 2; i++) { int w = tw(SUB[i], F22); if (inR(x, y, tx - 8, 40, w + 16, 50)) { gUsrTab = i; return true; } tx += w + 44; }
+    if (gUsrTab == 0) {
+        if (inR(x, y, X + 180, 180, 160, 44)) { gNameEdit = gUser; openKbStr(&gNameEdit, 20, applyName); return true; }
+        if (inR(x, y, X + 360, 180, 180, 44)) { gStatusEdit = gUserStatus; openKbStr(&gStatusEdit, 60, applyStatus); return true; }
+        for (int i = 0; i < 8; i++) if (inR(x, y, X + i * 80, 326, 68, 68)) { gAvatar = i; if (gAvatarTex) { SDL_DestroyTexture(gAvatarTex); gAvatarTex = nullptr; remove((DIR_ + "avatar.png").c_str()); } saveCfg(); return true; }
+        if (inR(x, y, 1100, 420, 160, 70)) { gAvInitial = !gAvInitial; lockSave(); return true; }
+        if (inR(x, y, X, 500, 380, 54)) { pendingApp = A_PHOTOS; closeApp(false); toast("Open a picture and tap Account pic"); return true; }
+        if (gAvatarTex && inR(x, y, X + 400, 500, 300, 54)) { SDL_DestroyTexture(gAvatarTex); gAvatarTex = nullptr; remove((DIR_ + "avatar.png").c_str()); return true; }
+    } else {
+        for (int i = 0; i < 6; i++) if (inR(x, y, X, 148 + i * 66, 700, 58)) { if (i != gLockMethod) authStartSetup(i); return true; }
+    }
+    return false;
+}
+
 static void drawSettings(const Theme& th) {
     (void)th;
     rect(0, 0, W, UIH, WHITE);
@@ -6486,11 +8885,7 @@ static void drawSettings(const Theme& th) {
             text("Local account", F22, X + 190, 214, Col{120, 120, 128});
         }
     } else if (setPage == 1) {
-        text("Users", F44, X, 40, Col{70, 90, 120});
-        rect(X, 130, 110, 110, Col{150, 150, 160});
-        disc(X + 55, 170, 22, WHITE); rect(X + 24, 202, 62, 38, WHITE);
-        text(gUser, F30, X + 140, 150, Col{50, 50, 55});
-        text("Name comes from your Switch user profile.", F16, X + 140, 196, Col{120, 120, 128});
+        drawUsersPage();
     } else if (setPage == 3) {
         text("Search", F44, X, 40, Col{70, 90, 120});
         text("Web search engine for CMrhoe and the Search charm", F22, X, 130, Col{60, 60, 66});
@@ -6529,7 +8924,7 @@ static void drawSettings(const Theme& th) {
         btn(X + 96, 180, 80, 52, "A+", Col{232, 233, 237}, Col{50, 50, 55});
     } else if (setPage == 11) {
         text("Windows Update", F44, X, 40, Col{70, 90, 120});
-        text("WinNX 0.6.1 - up to date", F22, X, 112, Col{60, 60, 66});
+        text("WinNX 0.7.0 - up to date", F22, X, 112, Col{60, 60, 66});
         text("Homebrew menu", F30, X, 160, Col{70, 90, 120});
         text("Replace hbmenu so the Album launch opens WinNX. Your original is backed up first.", F16, X, 202, Col{120, 120, 128});
         bool c1 = gHbConfirm > 0 && gHbWhich == 1, c2 = gHbConfirm > 0 && gHbWhich == 2;
@@ -6545,8 +8940,12 @@ static void drawSettings(const Theme& th) {
         text(SET_PAGES[setPage], F44, X, 40, Col{70, 90, 120});
         text("There are no settings here on Switch.", F22, X, 130, Col{120, 120, 128});
     }
+    if (gSetup) drawAuthUI(false);
 }
 static void settingsTapImpl(int x, int y) {
+    if (gSetup) return;
+    if (setPage == 1 && usersTap(x, y)) return;
+    if (setPage == 1) { for (int i = 0; i < 12; i++) if (inR(x, y, 0, 128 + i * 44, 440, 42)) { setPage = i; setSub = 0; } return; }
     for (int i = 0; i < 12; i++) if (inR(x, y, 0, 128 + i * 44, 440, 42)) { setPage = i; setSub = 0; return; }
     int X = 500;
     if (setPage == 0) {
@@ -6599,6 +8998,7 @@ static void appKeys(u64 kd) {
         if (d == 0) musSetVol(musVol - 0.1f); else if (d == 1) musSetVol(musVol + 0.1f);
         if (d == 2) musScroll = std::max(0, musScroll - 120); else if (d == 3) musScroll = std::min(musScrollMax, musScroll + 120);
     }
+    if (curApp == A_SETTINGS && gSetup) authKeys(kd);
     // @@KEYS@@
 }
 static void drawApp() {
@@ -6607,7 +9007,9 @@ static void drawApp() {
     int bottom = areaBottom();
     switch (curApp) {
         case A_CALC: {
+            if (gSci) { drawSci(th); rect(SCI_TX, SCI_TY, SCI_TW, SCI_TH, Col{70, 70, 76}); text("Standard", F22, SCI_TX + SCI_TW / 2, SCI_TY + 6, WHITE, 1); break; }
             rect(0, 0, W, UIH, bg);
+            rect(SCI_TX, SCI_TY + 14, SCI_TW, SCI_TH, Col{70, 70, 76}); text("Scientific", F22, SCI_TX + SCI_TW / 2, SCI_TY + 20, WHITE, 1);
             rect(348, 34, 584, 124, Col{42, 42, 42});
             if (cOp) {
                 const char* sym[5] = {"", "+", "-", "\xC3\x97", "\xC3\xB7"};
@@ -6674,6 +9076,14 @@ static void drawApp() {
         case A_MAIL: drawMail(); break;
         case A_NEWS: drawNews(); break;
         case A_ROBLOX: drawRoblox(); break;
+        case A_FILES: drawFiles(); break;
+        case A_MAPS: drawMaps(); break;
+        case A_PODCASTS: drawPodcasts(); break;
+        case A_RADIO: drawRadio(); break;
+        case A_CAMERA: drawCamera(); break;
+        case A_PDF: drawPdf(); break;
+        case A_CHESS: drawChess(); break;
+        case A_TERM: case A_PS: gTermCur = curApp == A_PS ? 1 : 0; drawTerm(); break;
         // @@DRAW@@
         case A_PHOTOS: drawPhotos(); break;
         case A_GAMES: {
@@ -6709,6 +9119,51 @@ static void drawApp() {
     }
 }
 
+
+// ---------------------------------------------------------------- snap view (two apps side by side, scaled 50%)
+static void appTap(int x, int y); static void appDrag(int dx, int dy);
+static SDL_Texture* gSnapT[2] = {nullptr, nullptr}; static int gSnapSide = 0;
+#define SNAP_Y 100
+#define SNAP_H 334
+static void snapEnsure() { for (int i = 0; i < 2; i++) if (!gSnapT[i]) gSnapT[i] = SDL_CreateTexture(gR, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, W, UIH); }
+static void drawSnap() {
+    if (gSnap == curApp || gSnap < 0 || !running[gSnap]) { gSnap = -1; drawApp(); return; }
+    snapEnsure(); if (!gSnapT[0] || !gSnapT[1]) { gSnap = -1; drawApp(); return; }
+    bool kb = kbOpen; kbOpen = false; int pc = curApp; SDL_Texture* prev = gTarget;
+    for (int i = 0; i < 2; i++) {
+        SDL_SetRenderTarget(gR, gSnapT[i]); SDL_RenderSetClipRect(gR, nullptr);
+        SDL_SetRenderDrawColor(gR, 0, 0, 0, 255); SDL_RenderClear(gR);
+        curApp = i ? gSnap : pc; drawApp();
+    }
+    curApp = pc; kbOpen = kb; SDL_RenderSetClipRect(gR, nullptr); SDL_SetRenderTarget(gR, prev);
+    rect(0, 0, W, UIH, Col{8, 8, 10});
+    SDL_Rect d0{0, SNAP_Y, 640, SNAP_H}, d1{640, SNAP_Y, 640, SNAP_H};
+    SDL_RenderCopy(gR, gSnapT[0], nullptr, &d0); SDL_RenderCopy(gR, gSnapT[1], nullptr, &d1);
+    rect(638, SNAP_Y, 4, SNAP_H, Col{120, 120, 130});
+    text(appName(pc), F22, 20, 14, WHITE); text(appName(gSnap), F22, 660, 14, WHITE);
+    btn(20, 52, 140, 40, "Swap", Col{70, 68, 74}, WHITE); btn(660, 52, 180, 40, "Close snap", Col{196, 43, 28}, WHITE);
+    text("Snap view is scaled to half size.", F16, 640, SNAP_Y + SNAP_H + 20, Col{140, 140, 150}, 1);
+}
+static void snapMapC(int side, int& x, int& y) { x = std::max(0, std::min(W - 1, (x - side * 640) * 2)); y = std::max(0, std::min(UIH - 1, (y - SNAP_Y) * 2)); }
+static void snapTouch(int ph, int x, int y) {
+    if (gSnap < 0) { appTouch(ph, x, y); return; }
+    if (ph == 0) gSnapSide = x >= 640;
+    int pc = curApp; if (gSnapSide) curApp = gSnap; snapMapC(gSnapSide, x, y); appTouch(ph, x, y); curApp = pc;
+}
+static void snapDrag(int dx, int dy) {
+    if (gSnap < 0) { appDrag(dx, dy); return; }
+    int pc = curApp; if (gSnapSide) curApp = gSnap; appDrag(dx * 2, dy * 2); curApp = pc;
+}
+static void snapTap(int x, int y) {
+    if (gSnap < 0) { appTap(x, y); return; }
+    if (y < SNAP_Y) {
+        if (inR(x, y, 20, 52, 140, 40)) { std::swap(curApp, gSnap); lastApp = curApp; }
+        else if (inR(x, y, 660, 52, 180, 40)) gSnap = -1;
+        return;
+    }
+    if (y >= SNAP_Y + SNAP_H) return;
+    int side = x >= 640; int pc = curApp; if (side) curApp = gSnap; snapMapC(side, x, y); appTap(x, y); curApp = pc;
+}
 static void drawTopBar() {
     if (barP < 0.01f) return;
     int y = (int)(-44 + 44 * barP);
@@ -6724,6 +9179,8 @@ static void settingsTap(int x, int y, const Theme& th) { (void)th; settingsTapIm
 static void appTap(int x, int y) {
     switch (curApp) {
         case A_CALC:
+            if (inR(x, y, SCI_TX, SCI_TY + (gSci ? 0 : 14), SCI_TW, SCI_TH)) { gSci = !gSci; saveCfg(); break; }
+            if (gSci) { sciTap(x, y); break; }
             for (int i = 0; i < NCB; i++) {
                 SDL_Rect r = calcRect(CBTNS[i]);
                 if (inR(x, y, r.x, r.y, r.w, r.h)) { calcPress(CBTNS[i].l); break; }
@@ -6756,6 +9213,14 @@ static void appTap(int x, int y) {
         case A_MAIL: mailTap(x, y); break;
         case A_NEWS: newsTap(x, y); break;
         case A_ROBLOX: robloxTap(x, y); break;
+        case A_FILES: filesTap(x, y); break;
+        case A_MAPS: mapsTap(x, y); break;
+        case A_PODCASTS: podcastsTap(x, y); break;
+        case A_RADIO: radioTap(x, y); break;
+        case A_CAMERA: camTap(x, y); break;
+        case A_PDF: pdfTap(x, y); break;
+        case A_CHESS: chessTap(x, y); break;
+        case A_TERM: case A_PS: gTermCur = curApp == A_PS ? 1 : 0; termTap(x, y); break;
         // @@TAP@@
         case A_PHOTOS: photoTap(x, y); break;
         case A_GAMES: {
@@ -6779,7 +9244,17 @@ static void appDrag(int dx, int dy) {
         case A_MUSIC: if (!musSeeking && !musVolDrag) musScroll -= dy; break;
         case A_MAIL: mailDrag(dy); break;
         case A_NEWS: newsDrag(dy); break;
-        case A_PHOTOS: if (phView == 0) phScroll -= dy; break;
+        case A_CALENDAR: calendarDrag(dx, dy); break;
+        case A_FILES: filesDrag(dx, dy); break;
+        case A_MAPS: mapsDrag(dx, dy); break;
+        case A_PODCASTS: podcastsDrag(dx, dy); break;
+        case A_RADIO: radioDrag(dx, dy); break;
+        case A_PDF: pdfDrag(dx, dy); break;
+        case A_TERM: case A_PS: gTermCur = curApp == A_PS ? 1 : 0; termDrag(dx, dy); break;
+        case A_PHOTOS:
+            if (phView == 0) phScroll -= dy;
+            else if (phZ > 1.02f) { phOX += dx; phOY += dy; phClamp(); }
+            break;
         case A_STORE: if (storeView == 0) storeScroll -= dy; break;
         case A_EXCEL: {
             accX += dx; accY += dy;
@@ -6809,6 +9284,7 @@ static void fdisc(float cx, float cy, float r, Col c) {
     SDL_RenderGeometry(gR, nullptr, v, N + 1, idx, N * 3);
 }
 static void lockInit() {
+    if (gLockTex) { SDL_DestroyTexture(gLockTex); gLockTex = nullptr; }
     gLockTex = SDL_CreateTexture(gR, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, W, UIH);
     if (!gLockTex) return;
     SDL_SetTextureBlendMode(gLockTex, SDL_BLENDMODE_NONE);
@@ -6854,6 +9330,7 @@ static void lockInit() {
     }
     SDL_SetRenderTarget(gR, nullptr);
 }
+static void lockRebuild() { lockInit(); }
 static SDL_Texture* gBootTex = nullptr;
 static int gBootIdx = -1;
 static void drawBoot(float t) {
@@ -6884,16 +9361,22 @@ static void drawLock(float off) {
     text(ds, F44, 54, o + UIH - 178, WHITE);
     char bb[48];
     snprintf(bb, sizeof bb, "%s   %u%%", gUser.c_str(), (unsigned)gBat);
-    text(bb, F22, 56, o + UIH - 100, WHITE, 0, 220);
+    drawAvatar(54, o + UIH - 118, 52);
+    text(bb, F22, 118, o + UIH - 110, WHITE, 0, 230);
+    if (!gUserStatus.empty()) text(gUserStatus, F16, 118, o + UIH - 80, WHITE, 0, 190);
+    if (!gAuth) drawLockWidgets(o);
     float bounce = sinf(SDL_GetTicks() / 350.0f) * 5.0f;
     int hy = o + UIH - 62 + (int)bounce;
     line(W / 2 - 14, hy + 8, W / 2, hy - 4, 3, WHITE, 200);
     line(W / 2 + 14, hy + 8, W / 2, hy - 4, 3, WHITE, 200);
-    text("Swipe up to unlock", F16, W / 2, o + UIH - 40, WHITE, 1, 200);
+    text(gLockMethod ? "Swipe up to sign in" : "Swipe up to unlock", F16, W / 2, o + UIH - 40, WHITE, 1, 200);
+    if (gAuth) drawAuthUI(true);
     if (o < 0) rect(0, o + UIH, W, 5, BLACK, 70);
 }
 static void unlockNow() {
-    if (uiState == 1 && !lockAnim) { lockAnim = true; introT = 0; }
+    if (uiState != 1 || lockAnim || gAuth) return;
+    if (gLockMethod != 0) { gAuth = true; gAuthFails = 0; lockOff = 0; authBegin(0, gLockMethod); return; }
+    lockAnim = true; introT = 0;
 }
 
 // ---- search charm helpers
@@ -6921,6 +9404,131 @@ static void searchGo() {
     browserGo();
 }
 
+// ================================================================ notification center
+struct Notif { int app; std::string title, body, when; bool unread; };
+static std::vector<Notif> gNotifs;
+static float notifP = 0; static int notifScroll = 0;
+static Notif gBanner; static Uint32 gBannerT = 0; static bool gBannerOn = false;
+static void notifSave() {
+    std::string o;
+    for (auto& n : gNotifs) {
+        auto clean = [](std::string s) { for (auto& c : s) if (c == '\t' || c == '\n' || c == '\r') c = ' '; return s; };
+        o += std::to_string(n.app) + "\t" + (n.unread ? "1" : "0") + "\t" + clean(n.when) + "\t" + clean(n.title) + "\t" + clean(n.body) + "\n";
+    }
+    writeFile(DIR_ + "notifs.txt", o);
+}
+static void notifLoad() {
+    std::string d; gNotifs.clear();
+    if (!readFile(DIR_ + "notifs.txt", d)) return;
+    size_t p = 0;
+    while (p < d.size() && gNotifs.size() < 60) {
+        size_t e = d.find('\n', p); if (e == std::string::npos) e = d.size();
+        std::string l = d.substr(p, e - p); p = e + 1;
+        std::vector<std::string> f; size_t q = 0;
+        for (int i = 0; i < 4; i++) { size_t t = l.find('\t', q); if (t == std::string::npos) break; f.push_back(l.substr(q, t - q)); q = t + 1; }
+        if (f.size() < 4) continue;
+        f.push_back(l.substr(q));
+        Notif n; n.app = atoi(f[0].c_str()); n.unread = f[1] == "1"; n.when = f[2]; n.title = f[3]; n.body = f[4];
+        if (n.app >= 0 && n.app < A_COUNT) gNotifs.push_back(n);
+    }
+}
+static int notifUnread() { int c = 0; for (auto& n : gNotifs) if (n.unread) c++; return c; }
+static void notify(int app, const std::string& title, const std::string& body) {
+    Notif n; n.app = app; n.title = title; n.body = body; n.unread = true; n.when = timeStr(true);
+    gNotifs.insert(gNotifs.begin(), n);
+    if (gNotifs.size() > 60) gNotifs.pop_back();
+    notifSave();
+    if (gNotif && uiState == 2) { gBanner = n; gBannerT = SDL_GetTicks(); gBannerOn = true; }
+}
+static SDL_Rect bannerRect() {
+    float age = (SDL_GetTicks() - gBannerT) / 1000.0f;
+    float slide = age < 0.25f ? 1.0f - age / 0.25f : (age > 4.6f ? (age - 4.6f) / 0.4f : 0.0f);
+    return SDL_Rect{W - 420 + (int)(slide * 440), 16, 400, 88};
+}
+static bool bannerHit(int x, int y) {
+    if (!gBannerOn || notifOpen || charmsOpen) return false;
+    SDL_Rect r = bannerRect();
+    return SDL_GetTicks() - gBannerT < 5000 && inR(x, y, r.x, r.y, r.w, r.h);
+}
+static void drawBanner() {
+    if (!gBannerOn) return;
+    if (SDL_GetTicks() - gBannerT > 5000 || notifOpen) { gBannerOn = false; return; }
+    SDL_Rect r = bannerRect();
+    rect(r.x, r.y, r.w, r.h, Col{20, 20, 24}, 250);
+    rect(r.x, r.y, 8, r.h, ADEF[gBanner.app].col);
+    text(appName(gBanner.app), F16, r.x + 24, r.y + 8, WHITE, 0, 150);
+    std::string t = gBanner.title; while (t.size() > 3 && tw(t, F22) > 350) t.pop_back();
+    text(t, F22, r.x + 24, r.y + 28, WHITE);
+    std::string b = gBanner.body; while (b.size() > 3 && tw(b, F16) > 350) b.pop_back();
+    text(b, F16, r.x + 24, r.y + 60, WHITE, 0, 190);
+}
+static const int NP_W = 420, NP_ROW = 96;
+static void bellIcon(int cx, int cy, Col c, Col bg) {
+    disc(cx, cy - 6, 14, c); rect(cx - 14, cy - 6, 28, 18, c); rect(cx - 20, cy + 10, 40, 5, c); disc(cx, cy + 20, 5, c);
+    rect(cx - 2, cy - 24, 4, 8, c);
+}
+static void drawNotifPanel() {
+    if (notifP <= 0.01f) return;
+    float e = ease(notifP);
+    int px = W - NP_W + (int)((1.0f - e) * NP_W);
+    rect(px, 0, NP_W, UIH, Col{22, 22, 26}, 252);
+    text("Notifications", F30, px + 24, 16, WHITE);
+    btn(px + NP_W - 130, 20, 106, 38, "Clear all", Col{70, 70, 78}, WHITE);
+    // quick actions
+    struct Q { const char* l; bool on; } q[4] = {{"Offline", gOffline}, {"Alerts", gNotif}, {"Burn-in", gBurn}, {"Settings", false}};
+    for (int i = 0; i < 4; i++) {
+        int x = px + 24 + i * 94;
+        rect(x, 76, 86, 62, q[i].on ? Col{0, 120, 215} : Col{58, 58, 66});
+        text(q[i].l, F16, x + 43, 96, WHITE, 1);
+    }
+    int top = 156;
+    SDL_Rect clip = {px, top, NP_W, UIH - top};
+    SDL_RenderSetClipRect(gR, &clip);
+    int n = (int)gNotifs.size();
+    int maxS = std::max(0, n * NP_ROW - (UIH - top));
+    notifScroll = std::max(0, std::min(notifScroll, maxS));
+    for (int i = 0; i < n; i++) {
+        int y = top + i * NP_ROW - notifScroll;
+        if (y + NP_ROW < top || y > UIH) continue;
+        const Notif& nn = gNotifs[i];
+        rect(px + 16, y + 4, NP_W - 32, NP_ROW - 8, Col{40, 40, 48});
+        rect(px + 16, y + 4, 8, NP_ROW - 8, ADEF[nn.app].col);
+        text(appName(nn.app) + (nn.unread ? "  \xE2\x80\xA2" : ""), F16, px + 38, y + 10, WHITE, 0, 150);
+        text(nn.when, F16, px + NP_W - 70, y + 10, WHITE, 2, 130);
+        std::string t = nn.title; while (t.size() > 3 && tw(t, F22) > NP_W - 110) t.pop_back();
+        text(t, F22, px + 38, y + 30, WHITE);
+        std::string b = nn.body; while (b.size() > 3 && tw(b, F16) > NP_W - 110) b.pop_back();
+        text(b, F16, px + 38, y + 62, WHITE, 0, 190);
+        text("x", F22, px + NP_W - 36, y + 30, WHITE, 1, 160);
+    }
+    SDL_RenderSetClipRect(gR, nullptr);
+    if (n == 0) text("No new notifications", F22, px + NP_W / 2, 300, WHITE, 1, 150);
+}
+static void notifTap(int x, int y) {
+    int px = W - NP_W;
+    if (x < px) { notifOpen = false; return; }
+    if (inR(x, y, px + NP_W - 130, 20, 106, 38)) { gNotifs.clear(); notifSave(); return; }
+    if (y >= 76 && y < 138) {
+        int i = (x - px - 24) / 94;
+        if (i >= 0 && i < 4 && (x - px - 24) % 94 < 86) {
+            if (i == 0) { gOffline = !gOffline; saveCfg(); }
+            else if (i == 1) { gNotif = !gNotif; saveCfg(); }
+            else if (i == 2) { gBurn = !gBurn; saveCfg(); }
+            else { notifOpen = false; pendingApp = A_SETTINGS; if (curApp >= 0 && curApp != A_SETTINGS) closeApp(false); }
+        }
+        return;
+    }
+    int top = 156;
+    if (y < top) return;
+    int i = (y - top + notifScroll) / NP_ROW;
+    if (i < 0 || i >= (int)gNotifs.size()) return;
+    if (x > px + NP_W - 64) { gNotifs.erase(gNotifs.begin() + i); notifSave(); return; }
+    int a = gNotifs[i].app;
+    gNotifs.erase(gNotifs.begin() + i); notifSave();
+    notifOpen = false;
+    if (a != curApp) { pendingApp = a; if (curApp >= 0) closeApp(false); }
+}
+
 static const int CH_X = W - 120;
 static void drawCharms() {
     if (charmsP <= 0.01f) return;
@@ -6928,14 +9536,15 @@ static void drawCharms() {
     int off = (int)((1.0f - e) * 120);
     Col pb = {14, 14, 16};
     rect(CH_X + off, 0, 120, UIH, pb, 245);
-    static const char* CN[5] = {"Search", "Share", "Start", "Devices", "Settings"};
+    static const char* CN[5] = {"Search", "Alerts", "Start", "Devices", "Settings"};
     for (int i = 0; i < 5; i++) {
         int cy = 90 + i * 110, cx = CH_X + off + 60;
         Col c = WHITE;
         switch (i) {
             case 0: ring(cx - 6, cy - 6, 18, 4, c, pb); line(cx + 7, cy + 7, cx + 20, cy + 20, 5, c); break;
-            case 1: disc(cx - 16, cy, 7, c); disc(cx + 14, cy - 14, 7, c); disc(cx + 14, cy + 14, 7, c);
-                    line(cx - 16, cy, cx + 14, cy - 14, 2, c); line(cx - 16, cy, cx + 14, cy + 14, 2, c); break;
+            case 1: bellIcon(cx, cy, c, pb);
+                    if (notifUnread() > 0) { disc(cx + 18, cy - 18, 12, Col{209, 52, 56}); text(std::to_string(std::min(9, notifUnread())), F16, cx + 18, cy - 28, WHITE, 1); }
+                    break;
             case 2: winLogo(cx, cy, 44, c); break;
             case 3: outline(cx - 22, cy - 14, 32, 22, 3, c); outline(cx - 4, cy - 2, 28, 18, 3, c); break;
             default: ring(cx, cy, 18, 6, c, pb);
@@ -7001,6 +9610,7 @@ static void drawSwitcher() {
         rect(px + 20, y, 180, 100, appBg(a));
         if (a == curApp) outline(px + 20, y, 180, 100, 3, WHITE);
         text(appName(a), F16, px + 20, y + 104, WHITE);
+        if (curApp >= 0 && a != curApp) { rect(px + 130, y + 68, 70, 32, Col{0, 0, 0}, 150); text("Snap", F16, px + 165, y + 72, WHITE, 1); }
         y += 140;
     }
 }
@@ -7020,13 +9630,15 @@ static void overlayTap(int x, int y) {
         }
         return;
     }
+    if (bannerHit(x, y) && !overlayOpen()) { int a = gBanner.app; gBannerOn = false; if (a != curApp) { pendingApp = a; if (curApp >= 0) closeApp(false); } return; }
+    if (notifOpen) { notifTap(x, y); return; }
     if (charmsOpen) {
         if (x < CH_X) { closeOverlays(); return; }
         int i = (y - 35) / 110;
         if (y < 35 || i < 0 || i > 4) return;
         switch (i) {
             case 0: charmsOpen = false; searchOpen = true; gQuery.clear(); openKb(6); break;
-            case 1: toast("Nothing to share here"); break;
+            case 1: charmsOpen = false; notifOpen = true; notifScroll = 0; for (auto& n : gNotifs) n.unread = false; notifSave(); break;
             case 2: closeOverlays(); if (curApp >= 0) closeApp(false); break;
             case 3: toast("Pair controllers in the Switch Controllers menu"); break;
             default: {
@@ -7043,6 +9655,7 @@ static void overlayTap(int x, int y) {
         for (int a = 0; a < A_COUNT && yy < UIH - 130; a++) {
             if (!running[a]) continue;
             if (y >= yy && y < yy + 100) {
+                if (curApp >= 0 && a != curApp && x >= 150 && y >= yy + 68) { closeOverlays(); gSnap = a; return; }
                 closeOverlays();
                 if (a != curApp) { pendingApp = a; if (curApp >= 0) closeApp(false); }
                 return;
@@ -7059,8 +9672,86 @@ static void drawToast() {
 }
 
 // ---------------------------------------------------------------- main
+// ================================================================ crash safety and the blue screen
+static float gBsodT = 0; static std::string gBsodCode, gBsodDetail; static int gBsodApp = -1;
+static int gCrashApp = -1;               // app that was open during the last hard crash (its live tile stays off)
+static char gSelfPath[300] = "";
+static void bsodNow(const std::string& code, const std::string& detail) {
+    gBsodCode = code; gBsodDetail = detail; gBsodApp = curApp; gBsodT = 0;
+    std::string log;
+    readFile(DIR_ + "crash_log.txt", log);
+    if (log.size() > 6000) log = log.substr(log.size() - 3000);
+    log += "[" + std::to_string(gNow.y) + "-" + std::to_string(gNow.mo) + "-" + std::to_string(gNow.d) + "] " + code + " app=" + std::to_string(curApp) + " " + detail + "\n";
+    writeFile(DIR_ + "crash_log.txt", log);
+    if (curApp >= 0) { gCrashApp = curApp; }
+    closeOverlays(); kbOpen = false; searchOpen = false;
+    curApp = -1; appDir = 0; appT = 0; pendingApp = -1;
+    for (int a = 0; a < A_COUNT; a++) running[a] = false;
+    uiState = 3;
+}
+static void drawBsod() {
+    rect(0, 0, W, H, Col{16, 114, 198});
+    text(":(", F130, 120, 70, WHITE);
+    text("Your PC ran into a problem and needs to restart.", F44, 120, 250, WHITE);
+    text("We're just collecting some error info, and then we'll restart for you.", F30, 120, 320, WHITE);
+    int pct = std::min(100, (int)(gBsodT * 18));
+    text(std::to_string(pct) + "% complete", F30, 120, 400, WHITE);
+    std::string nm = gBsodApp >= 0 ? appName(gBsodApp) : "WinNX";
+    text("If you call a support person, give them this info:", F22, 120, 520, WHITE);
+    text("Stop code: " + gBsodCode, F22, 120, 552, WHITE);
+    text("What failed: " + nm + (gBsodDetail.empty() ? "" : "  (" + gBsodDetail + ")"), F22, 120, 584, WHITE);
+    if (pct >= 100) text("Tap the screen or press A to restart", F30, 120, 640, WHITE, 0, (int)(155 + 100 * sinf(gBsodT * 4)));
+}
+static void bsodLeave() {
+    if (gBsodT < 2.0f) return;
+    remove((DIR_ + "crash.txt").c_str());
+    uiState = gLockScr ? 1 : 2; lockOff = 0; lockAnim = false; introT = 0;
+}
+#ifndef WNX_HOST
+// A real crash (data abort etc.): write a note, then chain-load ourselves again; the next start shows the blue screen.
+extern "C" void __libnx_exception_handler(ThreadExceptionDump* ctx) {
+    char b[200];
+    snprintf(b, sizeof b, "%u\n%llx\n%d\n", (unsigned)ctx->error_desc, (unsigned long long)ctx->pc.x, curApp);
+    FILE* f = fopen("sdmc:/switch/WinNX/crash.txt", "wb");
+    if (f) { fwrite(b, 1, strlen(b), f); fclose(f); }
+    if (gSelfPath[0]) envSetNextLoad(gSelfPath, gSelfPath);
+    svcExitProcess();
+}
+#endif
+static void crashCheckOnBoot() {
+    std::string c;
+    if (!readFile(DIR_ + "crash.txt", c)) return;
+    unsigned code = 0; unsigned long long pc = 0; int app = -1;
+    sscanf(c.c_str(), "%u %llx %d", &code, &pc, &app);
+    char b[120]; snprintf(b, sizeof b, "0x%X", code);
+    gCrashApp = app;
+    gBsodCode = std::string("SYSTEM_THREAD_EXCEPTION_NOT_HANDLED ") + b;
+    char d[60]; snprintf(d, sizeof d, "at 0x%llX", pc);
+    gBsodDetail = d; gBsodApp = app; gBsodT = 0;
+    uiState = 3;
+}
+
+static bool appBack() {
+    switch (curApp) {
+        case A_MUSIC: return musBack();
+        case A_CALENDAR: return calBack();
+        case A_FILES: return filesBack();
+        case A_SETTINGS: if (gSetup) { authCancel(); return true; } return false;
+        case A_PODCASTS: return podcastsBack();
+        // @@BACK@@
+        default: return false;
+    }
+}
+static void appPinch(float sc, int cx, int cy, bool begin) {
+    switch (curApp) {
+        case A_PHOTOS: photosPinch(sc, cx, cy, begin); break;
+        case A_MAPS: mapsPinch(sc, cx, cy, begin); break;
+        // @@PINCH@@
+        default: break;
+    }
+}
 int main(int argc, char** argv) {
-    if (argc > 0 && argv && argv[0]) gArg0 = argv[0];
+    if (argc > 0 && argv && argv[0]) { gArg0 = argv[0]; snprintf(gSelfPath, sizeof gSelfPath, "%s", argv[0]); }
     plInitialize(PlServiceType_User);
     timeInitialize();
     psmInitialize();
@@ -7080,6 +9771,8 @@ int main(int argc, char** argv) {
     }
     loadCfg();
     loadUser();
+    lockLoad();
+    notifLoad();
     rebuildTiles();
     if (gInstLegacy) { saveCfg(); saveLayout(); }
 
@@ -7111,8 +9804,10 @@ int main(int argc, char** argv) {
     }
 
     lockInit();
+    startPicLoad(); avatarLoad();
     uiState = gBootAnim ? 0 : (gLockScr ? 1 : 2);
     updateNow();
+    crashCheckOnBoot();
     srand((unsigned)SDL_GetTicks());
     lastInput = SDL_GetTicks();
     Uint32 prev = lastInput, lastClock = 0, lastBat = 0, lastSave = 0, kbHeldT = 0, kbRep = 0;
@@ -7142,14 +9837,34 @@ int main(int argc, char** argv) {
         HidTouchScreenState ts = {0};
         hidGetTouchScreenStates(&ts, 1);
         bool downRaw = ts.count > 0;
+        { // two fingers = pinch; the single-finger logic is paused until every finger is lifted
+            static bool pinching = false; static float pd0 = 1;
+            if (uiState == 2 && ts.count >= 2) {
+                float pdx = (float)ts.touches[0].x - ts.touches[1].x, pdy = (float)ts.touches[0].y - ts.touches[1].y;
+                float pd = sqrtf(pdx * pdx + pdy * pdy);
+                int pcx = (int)(ts.touches[0].x + ts.touches[1].x) / 2, pcy = (int)(ts.touches[0].y + ts.touches[1].y) / 2;
+                if (!pinching) { pinching = true; pd0 = std::max(pd, 1.0f); tMoved = true; startPinch(pd, true); appPinch(1.0f, pcx, pcy, true); }
+                else { startPinch(pd, false); appPinch(pd / pd0, pcx, pcy, false); }
+                lastInput = now; dimA = 0;
+            }
+            if (pinching) { if (ts.count == 0) pinching = false; else downRaw = false; }
+        }
         int rawX = downRaw ? (int)ts.touches[0].x : 0, rawY = downRaw ? (int)ts.touches[0].y : 0;
         // ---- boot animation and lock screen
         if (uiState == 0) {
             bootT += dt;
             if ((kdRaw || (downRaw && !wasRaw)) && bootT > 0.4f && bootT < BOOT_END - 0.5f) bootT = BOOT_END - 0.5f;
             if (bootT >= BOOT_END) { uiState = gLockScr ? 1 : 2; lockOff = 0; lockAnim = false; introT = 0; }
+        } else if (uiState == 3) {
+            gBsodT += dt;
+            if ((kdRaw & HidNpadButton_A) || (downRaw && !wasRaw)) bsodLeave();
         } else if (uiState == 1) {
-            if (lockAnim) {
+            static int lrx = 0, lry = 0;
+            if (downRaw) { lrx = rawX; lry = rawY; }
+            if (gAuth) {
+                lockOff = 0; authKeys(kdRaw); authUpdate(dt);
+                if (downRaw && !wasRaw) authTouch(0, rawX, rawY); else if (downRaw) authTouch(1, rawX, rawY); else if (wasRaw) authTouch(2, lrx, lry);
+            } else if (lockAnim) {
                 lockOff -= (UIH * 2.4f + 200) * dt;
                 if (lockOff <= -UIH) { lockOff = 0; lockAnim = false; uiState = 2; introT = 0; }
             } else {
@@ -7166,6 +9881,7 @@ int main(int argc, char** argv) {
         }
         if (kd & HidNpadButton_Minus) { if (overlayOpen()) closeOverlays(); else charmsOpen = true; }
         if ((kd & HidNpadButton_B) && overlayOpen()) { closeOverlays(); if (kbTarget == 6) kbOpen = false; kd &= ~(u64)HidNpadButton_B; }
+        if ((kd & HidNpadButton_ZL) && !gEdit) { if (notifOpen) closeOverlays(); else { closeOverlays(); notifOpen = true; notifScroll = 0; for (auto& n : gNotifs) n.unread = false; notifSave(); } }
         if (kd & HidNpadButton_Plus) winPress();
         if (curApp < 0 && appDir == 0) {
             startPad(kd);
@@ -7177,7 +9893,7 @@ int main(int argc, char** argv) {
                 if ((kd & HidNpadButton_A) && navMode) launch(sel);
             }
         } else if (curApp >= 0 && appDir == 0) {
-            if (kd & HidNpadButton_B) { if (!(curApp == A_MUSIC && musBack())) closeApp(false); }
+            if (kd & HidNpadButton_B) { if (!appBack()) closeApp(false); }
             if (kd & HidNpadButton_X) closeApp(true);
             appKeys(kd);
             if (curApp == A_PHOTOS) {
@@ -7195,7 +9911,8 @@ int main(int argc, char** argv) {
             tDX = tx; tDY = ty; tLX = tx; tLY = ty; tMoved = false; scrollV = 0;
             tTop = false; tKb = false; tApp = false; kbHeld = -1; tOv = false; tEdge = 0;
             tPressWin = inWinBtn(tx, ty);
-            if (!tPressWin && overlayOpen()) {
+            if (!tPressWin && !overlayOpen() && bannerHit(tx, ty)) { tOv = true; tKb = true; }
+            else if (!tPressWin && overlayOpen()) {
                 if (kbOpen && ty >= KBTOP && ty < UIH) {
                     buildKeys();
                     int k = kbHit(tx, ty);
@@ -7208,14 +9925,14 @@ int main(int argc, char** argv) {
             tStart = false;
             if (curApp < 0 && appDir == 0 && !tPressWin && !tKb && !tEdge) { tStart = true; startTouch(0, tx, ty); }
             if (appOpen && !tPressWin && !tKb && !tEdge) {
-                if (ty < 30) { barT = 3.5f; tTop = true; }
-                else if (barP > 0.5f && ty < 44) tTop = true;
+                if (ty < 30 && gSnap < 0) { barT = 3.5f; tTop = true; }
+                else if (barP > 0.5f && ty < 44 && gSnap < 0) tTop = true;
                 else if (kbOpen && ty >= KBTOP && ty < UIH) {
                     buildKeys();
                     int k = kbHit(tx, ty);
                     if (k >= 0) { kbHeld = k; kbHeldT = now; kbRep = now; kbAction(gKeys[k].act); }
                     tKb = true;
-                } else { tApp = true; appTouch(0, tx, ty); }
+                } else { tApp = true; snapTouch(0, tx, ty); }
             }
         } else if (down && wasDown) {
             lastInput = now;
@@ -7226,14 +9943,15 @@ int main(int argc, char** argv) {
             }
             if (tEdge == 1 && tx < tDX - 36) { charmsOpen = true; tEdge = 3; }
             if (tEdge == 2 && tx > tDX + 36) { switchOpen = true; tEdge = 3; }
-            if (tApp && tMoved) appTouch(1, tx, ty);
+            if (tOv && tMoved && notifOpen) notifScroll -= dy;
+            if (tApp && tMoved) snapTouch(1, tx, ty);
             if (tStart) startTouch(1, tx, ty);
             if (tMoved && !tKb && !tPressWin && !tEdge) {
-                if (appOpen && !tTop) appDrag(dx, dy);
+                if (appOpen && !tTop) snapDrag(dx, dy);
             }
             tLX = tx; tLY = ty;
         } else if (!down && wasDown) {
-            if (tApp) { appTouch(2, tLX, tLY); tApp = false; }
+            if (tApp) { snapTouch(2, tLX, tLY); tApp = false; }
             if (tStart) { startTouch(2, tLX, tLY); tStart = false; }
             if (tOv) { if (!tMoved) overlayTap(tLX, tLY); tOv = false; tKb = false; kbHeld = -1; }
             else if (tEdge) { if (!tMoved && tEdge == 1) charmsOpen = true; if (!tMoved && tEdge == 2) switchOpen = true; tEdge = 0; }
@@ -7245,8 +9963,8 @@ int main(int argc, char** argv) {
                 }
             } else if (!tMoved && appDir == 0) {
                 if (inWinBtn(tLX, tLY)) winPress();
-                else if (curApp >= 0) appTap(tLX, tLY);
-            } else if (tMoved && appOpen && curApp == A_PHOTOS && phView == 1) {
+                else if (curApp >= 0) snapTap(tLX, tLY);
+            } else if (tMoved && appOpen && curApp == A_PHOTOS && phView == 1 && phZ <= 1.02f) {
                 int dx = tLX - tDX;
                 if (abs(dx) > 120) photoNav(dx < 0 ? 1 : -1);
             }
@@ -7278,11 +9996,11 @@ int main(int argc, char** argv) {
                 if (storeProg[a] >= 1) { storeProg[a] = 0; gInst[a] = true; pinApp(a); saveLayout(); saveCfg(); }
             }
         }
-        appUpdate(dt);
-        startUpdate(dt);
+        if (uiState != 3) { try { appUpdate(dt); startUpdate(dt); } catch (const std::exception& e) { bsodNow("UNHANDLED_EXCEPTION", e.what()); } catch (...) { bsodNow("UNHANDLED_EXCEPTION", ""); } }
         if (curApp >= 0 && appDir == 0) openT += dt;
         charmsP += ((charmsOpen ? 1.0f : 0.0f) - charmsP) * std::min(1.0f, dt * 14.0f);
         switchP += ((switchOpen ? 1.0f : 0.0f) - switchP) * std::min(1.0f, dt * 14.0f);
+        notifP += ((notifOpen ? 1.0f : 0.0f) - notifP) * std::min(1.0f, dt * 14.0f);
         searchP += ((searchOpen ? 1.0f : 0.0f) - searchP) * std::min(1.0f, dt * 14.0f);
         if (barT > 0) barT -= dt;
         float barTarget = (barT > 0 && curApp >= 0 && appDir == 0) ? 1.0f : 0.0f;
@@ -7297,10 +10015,12 @@ int main(int argc, char** argv) {
         int sx = 0, sy = 0;
         if (gBurn) { int k = (int)((now / 30000) % 5); sx = SH[k][0]; sy = SH[k][1]; }
 
+        if (curApp < 0) gSnap = -1;
         // ---- render
         if (gTarget) SDL_SetRenderTarget(gR, gTarget);
         SDL_SetRenderDrawColor(gR, 0, 0, 0, 255);
         SDL_RenderClear(gR);
+        if (uiState != 3) try {
         drawStart(down, tMoved, pressTile);
         if (curApp >= 0) {
             if (appT < 1) {
@@ -7310,25 +10030,32 @@ int main(int argc, char** argv) {
                 int rw = (int)(a.w + (W - a.w) * e), rh = (int)(a.h + (UIH - a.h) * e);
                 rect(rx, ry, rw, rh, appBg(curApp));
             } else {
-                drawApp();
+                if (gSnap >= 0) drawSnap(); else drawApp();
                 if (kbOpen) drawKb();
                 if (gAnim && openT < 0.28f) rect(0, 0, W, UIH, appBg(curApp), (int)(255 * (1.0f - ease(openT / 0.28f))));
-                drawTopBar();
+                if (gSnap < 0) drawTopBar();
             }
         }
         if (uiState == 2 || lockAnim) {
-            if (charmsP > 0.01f || switchP > 0.01f || searchP > 0.01f) rect(0, 0, W, UIH, BLACK, 70);
+            if (charmsP > 0.01f || switchP > 0.01f || searchP > 0.01f || notifP > 0.01f) rect(0, 0, W, UIH, BLACK, 70);
             drawSwitcher();
             drawCharms();
             drawSearchCharm();
+            drawNotifPanel();
             if (kbOpen && kbTarget == 6) drawKb();
+            drawBanner();
             drawToast();
         }
+        } catch (const std::exception& e) { SDL_RenderSetClipRect(gR, nullptr); bsodNow("UNHANDLED_EXCEPTION", e.what()); }
+        catch (...) { SDL_RenderSetClipRect(gR, nullptr); bsodNow("UNHANDLED_EXCEPTION", ""); }
         if (uiState == 0) drawBoot(bootT);
-        else if (uiState == 1) drawLock(lockOff);
+        else if (uiState == 1) { drawLock(lockOff); if (gAuth && kbOpen) drawKb(); }
+        if (uiState == 3) drawBsod();
+        else {
         rect(0, UIH, W, H - UIH, BLACK);
         bool wb = downRaw && tPressWin;
         winLogo(W / 2, UIH + (H - UIH) / 2, 26, WHITE, wb ? 255 : 105);
+        }
         if (dimA > 1) rect(0, 0, W, H, BLACK, (int)dimA);
 
         if (gTarget) {
@@ -7344,6 +10071,7 @@ int main(int argc, char** argv) {
     commitCell();
     saveAll();
     saveCfg();
+    remove((DIR_ + "crash.txt").c_str());
     if (phTex) SDL_DestroyTexture(phTex);
     if (gLockTex) SDL_DestroyTexture(gLockTex);
     if (gStartTex) SDL_DestroyTexture(gStartTex);
