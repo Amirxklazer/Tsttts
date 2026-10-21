@@ -18,14 +18,24 @@ jobs:
 
       - name: Install libraries
         run: |
+          export DEVKITPRO=/opt/devkitpro
           if command -v dkp-pacman >/dev/null 2>&1; then PM=dkp-pacman; else PM=pacman; fi
-          # pkg.devkitpro.org sometimes answers 403/5xx to CI runners; retry with a growing pause
-          retry() { for i in 1 2 3 4 5 6; do "$@" && return 0; echo "attempt $i failed, waiting $((i*20))s"; sleep $((i*20)); done; return 1; }
-          retry $PM -Sy --noconfirm
-          retry $PM -S --noconfirm --needed switch-sdl2 switch-sdl2_ttf switch-sdl2_image switch-libjpeg-turbo switch-libpng switch-freetype switch-pkg-config switch-zlib
-          # audio (Music) and Wi-Fi (Weather, Mail, News, Roblox). Separate so a missing package can't stop the whole build.
-          retry $PM -S --noconfirm --needed switch-sdl2_mixer || echo "::warning::switch-sdl2_mixer not installed: Music will have no audio"
-          retry $PM -S --noconfirm --needed switch-curl switch-mbedtls switch-zlib || echo "::warning::switch-curl not installed: Wi-Fi apps will be offline"
+          PL=$DEVKITPRO/portlibs/switch/lib
+          need() { for f in libSDL2.a libSDL2_ttf.a libSDL2_image.a libfreetype.a libpng.a libjpeg.a libz.a libSDL2_mixer.a libcurl.a; do [ -f $PL/$f ] || return 1; done; return 0; }
+          if need; then echo "libraries already in the image, skipping download"; exit 0; fi
+          PKGS="switch-sdl2 switch-sdl2_ttf switch-sdl2_image switch-libjpeg-turbo switch-libpng switch-freetype switch-pkg-config switch-zlib switch-sdl2_mixer switch-curl switch-mbedtls"
+          try() { for i in 1 2 3; do "$@" && return 0; echo "attempt $i failed, retrying in 10s"; sleep 10; done; return 1; }
+          # 1) plain pacman
+          if try $PM -Sy --noconfirm && try $PM -S --noconfirm --needed $PKGS; then exit 0; fi
+          # 2) the server answers 403 to some CI addresses / default pacman user agent: download with curl and a browser-like agent
+          echo "::warning::plain pacman failed (403?), retrying through curl with a browser user agent"
+          CONF=/opt/devkitpro/pacman/etc/pacman.conf; [ -f $CONF ] || CONF=/etc/pacman.conf
+          cp $CONF /tmp/pacman-curl.conf
+          sed -i '/^XferCommand/d' /tmp/pacman-curl.conf
+          sed -i 's|^\[options\]|[options]\nXferCommand = /usr/bin/curl -fL --retry 3 -A "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36" -C - -o %o %u|' /tmp/pacman-curl.conf
+          if try $PM --config /tmp/pacman-curl.conf -Sy --noconfirm && try $PM --config /tmp/pacman-curl.conf -S --noconfirm --needed $PKGS; then exit 0; fi
+          echo "::error::pkg.devkitpro.org refuses this runner (403). Re-run the job later, or use a devkita64 image tag that already contains the Switch libraries."
+          exit 1
 
       - name: Build
         run: |
