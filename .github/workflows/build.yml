@@ -22,7 +22,7 @@ jobs:
           # pkg.devkitpro.org sometimes answers 403/5xx to CI runners; retry with a growing pause
           retry() { for i in 1 2 3 4 5 6; do "$@" && return 0; echo "attempt $i failed, waiting $((i*20))s"; sleep $((i*20)); done; return 1; }
           retry $PM -Sy --noconfirm
-          retry $PM -S --noconfirm --needed switch-sdl2 switch-sdl2_ttf switch-sdl2_image switch-libjpeg-turbo switch-libpng switch-freetype switch-pkg-config
+          retry $PM -S --noconfirm --needed switch-sdl2 switch-sdl2_ttf switch-sdl2_image switch-libjpeg-turbo switch-libpng switch-freetype switch-pkg-config switch-zlib
           # audio (Music) and Wi-Fi (Weather, Mail, News, Roblox). Separate so a missing package can't stop the whole build.
           retry $PM -S --noconfirm --needed switch-sdl2_mixer || echo "::warning::switch-sdl2_mixer not installed: Music will have no audio"
           retry $PM -S --noconfirm --needed switch-curl switch-mbedtls switch-zlib || echo "::warning::switch-curl not installed: Wi-Fi apps will be offline"
