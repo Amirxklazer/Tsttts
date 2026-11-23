@@ -9,7 +9,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Use the same pinned tag as your working repo (e.g. devkitpro/devkita64:20240202); 'latest' is only the fallback.
     container: devkitpro/devkita64:latest
 
     steps:
@@ -25,9 +24,7 @@ jobs:
           if need; then echo "libraries already in the image, skipping download"; exit 0; fi
           PKGS="switch-sdl2 switch-sdl2_ttf switch-sdl2_image switch-libjpeg-turbo switch-libpng switch-freetype switch-pkg-config switch-zlib switch-sdl2_mixer switch-curl switch-mbedtls"
           try() { for i in 1 2 3; do "$@" && return 0; echo "attempt $i failed, retrying in 10s"; sleep 10; done; return 1; }
-          # 1) plain pacman
           if try $PM -Sy --noconfirm && try $PM -S --noconfirm --needed $PKGS; then exit 0; fi
-          # 2) the server answers 403 to some CI addresses / default pacman user agent: download with curl and a browser-like agent
           echo "::warning::plain pacman failed (403?), retrying through curl with a browser user agent"
           CONF=/opt/devkitpro/pacman/etc/pacman.conf; [ -f $CONF ] || CONF=/etc/pacman.conf
           cp $CONF /tmp/pacman-curl.conf
@@ -45,14 +42,14 @@ jobs:
 
       - name: Check icon, hbmenu marker and features
         run: |
-          ls -l WinNX.nro
-          grep -q "ASET" WinNX.nro || { echo "NRO has no icon asset header"; exit 1; }
-          grep -q "WINNX-SELF-MARKER-9c41e7" WinNX.nro || { echo "hbmenu marker missing"; exit 1; }
-          grep -aq "WNXFEAT\[audio net \]" WinNX.nro && echo "audio + Wi-Fi built in" || echo "::warning::built WITHOUT audio and/or Wi-Fi (see the libraries step)"
+          ls -l Ilot14.nro
+          grep -q "ASET" Ilot14.nro || { echo "NRO has no icon asset header"; exit 1; }
+          grep -q "WINNX-SELF-MARKER-9c41e7" Ilot14.nro || { echo "hbmenu marker missing"; exit 1; }
+          grep -aq "WNXFEAT\[audio net \]" Ilot14.nro && echo "audio + Wi-Fi built in" || echo "::warning::built WITHOUT audio and/or Wi-Fi (see the libraries step)"
 
       - name: Upload NRO
         uses: actions/upload-artifact@v4
         with:
-          name: WinNX
-          path: "*.nro"
+          name: Ilot14-World
+          path: "Ilot14.nro"
           if-no-files-found: error
