@@ -15,7 +15,8 @@ struct ItemSp { std::string key, floor; float x; };
 struct ObjSp { std::string id, floor, label; float x; };
 struct Toast { std::string t; int life; };
 
-enum VS { V_NONE, V_RUN, V_SAY, V_CHOOSE, V_AWAIT, V_MINI, V_CARD, V_WAIT, V_ENDDAY, V_ASK, V_SCARE };
+enum VS { V_NONE, V_RUN, V_SAY, V_CHOOSE, V_AWAIT, V_MINI, V_CARD, V_WAIT, V_ENDDAY, V_ASK, V_SCARE, V_ILLIT };
+static void illitStart(); static void illitStop(); static float illitTime();
 enum Mode { M_TITLE, M_NEWSLOT, M_SLOTS, M_DAYSEL, M_SETTINGS, M_PLAY, M_PAUSE, M_PSET, M_ENDING, M_CHAPTERS, M_CHSLOT, M_CUSTOM, M_PCUSTOM, M_REG, M_EXTRAS, M_REDEEM, M_BADGES, M_LORE, M_LOREVIEW, M_COOP, M_PHOTO, M_PHONE };
 struct Frame { Block* b; int pc; };
 struct ChatLine { std::string who, txt; int t; };
@@ -68,7 +69,7 @@ struct Game {
     int fadePhase = 0; std::string pendingFloor;
     int quitConfirm = 0;
     // extras
-    Kb kb; std::string askText, askPrompt; int scareT = 0;
+    Kb kb; std::string askText, askPrompt; int scareT = 0, illitT = 0;
     int extSel = 0, loreSel = 0, lorePage = 0, badgeSel = 0, redeemT = 0; std::string redeemMsg;
     CoPlayer co[3]; int coSel[3] = {0, 0, 0}; int coStage = 0; bool coopOn = false;
     int badgeToastT = 0; std::string badgeToast;
@@ -413,6 +414,7 @@ static void vmRun() {
             case O_IFSAY: if (g.askText.find(c.a) != std::string::npos) vmGoto(c.b); else f.pc++; break;
             case O_SCARE: f.pc++; if (AUTOWIN) break; awardBadge("haunted"); unlockLore("e_scare"); g.scareT = 0; g.vs = V_SCARE; return;
             case O_STAY: f.pc++; break;
+            case O_ILLIT: f.pc++; if (AUTOWIN) break; awardBadge("illit"); unlockLore("e_illit"); setF("illit_seen", 1); illitStart(); g.vs = V_ILLIT; return;
             case O_ENDDAY:
                 f.pc++;
                 g.cTitle = "END OF DAY " + std::to_string(g.day);
@@ -509,6 +511,7 @@ static bool awaitEvent(const std::string& type, const std::string& arg) {
 
 static void startDay(int d) {
     g.day = std::max(1, std::min(lastDay(), d));
+    if (g.chapter == 1 && !F("illit_done") && !F("illit_day")) setF("illit_day", 5 + (int)((SDL_GetTicks() / 7 + (u32)g.slot * 7919u + rnd()) % 22u));   // random day 5..26, picked once per save
     g.dayFlags = g.flags;
     if (g.day > g.st.maxD[g.chapter]) g.st.maxD[g.chapter] = g.day;
     g.progressFlags[pkKey(g.chapter, g.day)] = flagsStr(g.flags);
@@ -520,6 +523,7 @@ static void startDay(int d) {
     if (g.mini) { delete g.mini; g.mini = nullptr; }
     vmPush(blockName(g.day));
     if (g.stack.empty()) { g.vs = V_NONE; toast("Missing script for this day"); return; }
+    if (g.chapter == 1 && !F("illit_done") && g.day == F("illit_day")) { setF("illit_done", 1); vmPush("illit_event"); }   // Adam Chermatti calls you GLLIT
     vmRun();
 }
 
@@ -774,6 +778,11 @@ static void updateVM(const Input& in) {
                 std::string t = g.kb.text; for (auto& ch : t) ch = tolower(ch);
                 g.askText = t; g.vs = V_RUN; vmRun();
             }
+        } break;
+        case V_ILLIT: {
+            g.illitT++;
+            bool skip = g.illitT > 90 && in.hit(B_X);
+            if (skip || illitTime() >= 74.7f || g.illitT > 4900) { illitStop(); g.vs = V_RUN; vmRun(); }
         } break;
         case V_SCARE: {
             g.scareT++;

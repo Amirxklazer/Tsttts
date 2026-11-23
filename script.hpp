@@ -6,7 +6,7 @@ enum Op {
     O_SAY, O_CHOOSE, O_GOTO, O_SET, O_ADD, O_IF, O_IFNOT, O_IFGE, O_IFDAY, O_MINI, O_CARD, O_SCENE, O_GOAL,
     O_AWAIT, O_SPAWN, O_CLEARITEMS, O_WARP, O_ENDDAY, O_RUN, O_END, O_NPC, O_OBJ, O_DELOBJ, O_FX, O_WAIT,
     O_TITLE, O_TOAST, O_LOCK, O_UNLOCK,
-    O_CAST, O_WALK, O_EMOTE, O_ANIM, O_BARS, O_NPCGO, O_PGO, O_FOCUS, O_ASK, O_IFSAY, O_BADGE, O_ENDING, O_SCARE, O_STAY, O_ZOOM
+    O_CAST, O_WALK, O_EMOTE, O_ANIM, O_BARS, O_NPCGO, O_PGO, O_FOCUS, O_ASK, O_IFSAY, O_BADGE, O_ENDING, O_SCARE, O_STAY, O_ZOOM, O_ILLIT
 };
 
 struct Cmd {
@@ -56,7 +56,7 @@ static void parseStory(const std::string& text, const std::string& srcName) {
         {"obj", O_OBJ}, {"delobj", O_DELOBJ}, {"fx", O_FX}, {"wait", O_WAIT}, {"title", O_TITLE}, {"toast", O_TOAST},
         {"lock", O_LOCK}, {"unlock", O_UNLOCK}, {"cast", O_CAST}, {"walk", O_WALK}, {"emote", O_EMOTE}, {"anim", O_ANIM},
         {"bars", O_BARS}, {"npcgo", O_NPCGO}, {"pgo", O_PGO}, {"focus", O_FOCUS}, {"zoom", O_ZOOM},
-        {"ask", O_ASK}, {"ifsay", O_IFSAY}, {"badge", O_BADGE}, {"ending", O_ENDING}, {"scare", O_SCARE}, {"stay", O_STAY}};
+        {"ask", O_ASK}, {"ifsay", O_IFSAY}, {"badge", O_BADGE}, {"ending", O_ENDING}, {"scare", O_SCARE}, {"stay", O_STAY}, {"illit", O_ILLIT}};
     std::vector<std::string> lines = splitStr(text, '\n');
     Block* cur = nullptr;
     int ln = 0;

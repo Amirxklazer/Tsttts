@@ -104,3 +104,10 @@ v0.7.0 M1
 
 v0.7.1
 - Phone chats are saved permanently (save/phone.dat) and kept between sessions
+
+v0.8.0
+- New random event (Chapter 1, one random day between Day 5 and Day 26, picked once per save): Adam Chermatti calls Amir "GLLIT",
+  then a fully animated stage cutscene of five original ILLIT-style girls plays, synced to the embedded NOT ME clip (nm_audio.hpp).
+  No lyrics are shown. X skips after 1.5 s. Badge "Wrong Name, Right Beat" + ending entry "NOT ME" (redeem code GLLIT).
+- After you have seen it, hold L and press R in free roam to replay it.
+- Test on PC: ./ilot14 --illit-t 45 --shots out --shot-at 3 --frames 4   (renders the cutscene at 45 s)

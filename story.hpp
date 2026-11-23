@@ -18,3 +18,4 @@
 #include "story_c3new.hpp"
 #include "story_c5new.hpp"
 #include "story_c4new.hpp"
+#include "story_illit.hpp"

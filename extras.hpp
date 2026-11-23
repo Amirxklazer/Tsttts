@@ -23,6 +23,7 @@ static const BadgeDef BADGE_LIST[] = {
     {"ch4", "Never Again", "Finish Chapter 4."},
     {"ch5", "Safe Ascent", "Finish Chapter 5."},
     {"collector", "Lore Hound", "Unlock 5 lore or ending entries."},
+    {"illit", "Wrong Name, Right Beat", "Get called GLLIT by Adam Chermatti."},
 };
 static const int NBADGES = (int)(sizeof(BADGE_LIST) / sizeof(BADGE_LIST[0]));
 
@@ -56,6 +57,7 @@ static const LoreDef LORE_LIST[] = {
     {"e_never", "ENDING", "Never Stop Coming Home", "Fourteen signs, one blank. Amir wrote the last one.|NEVER STOP COMING HOME.|The whole building hummed, and every lamp lit.|ENDING: THE FIFTEENTH SIGN"},
     {"e_ascent", "ENDING", "The Safe Ascent", "A long rope. A long climb. Everyone together.|At the top, sunrise. At the bottom, a bus. In between, snacks.|ENDING: THE LONG WAY UP"},
     {"e_sunrise", "ENDING", "Sunrise Over Reghaia", "The lake turns gold. The cable car wires sing. The 14 hums, pleased.|Amir finally says it out loud: 'Welcome home.'|ENDING: SUNRISE"},
+    {"e_illit", "ENDING", "Wrong Name, Right Beat", "Adam Chermatti called Amir the wrong name, and the whole room answered with a stage.|Five girls, one spotlight, a lot of labels that did not stick.|Amir still doesn't know where that came from. Adam says it was never on.|ENDING: NOT ME"},
     {"e_scare", "ENDING", "Do Not Tell Gabriel Numbers", "A number was said. The game forgot how to be a game.|It's just a prank. A Halloween decoration. Amir is hanging by the ankle with a pumpkin mask on, not hurt, just dramatic.|Gabriel will never admit he laughed.|ENDING: JUMP SCARE"},
 };
 static const int NLORE = (int)(sizeof(LORE_LIST) / sizeof(LORE_LIST[0]));
@@ -66,7 +68,7 @@ static const CodeDef CODE_LIST[] = {
     {"AMYAS", "l_amyas"}, {"ADAMB", "l_adamb"}, {"ALICIA", "l_alicia"}, {"JALIL", "l_jalil"}, {"ABDULLAH", "l_abdullah"}, {"AMINE", "l_amine"}, {"JILALI", "l_jilali"},
     {"TANSAOUTI", "l_nst"}, {"NEVER", "l_nevers"}, {"SCHOOL", "l_teachers"}, {"ETUSA", "l_etusa"}, {"CABLE", "l_cable"}, {"ROPE", "l_rope"},
     {"FIFTEEN", "e_never"}, {"ASCENT", "e_ascent"}, {"SUNRISE", "e_sunrise"},
-    {"KNOCK", "e_knock"}, {"ASHES", "e_ashes"}, {"OCTOBER", "e_october"}, {"STAY", "e_stay"}, {"CINEMA", "e_credits"},
+    {"GLLIT", "e_illit"}, {"KNOCK", "e_knock"}, {"ASHES", "e_ashes"}, {"OCTOBER", "e_october"}, {"STAY", "e_stay"}, {"CINEMA", "e_credits"},
 };
 static const int NCODES = (int)(sizeof(CODE_LIST) / sizeof(CODE_LIST[0]));
 
