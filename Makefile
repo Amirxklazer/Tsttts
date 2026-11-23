@@ -38,10 +38,6 @@ export OFILES   := $(CPPFILES:.cpp=.o) $(CFILES:.c=.o)
 export INCLUDE  := $(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) $(foreach dir,$(LIBDIRS),-I$(dir)/include)
 export LIBPATHS := $(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 export BUILD_EXEFS_SRC := $(TOPDIR)/$(EXEFS_SRC)
-export APP_ICON := $(TOPDIR)/icon.jpg
-ifeq ($(strip $(wildcard $(APP_ICON))),)
-  unexport APP_ICON
-endif
 .PHONY: $(BUILD) clean all
 all: $(BUILD)
 $(BUILD):
