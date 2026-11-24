@@ -1,4 +1,4 @@
-name: Build NRO
+name: Build Ilot14 World (Switch NRO)
 
 on:
   push:
@@ -9,38 +9,26 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: devkitpro/devkita64:latest
-
+    container:
+      image: devkitpro/devkita64:20260219   # pinned on purpose, do not use :latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install libraries
+      - name: Make sure SDL2 for Switch is present
         run: |
-          export DEVKITPRO=/opt/devkitpro
-          if command -v dkp-pacman >/dev/null 2>&1; then PM=dkp-pacman; else PM=pacman; fi
-          PL=$DEVKITPRO/portlibs/switch/lib
-          need() { for f in libSDL2.a libSDL2_ttf.a libSDL2_image.a libfreetype.a libpng.a libjpeg.a libz.a libSDL2_mixer.a libcurl.a; do [ -f $PL/$f ] || return 1; done; return 0; }
-          if need; then echo "libraries already in the image, skipping download"; exit 0; fi
-          PKGS="switch-sdl2 switch-sdl2_ttf switch-sdl2_image switch-libjpeg-turbo switch-libpng switch-freetype switch-pkg-config switch-zlib switch-sdl2_mixer switch-curl switch-mbedtls"
-          try() { for i in 1 2 3; do "$@" && return 0; echo "attempt $i failed, retrying in 10s"; sleep 10; done; return 1; }
-          if try $PM -Sy --noconfirm && try $PM -S --noconfirm --needed $PKGS; then exit 0; fi
-          echo "::warning::Could not download devkitPro packages (HTTP 403); continuing with libraries already available in the image"
+          if [ ! -x "$DEVKITPRO/portlibs/switch/bin/sdl2-config" ]; then
+            dkp-pacman -Sy --noconfirm switch-sdl2
+          fi
+          "$DEVKITPRO/portlibs/switch/bin/sdl2-config" --version
 
       - name: Build
-        run: |
-          export DEVKITPRO=/opt/devkitpro
-          export PATH=$DEVKITPRO/devkitA64/bin:$DEVKITPRO/portlibs/switch/bin:$PATH
-          make -j$(nproc)
+        run: make -j"$(nproc)"
 
-      - name: Verify NRO exists
-        run: |
-          test -f Ilot14.nro
-          ls -l Ilot14.nro
+      - name: Check output
+        run: ls -l Ilot14.nro
 
-      - name: Upload NRO
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: Ilot14-World
-          path: "Ilot14.nro"
+          name: Ilot14-World-nro
+          path: Ilot14.nro
           if-no-files-found: error
