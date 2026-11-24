@@ -38,10 +38,8 @@ walk dalia 700 5 wait
 emote dalia !
 anim dalia wave
 say |The building hums. Somebody laughs two floors away.
-say Dalia|Got a minute? Quick game.
 bars off
 scene off
-mini pairs 4 6
 bars on
 scene outside amir gabriel
 cast amir 300
@@ -50,10 +48,8 @@ walk gabriel 700 5 wait
 emote gabriel !
 anim gabriel wave
 say |The lamp flickers once. A hello.
-say Gabriel|Got a minute? Quick game.
 bars off
 scene off
-mini pairs 4 5
 bars on
 scene inn amir bolt
 cast amir 300
@@ -62,10 +58,8 @@ walk bolt 700 5 wait
 emote bolt !
 anim bolt wave
 say |A door opens by itself, then politely closes.
-say Bolt|Got a minute? Quick game.
 bars off
 scene off
-mini quiz 4 ilot14
 endday
 
 # ================================================================ CH2 DAY 21
@@ -100,10 +94,8 @@ walk bolt 700 5 wait
 emote bolt !
 anim bolt wave
 say |Someone left a snack on the stairs. A tiny miracle.
-say Bolt|Got a minute? Quick game.
 bars off
 scene off
-mini popcorn 10 2 1
 bars on
 scene lobby amir adam_t
 cast amir 300
@@ -112,10 +104,8 @@ walk adam_t 700 5 wait
 emote adam_t !
 anim adam_t wave
 say |The lamp flickers once. A hello.
-say Adam|Got a minute? Quick game.
 bars off
 scene off
-mini pairs 4 6
 bars on
 scene outside amir prime
 cast amir 300
@@ -124,10 +114,8 @@ walk prime 700 5 wait
 emote prime !
 anim prime wave
 say |Something small happens, and it matters more than it should.
-say Prime|Got a minute? Quick game.
 bars off
 scene off
-mini pairs 4 5
 bars on
 scene inn amir dalia
 cast amir 300
@@ -136,10 +124,8 @@ walk dalia 700 5 wait
 emote dalia !
 anim dalia wave
 say |The lamp flickers once. A hello.
-say Dalia|Got a minute? Quick game.
 bars off
 scene off
-mini quiz 4 ilot14
 endday
 
 # ================================================================ CH2 DAY 22
@@ -186,10 +172,8 @@ walk prime 700 5 wait
 emote prime !
 anim prime wave
 say |The lamp flickers once. A hello.
-say Prime|Got a minute? Quick game.
 bars off
 scene off
-mini whack 10
 bars on
 scene room amir dalia
 cast amir 300
@@ -198,10 +182,8 @@ walk dalia 700 5 wait
 emote dalia !
 anim dalia wave
 say |Something small happens, and it matters more than it should.
-say Dalia|Got a minute? Quick game.
 bars off
 scene off
-mini popcorn 10 2 1
 bars on
 scene lobby amir gabriel
 cast amir 300
@@ -210,10 +192,8 @@ walk gabriel 700 5 wait
 emote gabriel !
 anim gabriel wave
 say |A door opens by itself, then politely closes.
-say Gabriel|Got a minute? Quick game.
 bars off
 scene off
-mini pairs 4 6
 endday
 
 # ================================================================ CH2 DAY 23
@@ -252,10 +232,8 @@ walk gabriel 700 5 wait
 emote gabriel !
 anim gabriel wave
 say |Someone left a snack on the stairs. A tiny miracle.
-say Gabriel|Got a minute? Quick game.
 bars off
 scene off
-mini whack 12
 bars on
 scene inn amir bolt
 cast amir 300
@@ -264,10 +242,8 @@ walk bolt 700 5 wait
 emote bolt !
 anim bolt wave
 say |A door opens by itself, then politely closes.
-say Bolt|Got a minute? Quick game.
 bars off
 scene off
-mini whack 10
 bars on
 scene room amir adam_t
 cast amir 300
@@ -276,10 +252,8 @@ walk adam_t 700 5 wait
 emote adam_t !
 anim adam_t wave
 say |The lamp flickers once. A hello.
-say Adam|Got a minute? Quick game.
 bars off
 scene off
-mini popcorn 10 2 1
 endday
 
 # ================================================================ CH2 DAY 24
@@ -321,10 +295,8 @@ walk adam_t 700 5 wait
 emote adam_t !
 anim adam_t wave
 say |A door opens by itself, then politely closes.
-say Adam|Got a minute? Quick game.
 bars off
 scene off
-mini lights 3
 bars on
 scene outside amir prime
 cast amir 300
@@ -333,10 +305,8 @@ walk prime 700 5 wait
 emote prime !
 anim prime wave
 say |A door opens by itself, then politely closes.
-say Prime|Got a minute? Quick game.
 bars off
 scene off
-mini whack 12
 bars on
 scene inn amir dalia
 cast amir 300
@@ -345,10 +315,8 @@ walk dalia 700 5 wait
 emote dalia !
 anim dalia wave
 say |A door opens by itself, then politely closes.
-say Dalia|Got a minute? Quick game.
 bars off
 scene off
-mini whack 10
 bars on
 scene room amir gabriel
 cast amir 300
@@ -357,10 +325,8 @@ walk gabriel 700 5 wait
 emote gabriel !
 anim gabriel wave
 say |Someone left a snack on the stairs. A tiny miracle.
-say Gabriel|Got a minute? Quick game.
 bars off
 scene off
-mini popcorn 10 2 1
 endday
 
 # ================================================================ CH2 DAY 25
@@ -405,10 +371,8 @@ walk dalia 700 5 wait
 emote dalia !
 anim dalia wave
 say |The building hums. Somebody laughs two floors away.
-say Dalia|Got a minute? Quick game.
 bars off
 scene off
-mini lights 4
 bars on
 scene lobby amir gabriel
 cast amir 300
@@ -417,10 +381,8 @@ walk gabriel 700 5 wait
 emote gabriel !
 anim gabriel wave
 say |Something small happens, and it matters more than it should.
-say Gabriel|Got a minute? Quick game.
 bars off
 scene off
-mini lights 3
 bars on
 scene outside amir bolt
 cast amir 300
@@ -429,10 +391,8 @@ walk bolt 700 5 wait
 emote bolt !
 anim bolt wave
 say |Someone left a snack on the stairs. A tiny miracle.
-say Bolt|Got a minute? Quick game.
 bars off
 scene off
-mini whack 12
 endday
 
 # ================================================================ CH2 DAY 26
@@ -477,10 +437,8 @@ walk bolt 700 5 wait
 emote bolt !
 anim bolt wave
 say |The lamp flickers once. A hello.
-say Bolt|Got a minute? Quick game.
 bars off
 scene off
-mini quiz 4 ilot14
 bars on
 scene room amir adam_t
 cast amir 300
@@ -489,10 +447,8 @@ walk adam_t 700 5 wait
 emote adam_t !
 anim adam_t wave
 say |A door opens by itself, then politely closes.
-say Adam|Got a minute? Quick game.
 bars off
 scene off
-mini lights 4
 bars on
 scene lobby amir prime
 cast amir 300
@@ -501,10 +457,8 @@ walk prime 700 5 wait
 emote prime !
 anim prime wave
 say |Something small happens, and it matters more than it should.
-say Prime|Got a minute? Quick game.
 bars off
 scene off
-mini lights 3
 endday
 
 # ================================================================ CH2 DAY 27
@@ -545,10 +499,8 @@ walk prime 700 5 wait
 emote prime !
 anim prime wave
 say |The lamp flickers once. A hello.
-say Prime|Got a minute? Quick game.
 bars off
 scene off
-mini pairs 4 5
 bars on
 scene inn amir dalia
 cast amir 300
@@ -557,10 +509,8 @@ walk dalia 700 5 wait
 emote dalia !
 anim dalia wave
 say |Something small happens, and it matters more than it should.
-say Dalia|Got a minute? Quick game.
 bars off
 scene off
-mini quiz 4 ilot14
 bars on
 scene room amir gabriel
 cast amir 300
@@ -569,10 +519,8 @@ walk gabriel 700 5 wait
 emote gabriel !
 anim gabriel wave
 say |Something small happens, and it matters more than it should.
-say Gabriel|Got a minute? Quick game.
 bars off
 scene off
-mini lights 4
 bars on
 scene lobby amir bolt
 cast amir 300
@@ -581,10 +529,8 @@ walk bolt 700 5 wait
 emote bolt !
 anim bolt wave
 say |The building hums. Somebody laughs two floors away.
-say Bolt|Got a minute? Quick game.
 bars off
 scene off
-mini lights 3
 endday
 
 # ================================================================ CH2 DAY 28
@@ -622,10 +568,8 @@ walk gabriel 700 5 wait
 emote gabriel !
 anim gabriel wave
 say |A door opens by itself, then politely closes.
-say Gabriel|Got a minute? Quick game.
 bars off
 scene off
-mini pairs 4 6
 bars on
 scene outside amir bolt
 cast amir 300
@@ -634,10 +578,8 @@ walk bolt 700 5 wait
 emote bolt !
 anim bolt wave
 say |Something small happens, and it matters more than it should.
-say Bolt|Got a minute? Quick game.
 bars off
 scene off
-mini pairs 4 5
 bars on
 scene inn amir adam_t
 cast amir 300
@@ -646,10 +588,8 @@ walk adam_t 700 5 wait
 emote adam_t !
 anim adam_t wave
 say |Something small happens, and it matters more than it should.
-say Adam|Got a minute? Quick game.
 bars off
 scene off
-mini quiz 4 ilot14
 endday
 
 # ================================================================ CH2 DAY 29
@@ -687,10 +627,8 @@ walk adam_t 700 5 wait
 emote adam_t !
 anim adam_t wave
 say |Someone left a snack on the stairs. A tiny miracle.
-say Adam|Got a minute? Quick game.
 bars off
 scene off
-mini popcorn 10 2 1
 bars on
 scene lobby amir prime
 cast amir 300
@@ -699,10 +637,8 @@ walk prime 700 5 wait
 emote prime !
 anim prime wave
 say |Someone left a snack on the stairs. A tiny miracle.
-say Prime|Got a minute? Quick game.
 bars off
 scene off
-mini pairs 4 6
 bars on
 scene outside amir dalia
 cast amir 300
@@ -711,10 +647,8 @@ walk dalia 700 5 wait
 emote dalia !
 anim dalia wave
 say |A door opens by itself, then politely closes.
-say Dalia|Got a minute? Quick game.
 bars off
 scene off
-mini pairs 4 5
 endday
 
 # ================================================================ CH2 DAY 30
@@ -762,10 +696,8 @@ walk dalia 700 5 wait
 emote dalia !
 anim dalia wave
 say |Someone left a snack on the stairs. A tiny miracle.
-say Dalia|Got a minute? Quick game.
 bars off
 scene off
-mini whack 10
 bars on
 scene room amir gabriel
 cast amir 300
@@ -774,10 +706,8 @@ walk gabriel 700 5 wait
 emote gabriel !
 anim gabriel wave
 say |A door opens by itself, then politely closes.
-say Gabriel|Got a minute? Quick game.
 bars off
 scene off
-mini popcorn 10 2 1
 bars on
 scene lobby amir bolt
 cast amir 300
@@ -786,10 +716,8 @@ walk bolt 700 5 wait
 emote bolt !
 anim bolt wave
 say |A door opens by itself, then politely closes.
-say Bolt|Got a minute? Quick game.
 bars off
 scene off
-mini pairs 4 6
 bars on
 scene outside amir adam_t
 cast amir 300
@@ -798,10 +726,8 @@ walk adam_t 700 5 wait
 emote adam_t !
 anim adam_t wave
 say |Something small happens, and it matters more than it should.
-say Adam|Got a minute? Quick game.
 bars off
 scene off
-mini pairs 4 5
 endday
 
 # ================================================================ CH2 DAY 31
@@ -840,10 +766,8 @@ walk bolt 700 5 wait
 emote bolt !
 anim bolt wave
 say |Something small happens, and it matters more than it should.
-say Bolt|Got a minute? Quick game.
 bars off
 scene off
-mini whack 12
 bars on
 scene inn amir adam_t
 cast amir 300
@@ -852,10 +776,8 @@ walk adam_t 700 5 wait
 emote adam_t !
 anim adam_t wave
 say |The building hums. Somebody laughs two floors away.
-say Adam|Got a minute? Quick game.
 bars off
 scene off
-mini whack 10
 bars on
 scene room amir prime
 cast amir 300
@@ -864,10 +786,8 @@ walk prime 700 5 wait
 emote prime !
 anim prime wave
 say |The building hums. Somebody laughs two floors away.
-say Prime|Got a minute? Quick game.
 bars off
 scene off
-mini popcorn 10 2 1
 endday
 
 # ================================================================ CH2 DAY 32
@@ -908,10 +828,8 @@ walk prime 700 5 wait
 emote prime !
 anim prime wave
 say |Something small happens, and it matters more than it should.
-say Prime|Got a minute? Quick game.
 bars off
 scene off
-mini lights 3
 bars on
 scene outside amir dalia
 cast amir 300
@@ -920,10 +838,8 @@ walk dalia 700 5 wait
 emote dalia !
 anim dalia wave
 say |The building hums. Somebody laughs two floors away.
-say Dalia|Got a minute? Quick game.
 bars off
 scene off
-mini whack 12
 bars on
 scene inn amir gabriel
 cast amir 300
@@ -932,10 +848,8 @@ walk gabriel 700 5 wait
 emote gabriel !
 anim gabriel wave
 say |A door opens by itself, then politely closes.
-say Gabriel|Got a minute? Quick game.
 bars off
 scene off
-mini whack 10
 endday
 
 # ================================================================ CH2 DAY 33
@@ -975,10 +889,8 @@ walk gabriel 700 5 wait
 emote gabriel !
 anim gabriel wave
 say |Someone left a snack on the stairs. A tiny miracle.
-say Gabriel|Got a minute? Quick game.
 bars off
 scene off
-mini lights 4
 bars on
 scene lobby amir bolt
 cast amir 300
@@ -987,10 +899,8 @@ walk bolt 700 5 wait
 emote bolt !
 anim bolt wave
 say |A door opens by itself, then politely closes.
-say Bolt|Got a minute? Quick game.
 bars off
 scene off
-mini lights 3
 bars on
 scene outside amir adam_t
 cast amir 300
@@ -999,10 +909,8 @@ walk adam_t 700 5 wait
 emote adam_t !
 anim adam_t wave
 say |The building hums. Somebody laughs two floors away.
-say Adam|Got a minute? Quick game.
 bars off
 scene off
-mini whack 12
 bars on
 scene inn amir prime
 cast amir 300
@@ -1011,10 +919,8 @@ walk prime 700 5 wait
 emote prime !
 anim prime wave
 say |The building hums. Somebody laughs two floors away.
-say Prime|Got a minute? Quick game.
 bars off
 scene off
-mini whack 10
 endday
 
 # ================================================================ CH2 DAY 34
@@ -1054,10 +960,8 @@ walk adam_t 700 5 wait
 emote adam_t !
 anim adam_t wave
 say |The building hums. Somebody laughs two floors away.
-say Adam|Got a minute? Quick game.
 bars off
 scene off
-mini quiz 4 ilot14
 bars on
 scene room amir prime
 cast amir 300
@@ -1066,10 +970,8 @@ walk prime 700 5 wait
 emote prime !
 anim prime wave
 say |Someone left a snack on the stairs. A tiny miracle.
-say Prime|Got a minute? Quick game.
 bars off
 scene off
-mini lights 4
 bars on
 scene lobby amir dalia
 cast amir 300
@@ -1078,10 +980,8 @@ walk dalia 700 5 wait
 emote dalia !
 anim dalia wave
 say |A door opens by itself, then politely closes.
-say Dalia|Got a minute? Quick game.
 bars off
 scene off
-mini lights 3
 endday
 
 # ================================================================ CH2 DAY 35
@@ -1125,10 +1025,8 @@ walk dalia 700 5 wait
 emote dalia !
 anim dalia wave
 say |A door opens by itself, then politely closes.
-say Dalia|Got a minute? Quick game.
 bars off
 scene off
-mini pairs 4 5
 bars on
 scene inn amir gabriel
 cast amir 300
@@ -1137,10 +1035,8 @@ walk gabriel 700 5 wait
 emote gabriel !
 anim gabriel wave
 say |A door opens by itself, then politely closes.
-say Gabriel|Got a minute? Quick game.
 bars off
 scene off
-mini quiz 4 ilot14
 bars on
 scene room amir bolt
 cast amir 300
@@ -1149,9 +1045,7 @@ walk bolt 700 5 wait
 emote bolt !
 anim bolt wave
 say |Something small happens, and it matters more than it should.
-say Bolt|Got a minute? Quick game.
 bars off
 scene off
-mini lights 4
 endday
 )IL";

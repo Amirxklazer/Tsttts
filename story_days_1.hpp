@@ -273,10 +273,8 @@ walk gabriel 700 5 wait
 emote gabriel !
 anim gabriel wave
 say |Something small happens, and it matters more than it should.
-say Gabriel|Got a minute? Quick game.
 bars off
 scene off
-mini whack 10
 bars on
 scene inn amir bolt
 cast amir 300
@@ -285,10 +283,8 @@ walk bolt 700 5 wait
 emote bolt !
 anim bolt wave
 say |Someone left a snack on the stairs. A tiny miracle.
-say Bolt|Got a minute? Quick game.
 bars off
 scene off
-mini popcorn 10 2 1
 endday
 
 # ================================================================ DAY 4
@@ -352,10 +348,8 @@ walk adam_t 700 5 wait
 emote adam_t !
 anim adam_t wave
 say |Someone left a snack on the stairs. A tiny miracle.
-say Adam|Got a minute? Quick game.
 bars off
 scene off
-mini whack 12
 endday
 
 # ================================================================ DAY 5
@@ -428,9 +422,7 @@ walk dalia 700 5 wait
 emote dalia !
 anim dalia wave
 say |The building hums. Somebody laughs two floors away.
-say Dalia|Got a minute? Quick game.
 bars off
 scene off
-mini lights 3
 endday
 )IL";

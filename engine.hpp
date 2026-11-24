@@ -4,9 +4,9 @@
 #include "extras.hpp"
 #include <list>
 
-#define VERSION "v0.7.1"
+#define VERSION "v0.9.0"
 
-struct Settings { bool bigText = false, hiCon = false; int textSpeed = 1; int autoAdv = 2; bool scanlines = true; int lastSlot = 0; int maxD[6] = {0, 1, 0, 0, 0, 0}; bool unl[6] = {true, true, false, false, false, false}; };
+struct Settings { bool bigText = false, hiCon = false; int textSpeed = 2; int autoAdv = 2; bool scanlines = true; int lastSlot = 0; int maxD[6] = {0, 1, 0, 0, 0, 0}; bool unl[6] = {true, true, false, false, false, false}; };
 struct Npc { std::string floor; float baseX = 0, x = 0; bool visible = true; float phase = 0; int dir = 1; bool still = false; float goal = -1, spd = 4; };
 static int animLen(const std::string& n) { return n == "fall" ? 70 : (n == "zoomies" || n == "twirl" || n == "clap" || n == "dizzy") ? 80 : (n == "dance" || n == "laugh" || n == "cheer") ? 90 : (n == "jump" || n == "float") ? 60 : (n == "nod" || n == "look" || n == "point") ? 56 : (n == "shiver" || n == "stomp") ? 48 : (n == "sit") ? 120 : 50; }
 struct Actor { std::string key; float x = 640, tx = 640, spd = 4; int dir = 1, anim = 0, animT = 0, emoteT = 0; std::string animName, emote; bool walking = false; };
@@ -465,7 +465,7 @@ static void vmRun() {
                 else if (c.a == "beesoff") g.beesT = 0;
                 else if (c.a == "burst") spawnBurst(640, 300, 70, ORANGE, 2);
             } break;
-            case O_WAIT: f.pc++; g.waitT = c.n; if (c.n == 0) break; g.vs = V_WAIT; return;
+            case O_WAIT: f.pc++; g.waitT = c.n > 0 ? std::max(1, c.n * 6 / 10) : c.n; if (c.n == 0) break; g.vs = V_WAIT; return;
             case O_CAST: {
                 f.pc++;
                 Actor& a = ensureActor(c.a); a.x = a.tx = (float)c.n; a.walking = false;
@@ -511,7 +511,10 @@ static bool awaitEvent(const std::string& type, const std::string& arg) {
 
 static void startDay(int d) {
     g.day = std::max(1, std::min(lastDay(), d));
-    if (g.chapter == 1 && !F("illit_done") && !F("illit_day")) setF("illit_day", 5 + (int)((SDL_GetTicks() / 7 + (u32)g.slot * 7919u + rnd()) % 22u));   // random day 5..26, picked once per save
+    if (g.chapter == 4 && !F("illit_done4") && !F("illit_day4")) {   // GLLIT event: Ch3 = start of the last day, Ch4 = one random day (picked once per save)
+        int span = std::max(1, lastDay() - 8);
+        setF("illit_day4", 5 + (int)((SDL_GetTicks() / 7 + (u32)g.slot * 7919u + rnd()) % (u32)span));
+    }
     g.dayFlags = g.flags;
     if (g.day > g.st.maxD[g.chapter]) g.st.maxD[g.chapter] = g.day;
     g.progressFlags[pkKey(g.chapter, g.day)] = flagsStr(g.flags);
@@ -523,7 +526,9 @@ static void startDay(int d) {
     if (g.mini) { delete g.mini; g.mini = nullptr; }
     vmPush(blockName(g.day));
     if (g.stack.empty()) { g.vs = V_NONE; toast("Missing script for this day"); return; }
-    if (g.chapter == 1 && !F("illit_done") && g.day == F("illit_day")) { setF("illit_done", 1); vmPush("illit_event"); }   // Adam Chermatti calls you GLLIT
+    if ((g.chapter == 3 && g.day == lastDay() && !F("illit_done3")) || (g.chapter == 4 && !F("illit_done4") && g.day == F("illit_day4"))) {
+        setF("illit_done" + std::to_string(g.chapter), 1); vmPush("illit_event");   // Adam Chermatti calls you GLLIT
+    }
     vmRun();
 }
 
@@ -900,7 +905,7 @@ static void updateWorld(const Input& in) {
     if (g.elevOpen) { updateElevator(in); return; }
     float mx = in.ax;
     g.moving = fabsf(mx) > 0.2f;
-    if (g.moving) { g.px += mx * 5.4f; g.pdir = mx > 0 ? 1 : -1; g.walk++; }
+    if (g.moving) { g.px += mx * 7.6f; g.pdir = mx > 0 ? 1 : -1; g.walk++; }
     g.px = std::max(70.0f, std::min(f->width - 70, g.px));
     // items auto pickup
     for (size_t i = 0; i < g.items.size();) {

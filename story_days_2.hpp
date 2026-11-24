@@ -82,10 +82,8 @@ walk bolt 700 5 wait
 emote bolt !
 anim bolt wave
 say |A door opens by itself, then politely closes.
-say Bolt|Got a minute? Quick game.
 bars off
 scene off
-mini lights 4
 bars on
 scene room amir adam_t
 cast amir 300
@@ -94,10 +92,8 @@ walk adam_t 700 5 wait
 emote adam_t !
 anim adam_t wave
 say |A door opens by itself, then politely closes.
-say Adam|Got a minute? Quick game.
 bars off
 scene off
-mini lights 3
 endday
 
 # ================================================================ DAY 7
@@ -155,10 +151,8 @@ walk prime 700 5 wait
 emote prime !
 anim prime wave
 say |A door opens by itself, then politely closes.
-say Prime|Got a minute? Quick game.
 bars off
 scene off
-mini quiz 4 ilot14
 endday
 
 # ================================================================ DAY 8
@@ -206,10 +200,8 @@ walk gabriel 700 5 wait
 emote gabriel !
 anim gabriel wave
 say |Something small happens, and it matters more than it should.
-say Gabriel|Got a minute? Quick game.
 bars off
 scene off
-mini pairs 4 5
 endday
 
 # ================================================================ DAY 9
@@ -260,10 +252,8 @@ walk adam_t 700 5 wait
 emote adam_t !
 anim adam_t wave
 say |The lamp flickers once. A hello.
-say Adam|Got a minute? Quick game.
 bars off
 scene off
-mini pairs 4 6
 bars on
 scene lobby amir prime
 cast amir 300
@@ -272,10 +262,8 @@ walk prime 700 5 wait
 emote prime !
 anim prime wave
 say |A door opens by itself, then politely closes.
-say Prime|Got a minute? Quick game.
 bars off
 scene off
-mini pairs 4 5
 endday
 
 # ================================================================ DAY 10
@@ -330,10 +318,8 @@ walk dalia 700 5 wait
 emote dalia !
 anim dalia wave
 say |The lamp flickers once. A hello.
-say Dalia|Got a minute? Quick game.
 bars off
 scene off
-mini popcorn 10 2 1
 endday
 
 # ================================================================ DAY 11
@@ -404,10 +390,8 @@ walk bolt 700 5 wait
 emote bolt !
 anim bolt wave
 say |The lamp flickers once. A hello.
-say Bolt|Got a minute? Quick game.
 bars off
 scene off
-mini whack 10
 endday
 
 # ================================================================ DAY 12
@@ -470,10 +454,8 @@ walk prime 700 5 wait
 emote prime !
 anim prime wave
 say |The lamp flickers once. A hello.
-say Prime|Got a minute? Quick game.
 bars off
 scene off
-mini whack 12
 bars on
 scene outside amir dalia
 cast amir 300
@@ -482,9 +464,7 @@ walk dalia 700 5 wait
 emote dalia !
 anim dalia wave
 say |Something small happens, and it matters more than it should.
-say Dalia|Got a minute? Quick game.
 bars off
 scene off
-mini whack 10
 endday
 )IL";

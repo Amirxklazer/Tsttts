@@ -53,10 +53,8 @@ walk gabriel 700 5 wait
 emote gabriel !
 anim gabriel wave
 say |A door opens by itself, then politely closes.
-say Gabriel|Got a minute? Quick game.
 bars off
 scene off
-mini lights 3
 endday
 
 # ================================================================ DAY 14
@@ -120,10 +118,8 @@ walk adam_t 700 5 wait
 emote adam_t !
 anim adam_t wave
 say |The building hums. Somebody laughs two floors away.
-say Adam|Got a minute? Quick game.
 bars off
 scene off
-mini lights 4
 endday
 
 # ================================================================ DAY 15
@@ -179,10 +175,8 @@ walk dalia 700 5 wait
 emote dalia !
 anim dalia wave
 say |A door opens by itself, then politely closes.
-say Dalia|Got a minute? Quick game.
 bars off
 scene off
-mini quiz 4 ilot14
 bars on
 scene inn amir gabriel
 cast amir 300
@@ -191,10 +185,8 @@ walk gabriel 700 5 wait
 emote gabriel !
 anim gabriel wave
 say |A door opens by itself, then politely closes.
-say Gabriel|Got a minute? Quick game.
 bars off
 scene off
-mini lights 4
 endday
 
 # ================================================================ DAY 16
@@ -249,10 +241,8 @@ walk bolt 700 5 wait
 emote bolt !
 anim bolt wave
 say |A door opens by itself, then politely closes.
-say Bolt|Got a minute? Quick game.
 bars off
 scene off
-mini pairs 4 5
 endday
 
 # ================================================================ DAY 17
@@ -292,10 +282,8 @@ walk prime 700 5 wait
 emote prime !
 anim prime wave
 say |A door opens by itself, then politely closes.
-say Prime|Got a minute? Quick game.
 bars off
 scene off
-mini pairs 4 6
 endday
 
 # ================================================================ DAY 18
@@ -341,10 +329,8 @@ walk gabriel 700 5 wait
 emote gabriel !
 anim gabriel wave
 say |Someone left a snack on the stairs. A tiny miracle.
-say Gabriel|Got a minute? Quick game.
 bars off
 scene off
-mini popcorn 10 2 1
 bars on
 scene room amir bolt
 cast amir 300
@@ -353,10 +339,8 @@ walk bolt 700 5 wait
 emote bolt !
 anim bolt wave
 say |The building hums. Somebody laughs two floors away.
-say Bolt|Got a minute? Quick game.
 bars off
 scene off
-mini pairs 4 6
 endday
 
 # ================================================================ DAY 19
@@ -420,10 +404,8 @@ walk adam_t 700 5 wait
 emote adam_t !
 anim adam_t wave
 say |The building hums. Somebody laughs two floors away.
-say Adam|Got a minute? Quick game.
 bars off
 scene off
-mini whack 10
 endday
 
 # ================================================================ DAY 20
@@ -467,10 +449,8 @@ walk dalia 700 5 wait
 emote dalia !
 anim dalia wave
 say |Someone left a snack on the stairs. A tiny miracle.
-say Dalia|Got a minute? Quick game.
 bars off
 scene off
-mini whack 12
 endday
 
 # ================================================================ DAY 21
@@ -521,10 +501,8 @@ walk bolt 700 5 wait
 emote bolt !
 anim bolt wave
 say |A door opens by itself, then politely closes.
-say Bolt|Got a minute? Quick game.
 bars off
 scene off
-mini lights 3
 bars on
 scene lobby amir adam_t
 cast amir 300
@@ -533,9 +511,7 @@ walk adam_t 700 5 wait
 emote adam_t !
 anim adam_t wave
 say |The building hums. Somebody laughs two floors away.
-say Adam|Got a minute? Quick game.
 bars off
 scene off
-mini whack 12
 endday
 )IL";

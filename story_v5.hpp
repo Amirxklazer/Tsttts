@@ -433,8 +433,6 @@ say |Dalia's phone, face-up. Six drafts, all addressed to me. The first says "hi
 
 script use_p_dalia_board
 say |The plan board. Sticky notes, red string, a map of the 14 with a pin in every floor. A note in the corner: "THINGS TO FIX: EVERYTHING."
-mini pairs 4 6
-toast You sorted the sticky notes.
 
 script use_p_gab_rope
 say |A neat coil of rope on a hook. It's very, very well kept.

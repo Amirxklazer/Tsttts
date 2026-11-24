@@ -1,6 +1,7 @@
 // Ilot14 World - Nintendo Switch homebrew (SDL2 + libnx). Also builds on PC for testing.
 #include "story.hpp"
 #include "render.hpp"
+#include "chars.hpp"
 #include "illit.hpp"
 #include "phone.hpp"
 #ifdef __SWITCH__

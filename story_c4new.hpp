@@ -38,19 +38,11 @@ label b
 say Dalia@dalia|Scared people watch where they walk. You're fine!
 set c4_d1_b 1
 label m1
-mini whack 10
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 goal Talk to Dalia.
 npc dalia lobby 1400
 await talk dalia
-say Dalia@dalia|That was fun. I think I found something.
+say Dalia@dalia|I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini stack 7
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia prime
 cast amir 300
@@ -102,22 +94,7 @@ label b
 say Gabriel@gabriel|Weird is just new with a coat on.
 set c4_d2_b 1
 label m1
-mini lights 3
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 clearitems
-spawn lamp main 600
-spawn lamp main 1200
-spawn lamp main 1800
-goal Collect the 3 glowing lamps on the Main floor.
-await items 3
-say Dalia@dalia|Three! I counted! I'm the best counter!
-clearitems
-mini sort 10
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir gabriel dalia
 cast amir 300
@@ -169,19 +146,11 @@ label b
 say Dalia@dalia|Fine! I'm fearless! Mostly!
 set c4_d3_b 1
 label m1
-mini quiz 4 ilot14
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 goal Talk to Dalia.
 npc dalia rare 1400
 await talk dalia
-say Dalia@dalia|That was fun. I think I found something.
+say Dalia@dalia|I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini dash 12
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia jilali
 cast amir 300
@@ -233,22 +202,7 @@ label b
 say Gabriel@gabriel|Careful is good. Careful finishes the day.
 set c4_d4_b 1
 label m1
-mini pairs 4 6
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 clearitems
-spawn lamp ulobby 600
-spawn lamp ulobby 1200
-spawn lamp ulobby 1800
-goal Collect the 3 glowing lamps on the Underlobby.
-await items 3
-say Dalia@dalia|Three! I counted! I'm the best counter!
-clearitems
-mini balance 10
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia bolt
 cast amir 300
@@ -304,19 +258,11 @@ label b
 say Dalia@dalia|Okay okay! Action time!
 set c4_d5_b 1
 label m1
-mini popcorn 10 2 1
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 goal Talk to Dalia.
 npc dalia lethal 1400
 await talk dalia
-say Dalia@dalia|That was fun. I think I found something.
+say Dalia@dalia|I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini stack 8
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia gabriel
 cast amir 300
@@ -368,22 +314,7 @@ label b
 say Dalia@dalia|Scared people watch where they walk. You're fine!
 set c4_d6_b 1
 label m1
-mini slide 3
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 clearitems
-spawn lamp unc 600
-spawn lamp unc 1200
-spawn lamp unc 1800
-goal Collect the 3 glowing lamps on the Uncommon floor.
-await items 3
-say Dalia@dalia|Three! I counted! I'm the best counter!
-clearitems
-mini sort 12
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia alicia
 cast amir 300
@@ -435,19 +366,11 @@ label b
 say Gabriel@gabriel|Weird is just new with a coat on.
 set c4_d7_b 1
 label m1
-mini memo 4 5
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 goal Talk to Dalia.
 npc dalia common 1400
 await talk dalia
-say Dalia@dalia|That was fun. I think I found something.
+say Dalia@dalia|I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini dash 14
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia anes
 cast amir 300
@@ -504,17 +427,6 @@ ifnot skipped s1
 say |(Nice work! The hallway feels a little brighter.)
 label s1
 clearitems
-spawn lamp special 600
-spawn lamp special 1200
-spawn lamp special 1800
-goal Collect the 3 glowing lamps on the Special floor.
-await items 3
-say Dalia@dalia|Three! I counted! I'm the best counter!
-clearitems
-mini balance 12
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia amine
 cast amir 300
@@ -573,12 +485,8 @@ label s1
 goal Talk to Dalia.
 npc dalia park1 1400
 await talk dalia
-say Dalia@dalia|That was fun. I think I found something.
+say Dalia@dalia|I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini whack 12
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene garage amir dalia mopsy
 cast amir 300
@@ -634,22 +542,7 @@ label b
 say Dalia@dalia|Okay okay! Action time!
 set c4_d10_b 1
 label m1
-mini lights 4
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 clearitems
-spawn lamp teen 600
-spawn lamp teen 1200
-spawn lamp teen 1800
-goal Collect the 3 glowing lamps on the Teen floor.
-await items 3
-say Dalia@dalia|Three! I counted! I'm the best counter!
-clearitems
-mini popcorn 10 3 1
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia amyas
 cast amir 300
@@ -701,19 +594,11 @@ label b
 say Dalia@dalia|Scared people watch where they walk. You're fine!
 set c4_d11_b 1
 label m1
-mini whack 10
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 goal Talk to Dalia.
 npc dalia teen 1400
 await talk dalia
-say Dalia@dalia|That was fun. I think I found something.
+say Dalia@dalia|I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini stack 7
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia adam_t
 cast amir 300
@@ -765,22 +650,7 @@ label b
 say Gabriel@gabriel|Weird is just new with a coat on.
 set c4_d12_b 1
 label m1
-mini lights 3
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 clearitems
-spawn lamp park2 600
-spawn lamp park2 1200
-spawn lamp park2 1800
-goal Collect the 3 glowing lamps on Parking 2.
-await items 3
-say Dalia@dalia|Three! I counted! I'm the best counter!
-clearitems
-mini sort 10
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene garage amir dalia sweepy
 cast amir 300
@@ -832,19 +702,11 @@ label b
 say Dalia@dalia|Fine! I'm fearless! Mostly!
 set c4_d13_b 1
 label m1
-mini quiz 4 ilot14
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 goal Talk to Dalia.
 npc dalia inn 1400
 await talk dalia
-say Dalia@dalia|That was fun. I think I found something.
+say Dalia@dalia|I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini dash 12
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene inn amir dalia aya_n
 cast amir 300
@@ -896,22 +758,7 @@ label b
 say Gabriel@gabriel|Careful is good. Careful finishes the day.
 set c4_d14_b 1
 label m1
-mini pairs 4 6
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 clearitems
-spawn lamp roof 600
-spawn lamp roof 1200
-spawn lamp roof 1800
-goal Collect the 3 glowing lamps on the Roof.
-await items 3
-say Dalia@dalia|Three! I counted! I'm the best counter!
-clearitems
-mini balance 10
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene roof amir dalia prime
 cast amir 300
@@ -967,19 +814,11 @@ label b
 say Dalia@dalia|Okay okay! Action time!
 set c4_d15_b 1
 label m1
-mini popcorn 10 2 1
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 goal Talk to Dalia.
 npc dalia lobby 1400
 await talk dalia
-say Dalia@dalia|That was fun. I think I found something.
+say Dalia@dalia|I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini stack 8
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia prime
 cast amir 300
@@ -1031,22 +870,7 @@ label b
 say Dalia@dalia|Scared people watch where they walk. You're fine!
 set c4_d16_b 1
 label m1
-mini slide 3
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 clearitems
-spawn lamp unc 600
-spawn lamp unc 1200
-spawn lamp unc 1800
-goal Collect the 3 glowing lamps on the Uncommon floor.
-await items 3
-say Dalia@dalia|Three! I counted! I'm the best counter!
-clearitems
-mini sort 12
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia jalil
 cast amir 300
@@ -1098,19 +922,11 @@ label b
 say Gabriel@gabriel|Weird is just new with a coat on.
 set c4_d17_b 1
 label m1
-mini memo 4 5
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 goal Talk to Dalia.
 npc dalia unc 1400
 await talk dalia
-say Dalia@dalia|That was fun. I think I found something.
+say Dalia@dalia|I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini dash 14
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia abdullah
 cast amir 300
@@ -1167,17 +983,6 @@ ifnot skipped s1
 say |(Nice work! The hallway feels a little brighter.)
 label s1
 clearitems
-spawn lamp common 600
-spawn lamp common 1200
-spawn lamp common 1800
-goal Collect the 3 glowing lamps on the Common floor.
-await items 3
-say Dalia@dalia|Three! I counted! I'm the best counter!
-clearitems
-mini balance 12
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia iyad
 cast amir 300
@@ -1236,12 +1041,8 @@ label s1
 goal Talk to Dalia.
 npc dalia rare 1400
 await talk dalia
-say Dalia@dalia|That was fun. I think I found something.
+say Dalia@dalia|I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini whack 12
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia maysanne
 cast amir 300
@@ -1297,22 +1098,7 @@ label b
 say Dalia@dalia|Okay okay! Action time!
 set c4_d20_b 1
 label m1
-mini lights 4
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 clearitems
-spawn lamp main 600
-spawn lamp main 1200
-spawn lamp main 1800
-goal Collect the 3 glowing lamps on the Main floor.
-await items 3
-say Dalia@dalia|Three! I counted! I'm the best counter!
-clearitems
-mini popcorn 10 3 1
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia arwa
 cast amir 300
@@ -1364,19 +1150,11 @@ label b
 say Dalia@dalia|Scared people watch where they walk. You're fine!
 set c4_d21_b 1
 label m1
-mini whack 10
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 goal Talk to Dalia.
 npc dalia main 1400
 await talk dalia
-say Dalia@dalia|That was fun. I think I found something.
+say Dalia@dalia|I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini stack 7
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia youcef
 cast amir 300
@@ -1428,22 +1206,7 @@ label b
 say Gabriel@gabriel|Weird is just new with a coat on.
 set c4_d22_b 1
 label m1
-mini lights 3
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 clearitems
-spawn lamp lethal 600
-spawn lamp lethal 1200
-spawn lamp lethal 1800
-goal Collect the 3 glowing lamps on the Lethal floor.
-await items 3
-say Dalia@dalia|Three! I counted! I'm the best counter!
-clearitems
-mini sort 10
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia raceem
 cast amir 300
@@ -1495,19 +1258,11 @@ label b
 say Dalia@dalia|Fine! I'm fearless! Mostly!
 set c4_d23_b 1
 label m1
-mini quiz 4 ilot14
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 goal Talk to Dalia.
 npc dalia lethal 1400
 await talk dalia
-say Dalia@dalia|That was fun. I think I found something.
+say Dalia@dalia|I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini dash 12
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia basmala
 cast amir 300
@@ -1559,22 +1314,7 @@ label b
 say Gabriel@gabriel|Careful is good. Careful finishes the day.
 set c4_d24_b 1
 label m1
-mini pairs 4 6
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 clearitems
-spawn lamp common 600
-spawn lamp common 1200
-spawn lamp common 1800
-goal Collect the 3 glowing lamps on the Common floor.
-await items 3
-say Dalia@dalia|Three! I counted! I'm the best counter!
-clearitems
-mini balance 10
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia dania
 cast amir 300
@@ -1630,19 +1370,11 @@ label b
 say Dalia@dalia|Okay okay! Action time!
 set c4_d25_b 1
 label m1
-mini popcorn 10 2 1
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 goal Talk to Dalia.
 npc dalia lethal 1400
 await talk dalia
-say Dalia@dalia|That was fun. I think I found something.
+say Dalia@dalia|I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini stack 8
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia fares
 cast amir 300
@@ -1694,22 +1426,7 @@ label b
 say Dalia@dalia|Scared people watch where they walk. You're fine!
 set c4_d26_b 1
 label m1
-mini slide 3
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 clearitems
-spawn lamp special 600
-spawn lamp special 1200
-spawn lamp special 1800
-goal Collect the 3 glowing lamps on the Special floor.
-await items 3
-say Dalia@dalia|Three! I counted! I'm the best counter!
-clearitems
-mini sort 12
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia kenzy
 cast amir 300
@@ -1761,19 +1478,11 @@ label b
 say Gabriel@gabriel|Weird is just new with a coat on.
 set c4_d27_b 1
 label m1
-mini memo 4 5
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 goal Talk to Dalia.
 npc dalia rare 1400
 await talk dalia
-say Dalia@dalia|That was fun. I think I found something.
+say Dalia@dalia|I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini dash 14
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia anais
 cast amir 300
@@ -1830,17 +1539,6 @@ ifnot skipped s1
 say |(Nice work! The hallway feels a little brighter.)
 label s1
 clearitems
-spawn lamp park1 600
-spawn lamp park1 1200
-spawn lamp park1 1800
-goal Collect the 3 glowing lamps on Parking 1.
-await items 3
-say Dalia@dalia|Three! I counted! I'm the best counter!
-clearitems
-mini balance 12
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene garage amir dalia vacca
 cast amir 300
@@ -1899,12 +1597,8 @@ label s1
 goal Talk to Dalia.
 npc dalia inn 1400
 await talk dalia
-say Dalia@dalia|That was fun. I think I found something.
+say Dalia@dalia|I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini whack 12
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene inn amir dalia sofia
 cast amir 300
@@ -1960,22 +1654,7 @@ label b
 say Dalia@dalia|Okay okay! Action time!
 set c4_d30_b 1
 label m1
-mini lights 4
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 clearitems
-spawn lamp main 600
-spawn lamp main 1200
-spawn lamp main 1800
-goal Collect the 3 glowing lamps on the Main floor.
-await items 3
-say Dalia@dalia|Three! I counted! I'm the best counter!
-clearitems
-mini popcorn 10 3 1
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir gabriel dalia
 cast amir 300
@@ -2027,19 +1706,11 @@ label b
 say Dalia@dalia|Scared people watch where they walk. You're fine!
 set c4_d31_b 1
 label m1
-mini whack 10
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 goal Talk to Dalia.
 npc dalia main 1400
 await talk dalia
-say Dalia@dalia|That was fun. I think I found something.
+say Dalia@dalia|I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini stack 7
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia gabriel
 cast amir 300
@@ -2091,22 +1762,7 @@ label b
 say Gabriel@gabriel|Weird is just new with a coat on.
 set c4_d32_b 1
 label m1
-mini lights 3
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 clearitems
-spawn lamp lobby 600
-spawn lamp lobby 1200
-spawn lamp lobby 1800
-goal Collect the 3 glowing lamps on the Lobby.
-await items 3
-say Dalia@dalia|Three! I counted! I'm the best counter!
-clearitems
-mini sort 10
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia bolt
 cast amir 300
@@ -2158,19 +1814,11 @@ label b
 say Dalia@dalia|Fine! I'm fearless! Mostly!
 set c4_d33_b 1
 label m1
-mini quiz 4 ilot14
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 goal Talk to Dalia.
 npc dalia bots 1400
 await talk dalia
-say Dalia@dalia|That was fun. I think I found something.
+say Dalia@dalia|I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini dash 12
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia mopsy
 cast amir 300
@@ -2222,22 +1870,7 @@ label b
 say Gabriel@gabriel|Careful is good. Careful finishes the day.
 set c4_d34_b 1
 label m1
-mini pairs 4 6
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 clearitems
-spawn lamp roof 600
-spawn lamp roof 1200
-spawn lamp roof 1800
-goal Collect the 3 glowing lamps on the Roof.
-await items 3
-say Dalia@dalia|Three! I counted! I'm the best counter!
-clearitems
-mini balance 10
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene roof amir dalia prime
 cast amir 300
@@ -2293,19 +1926,11 @@ label b
 say Dalia@dalia|Okay okay! Action time!
 set c4_d35_b 1
 label m1
-mini popcorn 10 2 1
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 goal Talk to Dalia.
 npc dalia lobby 1400
 await talk dalia
-say Dalia@dalia|That was fun. I think I found something.
+say Dalia@dalia|I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini stack 8
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia alicia
 cast amir 300
@@ -2357,22 +1982,7 @@ label b
 say Dalia@dalia|Scared people watch where they walk. You're fine!
 set c4_d36_b 1
 label m1
-mini slide 3
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 clearitems
-spawn lamp main 600
-spawn lamp main 1200
-spawn lamp main 1800
-goal Collect the 3 glowing lamps on the Main floor.
-await items 3
-say Dalia@dalia|Three! I counted! I'm the best counter!
-clearitems
-mini sort 12
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir gabriel dalia
 cast amir 300
@@ -2424,19 +2034,11 @@ label b
 say Gabriel@gabriel|Weird is just new with a coat on.
 set c4_d37_b 1
 label m1
-mini memo 4 5
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 goal Talk to Dalia.
 npc dalia lethal 1400
 await talk dalia
-say Dalia@dalia|That was fun. I think I found something.
+say Dalia@dalia|I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini dash 14
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia amine
 cast amir 300
@@ -2493,17 +2095,6 @@ ifnot skipped s1
 say |(Nice work! The hallway feels a little brighter.)
 label s1
 clearitems
-spawn lamp teen 600
-spawn lamp teen 1200
-spawn lamp teen 1800
-goal Collect the 3 glowing lamps on the Teen floor.
-await items 3
-say Dalia@dalia|Three! I counted! I'm the best counter!
-clearitems
-mini balance 12
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia lilian
 cast amir 300
@@ -2562,12 +2153,8 @@ label s1
 goal Talk to Dalia.
 npc dalia inn 1400
 await talk dalia
-say Dalia@dalia|That was fun. I think I found something.
+say Dalia@dalia|I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini whack 12
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene inn amir dalia tansaouti
 cast amir 300
@@ -2623,22 +2210,7 @@ label b
 say Dalia@dalia|Okay okay! Action time!
 set c4_d40_b 1
 label m1
-mini lights 4
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 clearitems
-spawn lamp park2 600
-spawn lamp park2 1200
-spawn lamp park2 1800
-goal Collect the 3 glowing lamps on Parking 2.
-await items 3
-say Dalia@dalia|Three! I counted! I'm the best counter!
-clearitems
-mini popcorn 10 3 1
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene garage amir dalia grim
 cast amir 300
@@ -2690,19 +2262,11 @@ label b
 say Dalia@dalia|Scared people watch where they walk. You're fine!
 set c4_d41_b 1
 label m1
-mini whack 10
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 goal Talk to Dalia.
 npc dalia rare 1400
 await talk dalia
-say Dalia@dalia|That was fun. I think I found something.
+say Dalia@dalia|I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini stack 7
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia jilali
 cast amir 300
@@ -2754,22 +2318,7 @@ label b
 say Gabriel@gabriel|Weird is just new with a coat on.
 set c4_d42_b 1
 label m1
-mini lights 3
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 clearitems
-spawn lamp roof 600
-spawn lamp roof 1200
-spawn lamp roof 1800
-goal Collect the 3 glowing lamps on the Roof.
-await items 3
-say Dalia@dalia|Three! I counted! I'm the best counter!
-clearitems
-mini sort 10
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene roof amir dalia gabriel
 cast amir 300
@@ -2821,19 +2370,11 @@ label b
 say Dalia@dalia|Fine! I'm fearless! Mostly!
 set c4_d43_b 1
 label m1
-mini quiz 4 ilot14
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 goal Talk to Dalia.
 npc dalia lobby 1400
 await talk dalia
-say Dalia@dalia|That was fun. I think I found something.
+say Dalia@dalia|I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini dash 12
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia prime
 cast amir 300
@@ -2885,22 +2426,7 @@ label b
 say Gabriel@gabriel|Careful is good. Careful finishes the day.
 set c4_d44_b 1
 label m1
-mini pairs 4 6
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 clearitems
-spawn lamp lethal 600
-spawn lamp lethal 1200
-spawn lamp lethal 1800
-goal Collect the 3 glowing lamps on the Lethal floor.
-await items 3
-say Dalia@dalia|Three! I counted! I'm the best counter!
-clearitems
-mini balance 10
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene hall amir dalia bolt
 cast amir 300
@@ -2956,19 +2482,11 @@ label b
 say Dalia@dalia|Okay okay! Action time!
 set c4_d45_b 1
 label m1
-mini popcorn 10 2 1
-ifnot skipped s1
-say |(Nice work! The hallway feels a little brighter.)
-label s1
 goal Talk to Gabriel.
 npc gabriel roof 1400
 await talk gabriel
-say Gabriel@gabriel|That was fun. I think I found something.
+say Gabriel@gabriel|I think I found something.
 say |It's a small clue. Nobody understands it yet.
-mini stack 8
-ifnot skipped s2
-say |(Nice. Everyone cheers.)
-label s2
 bars on
 scene roof amir gabriel dalia
 cast amir 300
